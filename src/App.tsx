@@ -19,6 +19,7 @@ import {
   type HistoryAction,
   type HistoryState,
 } from './core/history'
+import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
 import {
   createProject,
   parseProject,
@@ -26,7 +27,7 @@ import {
   serializeProject,
   writeRecovery,
 } from './core/project'
-import type { PilotiParameters } from './core/types'
+import type { ModelScale, PilotiParameters } from './core/types'
 
 interface RangeFieldProps {
   readonly label: string
@@ -48,8 +49,13 @@ interface Notice {
 type ProjectOrigin = 'DEFAULT' | 'RECOVERED' | 'SAVED'
 type FootOffsetScope = 'shared' | 'selected'
 
-interface InitialSession {
+interface PilotiStudyState {
   readonly parameters: PilotiParameters
+  readonly modelScale: ModelScale
+}
+
+interface InitialSession {
+  readonly study: PilotiStudyState
   readonly origin: ProjectOrigin
   readonly baseline: string
   readonly notice?: Notice
@@ -66,14 +72,19 @@ const RANGE_KEYS = new Set([
   'PageUp',
 ])
 
+const DEFAULT_STUDY: PilotiStudyState = {
+  parameters: DEFAULT_PILOTI_PARAMETERS,
+  modelScale: 1,
+}
+
 const DEFAULT_PROJECT_JSON = serializeProject(
-  createProject(DEFAULT_PILOTI_PARAMETERS),
+  createProject(DEFAULT_STUDY.parameters, DEFAULT_STUDY.modelScale),
 )
 
 function pilotiHistoryReducer(
-  state: HistoryState<PilotiParameters>,
-  action: HistoryAction<PilotiParameters>,
-): HistoryState<PilotiParameters> {
+  state: HistoryState<PilotiStudyState>,
+  action: HistoryAction<PilotiStudyState>,
+): HistoryState<PilotiStudyState> {
   return reduceHistory(state, action)
 }
 
@@ -81,7 +92,10 @@ function loadInitialSession(): InitialSession {
   const recovery = readRecovery(window.localStorage)
   if (recovery.status === 'recovered') {
     return {
-      parameters: recovery.project.parameters,
+      study: {
+        parameters: recovery.project.parameters,
+        modelScale: recovery.project.modelScale,
+      },
       origin: 'RECOVERED',
       baseline: serializeProject(recovery.project),
       notice: { kind: 'info', text: 'Local recovery restored.' },
@@ -89,7 +103,7 @@ function loadInitialSession(): InitialSession {
   }
   if (recovery.status === 'invalid') {
     return {
-      parameters: DEFAULT_PILOTI_PARAMETERS,
+      study: DEFAULT_STUDY,
       origin: 'DEFAULT',
       baseline: DEFAULT_PROJECT_JSON,
       notice: {
@@ -99,7 +113,7 @@ function loadInitialSession(): InitialSession {
     }
   }
   return {
-    parameters: DEFAULT_PILOTI_PARAMETERS,
+    study: DEFAULT_STUDY,
     origin: 'DEFAULT',
     baseline: DEFAULT_PROJECT_JSON,
   }
@@ -175,7 +189,7 @@ export default function App() {
   const [initialSession] = useState(loadInitialSession)
   const [history, dispatch] = useReducer(
     pilotiHistoryReducer,
-    initialSession.parameters,
+    initialSession.study,
     createHistory,
   )
   const [selectedPieceId, setSelectedPieceId] = useState('upper-mass')
@@ -189,10 +203,20 @@ export default function App() {
     initialSession.notice,
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const parameters = history.present
-  const project = useMemo(() => createProject(parameters), [parameters])
+  const studyState = history.present
+  const parameters = studyState.parameters
+  const modelScale = studyState.modelScale
+  const modelScaleDenominator = Math.round(1 / modelScale)
+  const project = useMemo(
+    () => createProject(parameters, modelScale),
+    [modelScale, parameters],
+  )
   const projectJson = useMemo(() => serializeProject(project), [project])
-  const study = useMemo(() => generatePiloti(parameters), [parameters])
+  const masterStudy = useMemo(() => generatePiloti(parameters), [parameters])
+  const study = useMemo(
+    () => scaleMassStudy(masterStudy, modelScale),
+    [masterStudy, modelScale],
+  )
   const selectedSupportId = supportIdForPiece(selectedPieceId)
   const selectedFootOffsetOverride = parameters.footOffsetOverrides.find(
     (override) => override.supportId === selectedSupportId,
@@ -232,9 +256,12 @@ export default function App() {
   const projectStatus: ProjectOrigin | 'UNSAVED' =
     projectJson === baselineJson ? projectOrigin : 'UNSAVED'
 
-  const persistRecovery = (nextParameters: PilotiParameters) => {
+  const persistRecovery = (nextStudy: PilotiStudyState) => {
     try {
-      writeRecovery(window.localStorage, createProject(nextParameters))
+      writeRecovery(
+        window.localStorage,
+        createProject(nextStudy.parameters, nextStudy.modelScale),
+      )
     } catch {
       setNotice({
         kind: 'error',
@@ -257,10 +284,10 @@ export default function App() {
     }
   }
 
-  const replaceParameters = (nextParameters: PilotiParameters) => {
-    if (nextParameters === parameters) return
-    persistRecovery(nextParameters)
-    dispatch({ type: 'replace', value: nextParameters })
+  const replaceStudy = (nextStudy: PilotiStudyState) => {
+    if (nextStudy === studyState) return
+    persistRecovery(nextStudy)
+    dispatch({ type: 'replace', value: nextStudy })
   }
 
   const update = <Key extends keyof PilotiParameters>(
@@ -270,13 +297,18 @@ export default function App() {
     if (parameters[key] === value) return
     const nextParameters = { ...parameters, [key]: value }
     reconcileSelection(nextParameters)
-    replaceParameters(nextParameters)
+    replaceStudy({ ...studyState, parameters: nextParameters })
+  }
+
+  const updateModelScale = (nextModelScale: ModelScale) => {
+    if (nextModelScale === modelScale) return
+    replaceStudy({ ...studyState, modelScale: nextModelScale })
   }
 
   const undo = () => {
     const previous = history.past.at(-1)
     if (!previous) return
-    reconcileSelection(previous)
+    reconcileSelection(previous.parameters)
     persistRecovery(previous)
     dispatch({ type: 'undo' })
   }
@@ -284,7 +316,7 @@ export default function App() {
   const redo = () => {
     const next = history.future[0]
     if (!next) return
-    reconcileSelection(next)
+    reconcileSelection(next.parameters)
     persistRecovery(next)
     dispatch({ type: 'redo' })
   }
@@ -292,7 +324,7 @@ export default function App() {
   const reset = () => {
     setSelectedPieceId('upper-mass')
     setFootOffsetScope('shared')
-    replaceParameters(DEFAULT_PILOTI_PARAMETERS)
+    replaceStudy(DEFAULT_STUDY)
     setNotice({ kind: 'info', text: 'Defaults restored. Undo is available.' })
   }
 
@@ -301,7 +333,7 @@ export default function App() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `raaka-piloti-${String(parameters.seed).padStart(4, '0')}.raaka.json`
+    link.download = `raaka-piloti-${String(parameters.seed).padStart(4, '0')}-1to${modelScaleDenominator}.raaka.json`
     link.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
     setBaselineJson(projectJson)
@@ -313,8 +345,12 @@ export default function App() {
     try {
       const openedProject = parseProject(await file.text())
       const openedJson = serializeProject(openedProject)
-      dispatch({ type: 'load', value: openedProject.parameters })
-      persistRecovery(openedProject.parameters)
+      const openedStudy = {
+        parameters: openedProject.parameters,
+        modelScale: openedProject.modelScale,
+      }
+      dispatch({ type: 'load', value: openedStudy })
+      persistRecovery(openedStudy)
       setSelectedPieceId('upper-mass')
       setFootOffsetScope('shared')
       setBaselineJson(openedJson)
@@ -543,6 +579,7 @@ export default function App() {
       <section className="workspace">
         <Viewport
           study={study}
+          modelScale={modelScale}
           selectedPieceId={selectedPieceId}
           onSelect={selectPiece}
         />
@@ -565,7 +602,7 @@ export default function App() {
             <h2>Global composition</h2>
           </div>
           <RangeField
-            label="Physical height"
+            label="Design height"
             value={parameters.heightMm}
             minimum={1_000}
             maximum={2_000}
@@ -575,6 +612,33 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('heightMm', value)}
           />
+          <div className="model-scale-control">
+            <div className="model-scale-heading">
+              <span>MODEL SCALE</span>
+              <small>Uniform manufacturing size, not camera zoom.</small>
+            </div>
+            <div className="model-scale-presets" aria-label="Model scale">
+              {MODEL_SCALE_PRESETS.map((preset) => {
+                const denominator = Math.round(1 / preset)
+                return (
+                  <button
+                    type="button"
+                    key={preset}
+                    className={modelScale === preset ? 'is-active' : ''}
+                    aria-pressed={modelScale === preset}
+                    onClick={() => updateModelScale(preset)}
+                  >
+                    1:{denominator}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="model-scale-summary">
+              <span>MANUFACTURED HEIGHT</span>
+              <strong>{formatNumber(study.heightMm)} MM</strong>
+              <small>{formatNumber(masterStudy.heightMm)} MM DESIGN</small>
+            </div>
+          </div>
           <RangeField
             label="Supports"
             value={parameters.supportCount}
@@ -730,10 +794,14 @@ export default function App() {
             </span>
             <strong>{authoredLeanAngleDeg.toFixed(1)}°</strong>
             <small>
-              {formatNumber(footOffsetMm, 1)} MM OFFSET ·{' '}
+              {formatNumber(footOffsetMm, 1)} MM DESIGN OFFSET ·{' '}
               {footDirectionDeg === undefined
                 ? 'NO DIRECTION'
                 : `${footDirectionDeg.toFixed(0)}° FOOT DIRECTION`}
+            </small>
+            <small>
+              {formatNumber(footOffsetMm * modelScale, 1)} MM MODEL OFFSET AT
+              1:{modelScaleDenominator}
             </small>
             <small>
               {activeFootOffsetScope === 'selected'
@@ -748,11 +816,19 @@ export default function App() {
         <section className="panel-section metrics-section">
           <div className="section-heading">
             <span>04</span>
-            <h2>Physical estimate</h2>
+            <h2>Manufacturing estimate</h2>
           </div>
           <dl className="metrics-grid">
             <div>
-              <dt>Envelope</dt>
+              <dt>Design envelope</dt>
+              <dd>
+                {formatNumber(masterStudy.widthMm)} ×{' '}
+                {formatNumber(masterStudy.depthMm)} ×{' '}
+                {formatNumber(masterStudy.heightMm)} mm
+              </dd>
+            </div>
+            <div>
+              <dt>Manufactured envelope</dt>
               <dd>
                 {formatNumber(study.widthMm)} × {formatNumber(study.depthMm)} ×{' '}
                 {formatNumber(study.heightMm)} mm
@@ -774,8 +850,8 @@ export default function App() {
             </div>
           </dl>
           <p className="notice">
-            Solid estimate at 2,400 kg/m³. Structural approval, reinforcement and
-            anchoring are outside this study.
+            Manufactured solid estimate at 2,400 kg/m³. Structural approval,
+            reinforcement and anchoring are outside this study.
           </p>
         </section>
       </aside>
@@ -785,8 +861,9 @@ export default function App() {
           <i className="status-dot" /> RECOVERY ON
         </span>
         <span>SEED {parameters.seed}</span>
+        <span>SCALE 1:{modelScaleDenominator}</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.4 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.5 / LOCAL</span>
       </footer>
     </main>
   )

@@ -1,12 +1,18 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import type { MassStudy, PieceRole, ScenePiece } from '../core/types'
+import type {
+  MassStudy,
+  ModelScale,
+  PieceRole,
+  ScenePiece,
+} from '../core/types'
 import { createFrustumGeometry } from '../geometry/frustum'
 import { fitDirectionalShadow, fitPerspectiveCamera } from '../geometry/view'
 
 interface ViewportProps {
   readonly study: MassStudy
+  readonly modelScale: ModelScale
   readonly selectedPieceId: string
   readonly onSelect: (pieceId: string) => void
 }
@@ -46,6 +52,7 @@ function disposeObject(object: THREE.Object3D): void {
 
 export function Viewport({
   study,
+  modelScale,
   selectedPieceId,
   onSelect,
 }: ViewportProps) {
@@ -59,6 +66,7 @@ export function Viewport({
   const onSelectRef = useRef(onSelect)
   const selectedPieceIdRef = useRef(selectedPieceId)
   const studyRef = useRef(study)
+  const modelScaleRef = useRef(modelScale)
 
   useEffect(() => {
     onSelectRef.current = onSelect
@@ -260,6 +268,15 @@ export function Viewport({
       )
     }
   }, [selectedPieceId])
+
+  useEffect(() => {
+    if (modelScaleRef.current === modelScale) return
+    modelScaleRef.current = modelScale
+    const camera = cameraRef.current
+    const controls = controlsRef.current
+    if (!camera || !controls) return
+    fitPerspectiveCamera(camera, controls, studyRef.current.bounds, false)
+  }, [modelScale])
 
   const fitView = (useHomeDirection: boolean) => {
     const camera = cameraRef.current

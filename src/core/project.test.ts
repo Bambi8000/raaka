@@ -13,26 +13,29 @@ import {
 
 describe('RAAKA project files', () => {
   it('round-trips every Piloti parameter and version field', () => {
-    const project = createProject({
-      ...DEFAULT_PILOTI_PARAMETERS,
-      seed: 319,
-      heightMm: 2_000,
-      supportCount: 6,
-      footOffsetXMm: 175,
-      footOffsetYMm: -90,
-      footOffsetOverrides: [
-        {
-          supportId: 'support-2',
-          footOffsetXMm: -120,
-          footOffsetYMm: 80,
-        },
-        {
-          supportId: 'support-6',
-          footOffsetXMm: 200,
-          footOffsetYMm: 0,
-        },
-      ],
-    })
+    const project = createProject(
+      {
+        ...DEFAULT_PILOTI_PARAMETERS,
+        seed: 319,
+        heightMm: 2_000,
+        supportCount: 6,
+        footOffsetXMm: 175,
+        footOffsetYMm: -90,
+        footOffsetOverrides: [
+          {
+            supportId: 'support-2',
+            footOffsetXMm: -120,
+            footOffsetYMm: 80,
+          },
+          {
+            supportId: 'support-6',
+            footOffsetXMm: 200,
+            footOffsetYMm: 0,
+          },
+        ],
+      },
+      0.25,
+    )
 
     expect(parseProject(serializeProject(project))).toEqual(project)
   })
@@ -122,7 +125,7 @@ describe('RAAKA project files', () => {
       'unsupported model scale',
       JSON.stringify({
         ...createProject(DEFAULT_PILOTI_PARAMETERS),
-        modelScale: 0.5,
+        modelScale: 0.75,
       }),
     ],
     [

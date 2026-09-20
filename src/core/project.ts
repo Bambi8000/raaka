@@ -2,7 +2,8 @@ import {
   parsePilotiParameters,
   ProjectValidationError,
 } from './pilotiParameters'
-import type { PilotiParameters } from './types'
+import { isModelScale } from './modelScale'
+import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
@@ -14,7 +15,7 @@ export interface RaakaProject {
   readonly formatVersion: typeof PROJECT_FORMAT_VERSION
   readonly recipe: 'piloti'
   readonly recipeVersion: typeof PILOTI_RECIPE_VERSION
-  readonly modelScale: 1
+  readonly modelScale: ModelScale
   readonly parameters: PilotiParameters
 }
 
@@ -35,13 +36,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function createProject(parameters: PilotiParameters): RaakaProject {
+export function createProject(
+  parameters: PilotiParameters,
+  modelScale: ModelScale = 1,
+): RaakaProject {
   return {
     format: PROJECT_FORMAT,
     formatVersion: PROJECT_FORMAT_VERSION,
     recipe: 'piloti',
     recipeVersion: PILOTI_RECIPE_VERSION,
-    modelScale: 1,
+    modelScale,
     parameters: {
       ...parameters,
       footOffsetOverrides: parameters.footOffsetOverrides.map((override) => ({
@@ -88,9 +92,9 @@ export function parseProject(serialized: string): RaakaProject {
     )
   }
   const modelScale = input.modelScale ?? 1
-  if (modelScale !== 1) {
+  if (!isModelScale(modelScale)) {
     throw new ProjectValidationError(
-      'Only model scale 1 is supported by this version.',
+      'Model scale must be 1, 0.5 or 0.25.',
     )
   }
 
@@ -106,6 +110,7 @@ export function parseProject(serialized: string): RaakaProject {
         : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
+    modelScale,
   )
 }
 

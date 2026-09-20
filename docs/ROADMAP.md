@@ -10,8 +10,8 @@ Confirmed additions from the owner on 2026-09-20: physical scale models at
 1:2 and 1:4, repeated support rows in depth, and explicit X/Y foot offsets for
 leaning legs. These are specified in [Product definition](PRODUCT.md) and
 [Architecture](ARCHITECTURE.md). Shared foot offsets are implemented in 0.1.3;
-selected-leg overrides are implemented in 0.1.4; model scaling and support rows
-remain planned.
+selected-leg overrides are implemented in 0.1.4; model-scale presets are
+implemented in 0.1.5. Support rows remain planned.
 
 ## 0.1 — foundation
 
@@ -28,7 +28,8 @@ The baseline is a working study prototype. Manufacturing export, cores and five
 of the six recipe families are not yet implemented. Version 0.1.1 closes the
 measured geometry and viewport defects; version 0.1.2 begins durable study
 work with project files, recovery and history; version 0.1.3 adds authored
-shared leg lean; version 0.1.4 adds per-leg overrides.
+shared leg lean; version 0.1.4 adds per-leg overrides; version 0.1.5 adds
+physical model scales.
 
 ## 0.1.1 — correct the baseline
 
@@ -106,15 +107,18 @@ the distinction.
 
 ## 0.1.5 — physical scale models for testing
 
-- [ ] preserve full-size master parameters and add a separate uniform Model scale
-- [ ] presets 1:1, 1:2 and 1:4, plus a validated custom scale or target height
-- [ ] allow physical results below 1,000 mm without reapplying the design clamp
-- [ ] scale all geometry and offsets about the ground origin without rerolling
-- [ ] show master size and manufactured size distinctly; report scaled bounds,
+- [x] preserve full-size master parameters and add a separate uniform Model scale
+- [x] presets 1:1, 1:2 and 1:4
+- [ ] validated custom scale or target height
+- [x] allow physical results below 1,000 mm without reapplying the design clamp
+- [x] scale all geometry and offsets about the ground origin without rerolling
+- [x] show master size and manufactured size distinctly; report scaled bounds,
   volume, mass and ground-contact area from the physical study
-- [ ] persist scale and include it in undo/recovery; repeatable return to 1:1
-- [ ] test linear dimensions by `s`, areas by `s²`, volumes and fixed-density
-  mass by `s³`, including asymmetric and later multi-row/leaning studies
+- [x] persist scale and include it in undo/recovery; repeatable return to 1:1
+- [x] test linear dimensions by `s`, areas by `s²`, volumes and fixed-density
+  mass by `s³`, including asymmetric and selected-leg-leaning studies
+- [ ] repeat the scale fixtures when multi-row studies exist
+- [x] preserve view direction and automatically reframe after scale changes
 - [ ] require future mesh/drawing exports to use this same physical geometry,
   with drawing paper scale and Kerros stock/kerf kept separate
 

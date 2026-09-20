@@ -26,6 +26,12 @@ shoulder, switch the lean scope to **Selected**, and create an override from the
 current shared values. **Use shared** removes it without affecting the other
 legs. Overrides are project data and participate in save, recovery and history.
 
+Version 0.1.5 adds 1:1, 1:2 and 1:4 manufacturing scale presets. RAAKA keeps
+the full-size design parameters unchanged, derives a uniformly scaled physical
+study about the ground origin, and reports both design and manufactured
+envelopes. Length, contact area, volume and same-density mass follow their
+correct scale powers. Scale changes are saved, recoverable and undoable.
+
 ## Run locally
 
 Requirements:
@@ -66,7 +72,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.4 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.5 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

@@ -10,6 +10,7 @@ export type PieceRole = 'mass' | 'support' | 'surface' | 'core' | 'void'
 
 export type Vec3 = readonly [x: number, y: number, z: number]
 export type Size2 = readonly [width: number, depth: number]
+export type ModelScale = 1 | 0.5 | 0.25
 
 export interface Bounds3 {
   readonly min: Vec3

@@ -6,11 +6,12 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.4, the
+This document describes the product direction. In version 0.1.5, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
-overrides are implemented. Outputs, cores and the remaining recipe families
-are planned. See [Roadmap](ROADMAP.md) and the
+overrides are implemented, together with 1:1, 1:2 and 1:4 model scales.
+Outputs, cores and the remaining recipe families are planned. See
+[Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
 The constraint is the identity: RAAKA is not a general-purpose modeller. Its
@@ -52,9 +53,11 @@ full-size mould. Report details that become too small instead of silently
 thickening or removing them. A geometric scale model is not a structural
 validation of a full-size cast.
 
-Model scaling is a confirmed requirement and is not implemented in 0.1.4.
-The current generator clamps the authored height to 1,000–2,000 mm; the planned
-model-scale stage must not apply that clamp again to the smaller output.
+Version 0.1.5 implements the 1:1, 1:2 and 1:4 presets. The generator still
+clamps only the authored design height to 1,000–2,000 mm; the separate scale
+stage can therefore produce manufactured results below 1,000 mm without
+feeding them back through the design clamp. A validated custom scale or target
+height remains planned.
 
 Volume, estimated material mass, ground contact and centre of mass must remain
 visible during form finding. These readings inform decisions but never certify

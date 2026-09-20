@@ -540,6 +540,76 @@ input[type="range"] {
   cursor: ew-resize;
 }
 
+.model-scale-control {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.model-scale-heading {
+  display: grid;
+  gap: 3px;
+  padding: 8px 9px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.model-scale-heading > span,
+.model-scale-summary > span {
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+}
+
+.model-scale-heading small,
+.model-scale-summary small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.model-scale-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.model-scale-presets button {
+  min-height: 34px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  background: transparent;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.model-scale-presets button:first-child {
+  border-left: 0;
+}
+
+.model-scale-presets button.is-active {
+  background: var(--yellow);
+}
+
+.model-scale-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 10px;
+  padding: 8px 9px;
+  border-top: 1px solid var(--ink);
+}
+
+.model-scale-summary strong {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--blue);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 16px;
+}
+
+.model-scale-summary small {
+  grid-column: 1;
+}
+
 .control-subsection {
   display: grid;
   gap: 4px;
@@ -669,7 +739,7 @@ input[type="range"] {
 }
 
 .lean-readout strong {
-  grid-row: span 3;
+  grid-row: span 4;
   align-self: center;
   color: var(--blue);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
@@ -853,5 +923,13 @@ input[type="range"] {
 
   .panel {
     overflow: visible;
+  }
+
+  .statusbar {
+    gap: 12px;
+  }
+
+  .statusbar > span:nth-child(4) {
+    display: none;
   }
 }

@@ -32,24 +32,25 @@ cross-section agreement, memory cleanup and long-session behaviour.
 - Recipe output is already in physical size; display scaling must never change
   manufacturing dimensions.
 
-### Planned model-scale stage
+### Model-scale stage
 
-Preserve the master design and derive a physical study by one explicit uniform
-scale about the ground origin. The intended flow is master recipe geometry →
-model scale → physical geometry, analysis and exports. Rendering and file
-output consume the same physical study; camera zoom is not model scale.
+Version 0.1.5 preserves the master design and derives a physical study by one
+explicit uniform scale about the ground origin. The flow is master recipe
+geometry → model scale → physical geometry and analysis. Rendering consumes
+the physical study; future exports must consume the same result. Camera zoom
+is not model scale.
 
-Scale positions, primitive dimensions, loft endpoint offsets and future
-negative/core geometry together. Compute the complete bounds and physical
-readings from the scaled result. Do not feed a 500 mm quarter-scale result back
-through the current 1,000 mm design-height clamp. Store the scale separately
-from the master parameters and seed, and apply it once, not cumulatively.
+The scale stage transforms positions, primitive dimensions and loft endpoint
+offsets together, then recomputes complete bounds. Areas use `s²`; volume and
+same-density mass use `s³`. It never feeds a 500 mm quarter-scale result back
+through the 1,000 mm design-height clamp. Scale is stored separately from the
+master parameters and seed and applied once from the master, not cumulatively.
 
-Project persistence must include model scale with a backward-compatible 1:1
-default. Future drawing documents additionally store a paper scale; their
-dimension labels describe the physical model. Machine stock and kerf remain
-unscaled settings in Kerros. Regression fixtures must cover `s`, `s²`, `s³`,
-ground-plane preservation and repeated switching back to 1:1.
+Project persistence accepts the 1:1, 1:2 and 1:4 presets with a
+backward-compatible 1:1 default. Future drawing documents additionally store a
+paper scale; their dimension labels describe the physical model. Machine stock
+and kerf remain unscaled settings in Kerros. Regression fixtures cover `s`,
+`s²`, `s³`, ground-plane preservation and repeated switching back to 1:1.
 
 ### Support lean and planned support grid
 
@@ -84,12 +85,13 @@ checks. A future grid migration must preserve existing first-row identities.
 Recipe parameters + stable seed
               |
               v
-       Pure form generator
+       Pure master generator
               |
-              +--> semantic scene pieces --> Three.js preview
+              v
+      Explicit model scale
               |
+              +--> physical scene pieces --> Three.js preview
               +--> physical analysis
-              |
               +--> future solid kernel --> mesh / sections / drawings
 ```
 
@@ -100,8 +102,9 @@ scene pieces and must remain replaceable; renderer state is never project data.
 
 The portable project file is human-readable JSON with an explicit RAAKA format
 version and a separate recipe version. Piloti recipe version 3 stores every
-generator parameter, shared X/Y foot offsets, selected-leg overrides and
-`modelScale: 1`. Recipe version 2 is migrated with an empty override list;
+generator parameter, shared X/Y foot offsets, selected-leg overrides and one
+of the supported `modelScale` presets. Recipe version 2 is migrated with an
+empty override list;
 recipe version 1 additionally receives zero shared offsets. A missing model
 scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
@@ -113,11 +116,11 @@ one browser profile, while Save creates the portable artifact the owner can
 archive. Opening a project starts a new history; invalid input preserves the
 current study and reports the reason.
 
-Undo/redo stores immutable Piloti parameter snapshots, capped at 100 committed
-steps. Live slider values update the model and recovery copy continuously, but
-the pointer or keyboard gesture commits only its starting snapshot. Renderer
-selection and active scope are intentionally outside project history; creating,
-editing or removing an override changes parameters and is therefore undoable.
+Undo/redo stores immutable Piloti study snapshots—master parameters plus model
+scale—capped at 100 committed steps. Live slider values update the model and
+recovery copy continuously, but the pointer or keyboard gesture commits only
+its starting snapshot. Renderer selection and active scope are intentionally
+outside project history; scale and override edits are undoable project data.
 
 ## Current vertical slice
 
@@ -139,11 +142,13 @@ camera framing and directional-shadow fitting. The baseline defects and their
 0.1.1 resolution are recorded in the
 [baseline review](AUDIT-2026-09-20.md).
 
-The camera is independent interaction state: changing a seed or physical
-parameter does not overwrite the chosen view. **Fit** preserves the viewing
-direction while reframing the current bounds; **Home** restores the authored
-axonometric direction. The shadow camera includes the sculpture and a padded
-ground receiver at both ends of the supported height range.
+The camera is independent interaction state: changing a seed or design
+parameter does not overwrite the chosen view. A model-scale change preserves
+the viewing direction but automatically reframes the new physical bounds so a
+quarter-scale model remains inspectable. **Fit** performs the same directional
+reframe on demand; **Home** restores the authored axonometric direction. The
+shadow camera includes the sculpture and a padded ground receiver at every
+supported scale and height.
 
 ## Selection colours
 

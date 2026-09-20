@@ -6,7 +6,7 @@ import type { PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 1
+export const PILOTI_RECIPE_VERSION = 2
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -73,7 +73,10 @@ export function parseProject(serialized: string): RaakaProject {
       `Recipe "${String(input.recipe)}" is not supported by this version.`,
     )
   }
-  if (input.recipeVersion !== PILOTI_RECIPE_VERSION) {
+  if (
+    input.recipeVersion !== 1 &&
+    input.recipeVersion !== PILOTI_RECIPE_VERSION
+  ) {
     throw new ProjectValidationError(
       `Piloti recipe version ${String(input.recipeVersion)} is not supported.`,
     )
@@ -85,7 +88,13 @@ export function parseProject(serialized: string): RaakaProject {
     )
   }
 
-  return createProject(parsePilotiParameters(input.parameters))
+  const missingDefaults =
+    input.recipeVersion === 1
+      ? { footOffsetXMm: 0, footOffsetYMm: 0 }
+      : undefined
+  return createProject(
+    parsePilotiParameters(input.parameters, missingDefaults),
+  )
 }
 
 export function readRecovery(storage: StorageReader): RecoveryResult {

@@ -4,6 +4,7 @@ import { ProjectValidationError } from './pilotiParameters'
 import {
   createProject,
   parseProject,
+  PILOTI_RECIPE_VERSION,
   readRecovery,
   RECOVERY_STORAGE_KEY,
   serializeProject,
@@ -17,9 +18,29 @@ describe('RAAKA project files', () => {
       seed: 319,
       heightMm: 2_000,
       supportCount: 6,
+      footOffsetXMm: 175,
+      footOffsetYMm: -90,
     })
 
     expect(parseProject(serializeProject(project))).toEqual(project)
+  })
+
+  it('migrates recipe version one files to zero foot offsets', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 1
+    delete legacy.parameters.footOffsetXMm
+    delete legacy.parameters.footOffsetYMm
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+    expect(migrated.parameters.footOffsetXMm).toBe(0)
+    expect(migrated.parameters.footOffsetYMm).toBe(0)
   })
 
   it('defaults a missing model scale to one for older files', () => {

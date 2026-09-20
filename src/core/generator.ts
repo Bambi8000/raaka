@@ -62,6 +62,8 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   upperWidthRatio: 0.72,
   upperDepthRatio: 0.34,
   asymmetry: 0.12,
+  footOffsetXMm: 0,
+  footOffsetYMm: 0,
 }
 
 function boxVolume(piece: BoxPiece): number {
@@ -119,7 +121,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       height: stemHeight,
       bottomSize: [footWidth, footDepth],
       topSize: [neckWidth, neckDepth],
-      bottomOffset: [0, 0],
+      bottomOffset: [parameters.footOffsetXMm, parameters.footOffsetYMm],
       topOffset: [-individualShift * 0.2, 0],
     })
 

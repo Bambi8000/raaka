@@ -185,6 +185,24 @@ export default function App() {
   const project = useMemo(() => createProject(parameters), [parameters])
   const projectJson = useMemo(() => serializeProject(project), [project])
   const study = useMemo(() => generatePiloti(parameters), [parameters])
+  const stemHeightMm =
+    parameters.heightMm *
+    parameters.supportHeightRatio *
+    (1 - parameters.shoulderRatio)
+  const footOffsetMm = Math.hypot(
+    parameters.footOffsetXMm,
+    parameters.footOffsetYMm,
+  )
+  const authoredLeanAngleDeg =
+    (Math.atan2(footOffsetMm, stemHeightMm) * 180) / Math.PI
+  const footDirectionDeg =
+    footOffsetMm === 0
+      ? undefined
+      : ((Math.atan2(parameters.footOffsetYMm, parameters.footOffsetXMm) *
+          180) /
+          Math.PI +
+          360) %
+        360
   const selectedPiece = study.pieces.find(
     (piece) => piece.id === selectedPieceId,
   )
@@ -527,6 +545,43 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('asymmetry', value)}
           />
+          <div className="control-subsection">
+            <span>SHARED LEG LEAN</span>
+            <small>Moves every foot. Necks remain fixed.</small>
+          </div>
+          <RangeField
+            label="Foot offset X"
+            value={parameters.footOffsetXMm}
+            minimum={-300}
+            maximum={300}
+            step={5}
+            suffix=" mm"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('footOffsetXMm', value)}
+          />
+          <RangeField
+            label="Foot offset Y"
+            value={parameters.footOffsetYMm}
+            minimum={-300}
+            maximum={300}
+            step={5}
+            suffix=" mm"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('footOffsetYMm', value)}
+          />
+          <div className="lean-readout" aria-label="Shared leg lean result">
+            <span>AUTHORED LEAN</span>
+            <strong>{authoredLeanAngleDeg.toFixed(1)}°</strong>
+            <small>
+              {formatNumber(footOffsetMm, 1)} MM OFFSET ·{' '}
+              {footDirectionDeg === undefined
+                ? 'NO DIRECTION'
+                : `${footDirectionDeg.toFixed(0)}° FOOT DIRECTION`}
+            </small>
+            <small>Seeded asymmetry adds per-leg variation.</small>
+          </div>
         </section>
 
         <section className="panel-section metrics-section">
@@ -570,7 +625,7 @@ export default function App() {
         </span>
         <span>SEED {parameters.seed}</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.2 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.3 / LOCAL</span>
       </footer>
     </main>
   )

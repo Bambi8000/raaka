@@ -20,6 +20,18 @@ describe('RAAKA project files', () => {
       supportCount: 6,
       footOffsetXMm: 175,
       footOffsetYMm: -90,
+      footOffsetOverrides: [
+        {
+          supportId: 'support-2',
+          footOffsetXMm: -120,
+          footOffsetYMm: 80,
+        },
+        {
+          supportId: 'support-6',
+          footOffsetXMm: 200,
+          footOffsetYMm: 0,
+        },
+      ],
     })
 
     expect(parseProject(serializeProject(project))).toEqual(project)
@@ -35,12 +47,41 @@ describe('RAAKA project files', () => {
     legacy.recipeVersion = 1
     delete legacy.parameters.footOffsetXMm
     delete legacy.parameters.footOffsetYMm
+    delete legacy.parameters.footOffsetOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.footOffsetXMm).toBe(0)
     expect(migrated.parameters.footOffsetYMm).toBe(0)
+    expect(migrated.parameters.footOffsetOverrides).toEqual([])
+  })
+
+  it('migrates recipe version two files to an empty override list', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 2
+    delete legacy.parameters.footOffsetOverrides
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+    expect(migrated.parameters.footOffsetOverrides).toEqual([])
+  })
+
+  it('requires an override list in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.footOffsetOverrides
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "footOffsetOverrides" must be an array.',
+    )
   })
 
   it('defaults a missing model scale to one for older files', () => {
@@ -96,6 +137,27 @@ describe('RAAKA project files', () => {
       JSON.stringify({
         ...createProject(DEFAULT_PILOTI_PARAMETERS),
         parameters: { ...DEFAULT_PILOTI_PARAMETERS, supportCount: 12 },
+      }),
+    ],
+    [
+      'duplicated selected support override',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          footOffsetOverrides: [
+            {
+              supportId: 'support-2',
+              footOffsetXMm: 10,
+              footOffsetYMm: 20,
+            },
+            {
+              supportId: 'support-2',
+              footOffsetXMm: -10,
+              footOffsetYMm: -20,
+            },
+          ],
+        },
       }),
     ],
   ])('rejects %s before it can replace the study', (_name, serialized) => {

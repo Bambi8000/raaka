@@ -40,6 +40,12 @@ export interface FrustumPiece {
 
 export type ScenePiece = BoxPiece | FrustumPiece
 
+export interface PilotiFootOffsetOverride {
+  readonly supportId: string
+  readonly footOffsetXMm: number
+  readonly footOffsetYMm: number
+}
+
 export interface PilotiParameters {
   readonly seed: number
   readonly heightMm: number
@@ -52,6 +58,7 @@ export interface PilotiParameters {
   readonly asymmetry: number
   readonly footOffsetXMm: number
   readonly footOffsetYMm: number
+  readonly footOffsetOverrides: readonly PilotiFootOffsetOverride[]
 }
 
 export interface MassStudy {

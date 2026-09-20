@@ -557,10 +557,106 @@ input[type="range"] {
 }
 
 .control-subsection small,
-.lean-readout small {
+.lean-readout small,
+.offset-scope-switch small,
+.offset-inheritance small {
   color: var(--muted);
   font-size: 8px;
   line-height: 1.45;
+}
+
+.offset-scope-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--ink);
+}
+
+.offset-scope-switch button {
+  display: grid;
+  gap: 3px;
+  min-height: 47px;
+  padding: 8px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  background: var(--paper);
+  text-align: left;
+  cursor: pointer;
+}
+
+.offset-scope-switch button:first-child {
+  border-left: 0;
+}
+
+.offset-scope-switch button.is-active {
+  background: var(--yellow);
+}
+
+.offset-scope-switch button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.offset-scope-switch span,
+.offset-inheritance > span,
+.offset-override-heading > span {
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.offset-inheritance {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 8px;
+  align-items: center;
+  padding: 9px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.offset-inheritance small {
+  grid-column: 1;
+}
+
+.offset-inheritance button,
+.offset-override-heading button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: stretch;
+  padding: 0 9px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  background: var(--yellow);
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+}
+
+.offset-override-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  min-height: 28px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.offset-override-heading > span {
+  align-self: center;
+  padding-left: 9px;
+}
+
+.offset-override-heading button {
+  grid-column: auto;
+  grid-row: auto;
+  min-height: 28px;
+  background: transparent;
+}
+
+.offset-override-heading button:hover {
+  background: var(--yellow);
 }
 
 .lean-readout {

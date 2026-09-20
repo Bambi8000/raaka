@@ -6,6 +6,7 @@ import {
   RECIPES,
 } from './generator'
 import { scenePieceBounds } from './bounds'
+import { PILOTI_PARAMETER_RULES } from './pilotiParameters'
 import type { FrustumPiece, PilotiParameters } from './types'
 
 function expectFiniteStudy(parameters: PilotiParameters): void {
@@ -198,6 +199,62 @@ describe('generatePiloti', () => {
     }
   })
 
+  it('replaces the shared offset only for the named support', () => {
+    const shared = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 3,
+      footOffsetXMm: 40,
+      footOffsetYMm: -20,
+    })
+    const overridden = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 3,
+      footOffsetXMm: 40,
+      footOffsetYMm: -20,
+      footOffsetOverrides: [
+        {
+          supportId: 'support-2',
+          footOffsetXMm: -160,
+          footOffsetYMm: 90,
+        },
+      ],
+    })
+
+    for (let index = 1; index <= 3; index += 1) {
+      const support = overridden.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `support-${index}`,
+      )
+      const sharedSupport = shared.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `support-${index}`,
+      )
+
+      expect(support).toBeDefined()
+      expect(sharedSupport).toBeDefined()
+      if (!support || !sharedSupport) continue
+
+      expect(support.bottomOffset).toEqual(
+        index === 2 ? [-160, 90] : [40, -20],
+      )
+      expect(support.position[0] + support.topOffset[0]).toBeCloseTo(
+        sharedSupport.position[0] + sharedSupport.topOffset[0],
+        10,
+      )
+      expect(support.position[1] + support.topOffset[1]).toBeCloseTo(
+        sharedSupport.position[1] + sharedSupport.topOffset[1],
+        10,
+      )
+    }
+
+    expect(overridden.concreteVolumeMm3).toBeCloseTo(
+      shared.concreteVolumeMm3,
+      10,
+    )
+    expect(overridden.groundContactMm2).toBeCloseTo(
+      shared.groundContactMm2,
+      10,
+    )
+  })
+
   it('keeps geometry finite at both ends of every supported range', () => {
     expectFiniteStudy({
       seed: 0,
@@ -211,6 +268,7 @@ describe('generatePiloti', () => {
       asymmetry: 0,
       footOffsetXMm: -300,
       footOffsetYMm: -300,
+      footOffsetOverrides: [],
     })
     expectFiniteStudy({
       seed: MAX_SEED,
@@ -224,6 +282,13 @@ describe('generatePiloti', () => {
       asymmetry: 0.5,
       footOffsetXMm: 300,
       footOffsetYMm: 300,
+      footOffsetOverrides: [
+        {
+          supportId: 'support-6',
+          footOffsetXMm: -300,
+          footOffsetYMm: -300,
+        },
+      ],
     })
   })
 
@@ -231,8 +296,8 @@ describe('generatePiloti', () => {
     'rejects non-finite parameter value %s',
     (invalidValue) => {
       for (const key of Object.keys(
-        DEFAULT_PILOTI_PARAMETERS,
-      ) as (keyof PilotiParameters)[]) {
+        PILOTI_PARAMETER_RULES,
+      ) as (keyof typeof PILOTI_PARAMETER_RULES)[]) {
         expect(() =>
           generatePiloti({
             ...DEFAULT_PILOTI_PARAMETERS,
@@ -242,6 +307,52 @@ describe('generatePiloti', () => {
       }
     },
   )
+
+  it('rejects malformed or duplicated support overrides', () => {
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        footOffsetOverrides: [
+          {
+            supportId: 'support-2',
+            footOffsetXMm: Number.NaN,
+            footOffsetYMm: 0,
+          },
+        ],
+      }),
+    ).toThrow('Piloti parameter "footOffsetXMm" must be finite.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        footOffsetOverrides: [
+          {
+            supportId: 'support-02',
+            footOffsetXMm: 10,
+            footOffsetYMm: 20,
+          },
+        ],
+      }),
+    ).toThrow('Piloti foot offset override has an invalid support ID.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        footOffsetOverrides: [
+          {
+            supportId: 'support-2',
+            footOffsetXMm: 10,
+            footOffsetYMm: 20,
+          },
+          {
+            supportId: 'support-2',
+            footOffsetXMm: -10,
+            footOffsetYMm: -20,
+          },
+        ],
+      }),
+    ).toThrow('Piloti foot offset override for "support-2" is duplicated.')
+  })
 
   it('exposes the six agreed recipe families with only Piloti enabled', () => {
     expect(RECIPES).toHaveLength(6)

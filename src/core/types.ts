@@ -51,6 +51,9 @@ export interface PilotiParameters {
   readonly seed: number
   readonly heightMm: number
   readonly supportCount: number
+  readonly supportRowCount: number
+  readonly rowSpacingMm: number
+  readonly supportDepthRatio: number
   readonly supportHeightRatio: number
   readonly shoulderRatio: number
   readonly neckWidthRatio: number
@@ -60,6 +63,16 @@ export interface PilotiParameters {
   readonly footOffsetXMm: number
   readonly footOffsetYMm: number
   readonly footOffsetOverrides: readonly PilotiFootOffsetOverride[]
+}
+
+export interface SupportLayoutAnalysis {
+  readonly columns: number
+  readonly rows: number
+  readonly totalSupports: number
+  readonly rowSpacingMm: number
+  readonly shoulderDepthMm: number
+  readonly adjacentRowOverlapMm: number
+  readonly bearingOverhangMm: number
 }
 
 export interface MassStudy {
@@ -73,6 +86,7 @@ export interface MassStudy {
   readonly concreteVolumeMm3: number
   readonly estimatedMassKg: number
   readonly groundContactMm2: number
+  readonly supportLayout?: SupportLayoutAnalysis
 }
 
 export interface RecipeSummary {

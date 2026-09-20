@@ -6,11 +6,12 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.5, the
+This document describes the product direction. In version 0.1.6, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
-overrides are implemented, together with 1:1, 1:2 and 1:4 model scales.
-Outputs, cores and the remaining recipe families are planned. See
+overrides are implemented, together with 1:1, 1:2 and 1:4 model scales and
+multi-row support grids. Outputs, cores and the remaining recipe families are
+planned. See
 [Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
@@ -86,7 +87,7 @@ structural safety, reinforcement, anchors, wind loading or public installation.
 
 Piloti is the first implemented recipe. Its funnel support has an upper bearing
 area, faceted shoulder, neck, stem and ground footprint. It may appear once, as
-a pair, as a row or eventually as a grid.
+a pair, as a row or as a grid.
 
 ### Confirmed Piloti additions
 
@@ -113,8 +114,11 @@ selected-leg overrides that replace the shared X/Y values for one named
 support. Selecting either the stem or its shoulder addresses the same leg. A
 new override starts from the current shared values; removing it restores
 inheritance. Overrides for temporarily hidden supports are retained when the
-support count is reduced. Rows remain planned. The existing Asymmetry slider is
-seeded per-leg variation and stays separate from authored foot offsets.
+support count is reduced. Version 0.1.6 adds one to three Y rows, stable
+row/column identities, centre-to-centre spacing, separate upper-mass and
+support-depth controls, and measured overlap and bearing-overhang feedback.
+The existing Asymmetry slider is seeded per-leg variation and stays separate
+from authored foot offsets.
 
 ## Operations
 

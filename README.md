@@ -32,6 +32,13 @@ study about the ground origin, and reports both design and manufactured
 envelopes. Length, contact area, volume and same-density mass follow their
 correct scale powers. Scale changes are saved, recoverable and undoable.
 
+Version 0.1.6 turns the Piloti supports into an X/Y grid. One to six columns
+can repeat through one to three depth rows with an authored row spacing and a
+support depth separate from the upper mass. Existing first-row identities stay
+stable, so saved selected-leg overrides still address the same legs. RAAKA
+reports shoulder-row overlap and bearing overhang instead of silently changing
+the composition.
+
 ## Run locally
 
 Requirements:
@@ -72,10 +79,10 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.5 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.6 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass
 and ground-contact readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
-including seeded variation and explicit foot offsets.
+including seeded variation, support rows and explicit foot offsets.

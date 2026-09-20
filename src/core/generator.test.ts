@@ -56,6 +56,81 @@ describe('generatePiloti', () => {
     expect(study.pieces.at(-1)?.id).toBe('upper-mass')
   })
 
+  it('builds a stable three-column by two-row support grid', () => {
+    const study = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 3,
+      supportRowCount: 2,
+      rowSpacingMm: 320,
+      supportDepthRatio: 0.5,
+    })
+
+    expect(study.pieces.filter((piece) => piece.role === 'support')).toHaveLength(
+      12,
+    )
+    expect(study.pieces.map((piece) => piece.id)).toEqual([
+      'support-1',
+      'shoulder-1',
+      'support-2',
+      'shoulder-2',
+      'support-3',
+      'shoulder-3',
+      'support-r2-c1',
+      'shoulder-r2-c1',
+      'support-r2-c2',
+      'shoulder-r2-c2',
+      'support-r2-c3',
+      'shoulder-r2-c3',
+      'upper-mass',
+    ])
+    expect(study.supportLayout).toMatchObject({
+      columns: 3,
+      rows: 2,
+      totalSupports: 6,
+      rowSpacingMm: 320,
+      adjacentRowOverlapMm: 0,
+    })
+    expect(study.supportLayout?.shoulderDepthMm).toBeCloseTo(255, 10)
+    expect(study.supportLayout?.bearingOverhangMm).toBeCloseTo(32.5, 10)
+  })
+
+  it('keeps first-row identities and authored shapes when rows are added', () => {
+    const oneRow = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 932,
+      supportRowCount: 1,
+      rowSpacingMm: 280,
+      supportDepthRatio: 0.44,
+    })
+    const threeRows = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 932,
+      supportRowCount: 3,
+      rowSpacingMm: 280,
+      supportDepthRatio: 0.44,
+    })
+
+    for (const id of [
+      'support-1',
+      'shoulder-1',
+      'support-2',
+      'shoulder-2',
+      'support-3',
+      'shoulder-3',
+    ]) {
+      const original = oneRow.pieces.find((piece) => piece.id === id)
+      const repeated = threeRows.pieces.find((piece) => piece.id === id)
+      expect(original).toBeDefined()
+      expect(repeated).toBeDefined()
+      if (!original || !repeated) continue
+
+      expect(repeated).toEqual({
+        ...original,
+        position: [original.position[0], -280, original.position[2]],
+      })
+    }
+  })
+
   it('keeps the physical height inside the one-to-two metre design range', () => {
     expect(
       generatePiloti({ ...DEFAULT_PILOTI_PARAMETERS, heightMm: 400 }).heightMm,
@@ -99,38 +174,42 @@ describe('generatePiloti', () => {
     const study = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
       seed: 220,
-      supportCount: 6,
+      supportCount: 3,
+      supportRowCount: 2,
       asymmetry: 0.5,
       footOffsetXMm: 180,
       footOffsetYMm: -120,
     })
 
-    for (let index = 1; index <= 6; index += 1) {
-      const stem = study.pieces.find(
-        (piece): piece is FrustumPiece => piece.id === `support-${index}`,
-      )
-      const shoulder = study.pieces.find(
-        (piece): piece is FrustumPiece => piece.id === `shoulder-${index}`,
-      )
+    for (let row = 1; row <= 2; row += 1) {
+      for (let column = 1; column <= 3; column += 1) {
+        const suffix = row === 1 ? String(column) : `r${row}-c${column}`
+        const stem = study.pieces.find(
+          (piece): piece is FrustumPiece => piece.id === `support-${suffix}`,
+        )
+        const shoulder = study.pieces.find(
+          (piece): piece is FrustumPiece => piece.id === `shoulder-${suffix}`,
+        )
 
-      expect(stem).toBeDefined()
-      expect(shoulder).toBeDefined()
-      if (!stem || !shoulder) continue
+        expect(stem).toBeDefined()
+        expect(shoulder).toBeDefined()
+        if (!stem || !shoulder) continue
 
-      expect(stem.position[2] - stem.height / 2).toBeCloseTo(0, 10)
-      expect(stem.position[2] + stem.height / 2).toBeCloseTo(
-        shoulder.position[2] - shoulder.height / 2,
-        10,
-      )
-      expect(stem.position[0] + stem.topOffset[0]).toBeCloseTo(
-        shoulder.position[0] + shoulder.bottomOffset[0],
-        10,
-      )
-      expect(stem.position[1] + stem.topOffset[1]).toBeCloseTo(
-        shoulder.position[1] + shoulder.bottomOffset[1],
-        10,
-      )
-      expect(stem.topSize).toEqual(shoulder.bottomSize)
+        expect(stem.position[2] - stem.height / 2).toBeCloseTo(0, 10)
+        expect(stem.position[2] + stem.height / 2).toBeCloseTo(
+          shoulder.position[2] - shoulder.height / 2,
+          10,
+        )
+        expect(stem.position[0] + stem.topOffset[0]).toBeCloseTo(
+          shoulder.position[0] + shoulder.bottomOffset[0],
+          10,
+        )
+        expect(stem.position[1] + stem.topOffset[1]).toBeCloseTo(
+          shoulder.position[1] + shoulder.bottomOffset[1],
+          10,
+        )
+        expect(stem.topSize).toEqual(shoulder.bottomSize)
+      }
     }
     expect(study.bounds.min[2]).toBeCloseTo(0, 10)
   })
@@ -255,11 +334,41 @@ describe('generatePiloti', () => {
     )
   })
 
+  it('applies an override to a selected support in a later row', () => {
+    const study = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 3,
+      supportRowCount: 2,
+      footOffsetXMm: 40,
+      footOffsetYMm: -20,
+      footOffsetOverrides: [
+        {
+          supportId: 'support-r2-c2',
+          footOffsetXMm: -140,
+          footOffsetYMm: 110,
+        },
+      ],
+    })
+
+    const selected = study.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'support-r2-c2',
+    )
+    const neighbour = study.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'support-r2-c1',
+    )
+
+    expect(selected?.bottomOffset).toEqual([-140, 110])
+    expect(neighbour?.bottomOffset).toEqual([40, -20])
+  })
+
   it('keeps geometry finite at both ends of every supported range', () => {
     expectFiniteStudy({
       seed: 0,
       heightMm: 1_000,
       supportCount: 1,
+      supportRowCount: 1,
+      rowSpacingMm: 100,
+      supportDepthRatio: 0.25,
       supportHeightRatio: 0.25,
       shoulderRatio: 0.2,
       neckWidthRatio: 0.18,
@@ -274,6 +383,9 @@ describe('generatePiloti', () => {
       seed: MAX_SEED,
       heightMm: 2_000,
       supportCount: 6,
+      supportRowCount: 3,
+      rowSpacingMm: 800,
+      supportDepthRatio: 0.92,
       supportHeightRatio: 0.58,
       shoulderRatio: 0.8,
       neckWidthRatio: 0.7,
@@ -284,7 +396,7 @@ describe('generatePiloti', () => {
       footOffsetYMm: 300,
       footOffsetOverrides: [
         {
-          supportId: 'support-6',
+          supportId: 'support-r3-c6',
           footOffsetXMm: -300,
           footOffsetYMm: -300,
         },
@@ -328,6 +440,19 @@ describe('generatePiloti', () => {
         footOffsetOverrides: [
           {
             supportId: 'support-02',
+            footOffsetXMm: 10,
+            footOffsetYMm: 20,
+          },
+        ],
+      }),
+    ).toThrow('Piloti foot offset override has an invalid support ID.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        footOffsetOverrides: [
+          {
+            supportId: 'support-r1-c2',
             footOffsetXMm: 10,
             footOffsetYMm: 20,
           },

@@ -52,7 +52,7 @@ paper scale; their dimension labels describe the physical model. Machine stock
 and kerf remain unscaled settings in Kerros. Regression fixtures cover `s`,
 `s²`, `s³`, ground-plane preservation and repeated switching back to 1:1.
 
-### Support lean and planned support grid
+### Support lean and support grid
 
 Use a shared leg template and stable row/column identities to compose the
 support grid. Resolve global layout and selected-leg overrides before applying
@@ -74,10 +74,21 @@ count does not delete hidden overrides, so restoring the count restores the
 authored leg. The generator validates IDs and rejects duplicates before making
 an ID-to-override lookup.
 
-The support grid is still planned. Row placement must translate the entire
-leg, while lean changes its endpoint relationship. Keep these operations
-distinct, and include effective endpoints in bounds, contact and overlap
-checks. A future grid migration must preserve existing first-row identities.
+Version 0.1.6 repeats the authored support through one to three centred Y rows.
+Row placement translates the entire leg, while lean changes its endpoint
+relationship; the operations remain distinct. The first row retains the
+historic `support-N` and `shoulder-N` IDs. Later rows use
+`support-rR-cC` and `shoulder-rR-cC`, so adding a row does not rename existing
+legs or redirect selected-leg overrides. The original random sequence is
+consumed by the complete first row before later rows, preserving its seeded
+shapes when rows are added.
+
+Support depth is a separate ratio of upper-mass depth and drives shoulder,
+neck and foot depth without automatic fitting. Row spacing is a design-mm
+centre distance. Analysis reports adjacent shoulder overlap and the per-side
+distance by which the outer shoulder zone exceeds the upper mass. Model scale
+transforms those measured distances together with the geometry. The UI reports
+the condition instead of silently shrinking or moving supports.
 
 ## Data flow
 
@@ -101,11 +112,12 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 3 stores every
+version and a separate recipe version. Piloti recipe version 4 stores every
 generator parameter, shared X/Y foot offsets, selected-leg overrides and one
-of the supported `modelScale` presets. Recipe version 2 is migrated with an
-empty override list;
-recipe version 1 additionally receives zero shared offsets. A missing model
+of the supported `modelScale` presets. Recipe version 3 is migrated to one row
+with the original support depth; recipe version 2 additionally receives an
+empty override list; recipe version 1 additionally receives zero shared
+offsets. A missing model
 scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.
@@ -130,9 +142,11 @@ readings. `src/geometry/frustum.ts` converts a semantic rectangular loft into a
 flat-shaded Three.js buffer geometry.
 
 The volume equation integrates the product of linearly changing width and
-depth. Pieces only meet at boundaries in the current recipe, so their volumes
-can be summed without overlap correction. Future booleans must derive volume
-from the finished solid instead.
+depth. The one-row default and non-overlapping grids can sum preview-piece
+volumes directly. An authored grid may deliberately overlap shoulder rows;
+until boolean union exists, RAAKA labels the result nominal and warns that the
+sum double-counts intersecting preview pieces. Future booleans must derive
+volume from the finished solid instead.
 
 Current pieces are separate closed preview meshes; shared contact faces have
 not been removed by a boolean union. They are not yet an export-ready single

@@ -35,11 +35,14 @@ describe('scaleMassStudy', () => {
   const master = generatePiloti({
     ...DEFAULT_PILOTI_PARAMETERS,
     heightMm: 2_000,
+    supportRowCount: 2,
+    rowSpacingMm: 360,
+    supportDepthRatio: 0.48,
     footOffsetXMm: 120,
     footOffsetYMm: -80,
     footOffsetOverrides: [
       {
-        supportId: 'support-2',
+        supportId: 'support-r2-c2',
         footOffsetXMm: -180,
         footOffsetYMm: 60,
       },
@@ -77,6 +80,16 @@ describe('scaleMassStudy', () => {
         10,
       )
       expect(scaled.bounds.min[2]).toBeCloseTo(0, 10)
+      expect(scaled.supportLayout).toEqual({
+        ...master.supportLayout,
+        rowSpacingMm: (master.supportLayout?.rowSpacingMm ?? 0) * scale,
+        shoulderDepthMm:
+          (master.supportLayout?.shoulderDepthMm ?? 0) * scale,
+        adjacentRowOverlapMm:
+          (master.supportLayout?.adjacentRowOverlapMm ?? 0) * scale,
+        bearingOverhangMm:
+          (master.supportLayout?.bearingOverhangMm ?? 0) * scale,
+      })
     },
   )
 

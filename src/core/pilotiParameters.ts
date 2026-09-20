@@ -20,6 +20,9 @@ export const PILOTI_PARAMETER_RULES = {
   seed: { minimum: 0, maximum: MAX_SEED, integer: true },
   heightMm: { minimum: 1_000, maximum: 2_000 },
   supportCount: { minimum: 1, maximum: 6, integer: true },
+  supportRowCount: { minimum: 1, maximum: 3, integer: true },
+  rowSpacingMm: { minimum: 100, maximum: 800 },
+  supportDepthRatio: { minimum: 0.25, maximum: 0.92 },
   supportHeightRatio: { minimum: 0.25, maximum: 0.58 },
   shoulderRatio: { minimum: 0.2, maximum: 0.8 },
   neckWidthRatio: { minimum: 0.18, maximum: 0.7 },
@@ -47,16 +50,48 @@ function normalizeValue(
     : constrained
 }
 
+export interface PilotiSupportAddress {
+  readonly row: number
+  readonly column: number
+}
+
+export function pilotiSupportAddress(
+  value: string,
+): PilotiSupportAddress | undefined {
+  const firstRowMatch = /^support-(\d+)$/.exec(value)
+  if (firstRowMatch) {
+    const column = Number(firstRowMatch[1])
+    if (
+      Number.isInteger(column) &&
+      column >= 1 &&
+      column <= PILOTI_PARAMETER_RULES.supportCount.maximum &&
+      value === `support-${column}`
+    ) {
+      return { row: 1, column }
+    }
+    return undefined
+  }
+
+  const gridMatch = /^support-r(\d+)-c(\d+)$/.exec(value)
+  if (!gridMatch) return undefined
+  const row = Number(gridMatch[1])
+  const column = Number(gridMatch[2])
+  if (
+    !Number.isInteger(row) ||
+    !Number.isInteger(column) ||
+    row < 2 ||
+    row > PILOTI_PARAMETER_RULES.supportRowCount.maximum ||
+    column < 1 ||
+    column > PILOTI_PARAMETER_RULES.supportCount.maximum ||
+    value !== `support-r${row}-c${column}`
+  ) {
+    return undefined
+  }
+  return { row, column }
+}
+
 export function isPilotiSupportId(value: string): boolean {
-  const match = /^support-(\d+)$/.exec(value)
-  if (!match) return false
-  const index = Number(match[1])
-  return (
-    Number.isInteger(index) &&
-    index >= 1 &&
-    index <= PILOTI_PARAMETER_RULES.supportCount.maximum &&
-    value === `support-${index}`
-  )
+  return pilotiSupportAddress(value) !== undefined
 }
 
 function normalizeFootOffsetOverrides(
@@ -97,6 +132,15 @@ export function normalizePilotiParameters(
     seed: normalizeValue(input.seed, 'seed'),
     heightMm: normalizeValue(input.heightMm, 'heightMm'),
     supportCount: normalizeValue(input.supportCount, 'supportCount'),
+    supportRowCount: normalizeValue(
+      input.supportRowCount,
+      'supportRowCount',
+    ),
+    rowSpacingMm: normalizeValue(input.rowSpacingMm, 'rowSpacingMm'),
+    supportDepthRatio: normalizeValue(
+      input.supportDepthRatio,
+      'supportDepthRatio',
+    ),
     supportHeightRatio: normalizeValue(
       input.supportHeightRatio,
       'supportHeightRatio',
@@ -197,6 +241,9 @@ export function parsePilotiParameters(
     seed: readParameter(record, 'seed'),
     heightMm: readParameter(record, 'heightMm'),
     supportCount: readParameter(record, 'supportCount'),
+    supportRowCount: readParameter(record, 'supportRowCount'),
+    rowSpacingMm: readParameter(record, 'rowSpacingMm'),
+    supportDepthRatio: readParameter(record, 'supportDepthRatio'),
     supportHeightRatio: readParameter(record, 'supportHeightRatio'),
     shoulderRatio: readParameter(record, 'shoulderRatio'),
     neckWidthRatio: readParameter(record, 'neckWidthRatio'),

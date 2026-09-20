@@ -67,5 +67,17 @@ export function scaleMassStudy(
     concreteVolumeMm3: masterStudy.concreteVolumeMm3 * volumeScale,
     estimatedMassKg: masterStudy.estimatedMassKg * volumeScale,
     groundContactMm2: masterStudy.groundContactMm2 * areaScale,
+    supportLayout: masterStudy.supportLayout
+      ? {
+          ...masterStudy.supportLayout,
+          rowSpacingMm: masterStudy.supportLayout.rowSpacingMm * modelScale,
+          shoulderDepthMm:
+            masterStudy.supportLayout.shoulderDepthMm * modelScale,
+          adjacentRowOverlapMm:
+            masterStudy.supportLayout.adjacentRowOverlapMm * modelScale,
+          bearingOverhangMm:
+            masterStudy.supportLayout.bearingOverhangMm * modelScale,
+        }
+      : undefined,
   }
 }

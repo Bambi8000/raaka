@@ -56,6 +56,9 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   seed: 318,
   heightMm: 1_500,
   supportCount: 3,
+  supportRowCount: 1,
+  rowSpacingMm: 300,
+  supportDepthRatio: 0.92,
   supportHeightRatio: 0.42,
   shoulderRatio: 0.48,
   neckWidthRatio: 0.34,
@@ -96,6 +99,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   const upperHeight = height - supportHeight
   const upperWidth = height * parameters.upperWidthRatio
   const upperDepth = height * parameters.upperDepthRatio
+  const shoulderDepth = upperDepth * parameters.supportDepthRatio
   const bayWidth = upperWidth / parameters.supportCount
   const pieces: ScenePiece[] = []
   const footOffsetOverrides = new Map(
@@ -109,50 +113,64 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   const massShift =
     randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.65
 
-  for (let index = 0; index < parameters.supportCount; index += 1) {
-    const supportId = `support-${index + 1}`
-    const footOffsetOverride = footOffsetOverrides.get(supportId)
-    const bayCentre =
-      -upperWidth / 2 + bayWidth * (index + 0.5) + supportShift
-    const individualShift =
-      randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.16
-    const neckWidth = bayWidth * parameters.neckWidthRatio
-    const neckDepth = upperDepth * (0.34 + parameters.neckWidthRatio * 0.32)
-    const footWidth = neckWidth * 1.18
-    const footDepth = neckDepth * 1.16
+  for (let rowIndex = 0; rowIndex < parameters.supportRowCount; rowIndex += 1) {
+    const rowNumber = rowIndex + 1
+    const rowCentre =
+      (rowIndex - (parameters.supportRowCount - 1) / 2) *
+      parameters.rowSpacingMm
 
-    pieces.push({
-      kind: 'frustum',
-      id: supportId,
-      label: `Support ${index + 1}`,
-      role: 'support',
-      position: [bayCentre + individualShift, 0, stemHeight / 2],
-      height: stemHeight,
-      bottomSize: [footWidth, footDepth],
-      topSize: [neckWidth, neckDepth],
-      bottomOffset: [
-        footOffsetOverride?.footOffsetXMm ?? parameters.footOffsetXMm,
-        footOffsetOverride?.footOffsetYMm ?? parameters.footOffsetYMm,
-      ],
-      topOffset: [-individualShift * 0.2, 0],
-    })
+    for (let columnIndex = 0; columnIndex < parameters.supportCount; columnIndex += 1) {
+      const columnNumber = columnIndex + 1
+      const supportSuffix =
+        rowNumber === 1
+          ? String(columnNumber)
+          : `r${rowNumber}-c${columnNumber}`
+      const supportId = `support-${supportSuffix}`
+      const footOffsetOverride = footOffsetOverrides.get(supportId)
+      const bayCentre =
+        -upperWidth / 2 + bayWidth * (columnIndex + 0.5) + supportShift
+      const individualShift =
+        randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.16
+      const neckWidth = bayWidth * parameters.neckWidthRatio
+      const neckDepth =
+        shoulderDepth *
+        ((0.34 + parameters.neckWidthRatio * 0.32) / 0.92)
+      const footWidth = neckWidth * 1.18
+      const footDepth = neckDepth * 1.16
 
-    pieces.push({
-      kind: 'frustum',
-      id: `shoulder-${index + 1}`,
-      label: `Shoulder ${index + 1}`,
-      role: 'support',
-      position: [
-        bayCentre + individualShift * 0.8,
-        0,
-        stemHeight + shoulderHeight / 2,
-      ],
-      height: shoulderHeight,
-      bottomSize: [neckWidth, neckDepth],
-      topSize: [bayWidth * 0.92, upperDepth * 0.92],
-      bottomOffset: [0, 0],
-      topOffset: [-individualShift * 0.45, 0],
-    })
+      pieces.push({
+        kind: 'frustum',
+        id: supportId,
+        label: `Support C${columnNumber} / R${rowNumber}`,
+        role: 'support',
+        position: [bayCentre + individualShift, rowCentre, stemHeight / 2],
+        height: stemHeight,
+        bottomSize: [footWidth, footDepth],
+        topSize: [neckWidth, neckDepth],
+        bottomOffset: [
+          footOffsetOverride?.footOffsetXMm ?? parameters.footOffsetXMm,
+          footOffsetOverride?.footOffsetYMm ?? parameters.footOffsetYMm,
+        ],
+        topOffset: [-individualShift * 0.2, 0],
+      })
+
+      pieces.push({
+        kind: 'frustum',
+        id: `shoulder-${supportSuffix}`,
+        label: `Shoulder C${columnNumber} / R${rowNumber}`,
+        role: 'support',
+        position: [
+          bayCentre + individualShift * 0.8,
+          rowCentre,
+          stemHeight + shoulderHeight / 2,
+        ],
+        height: shoulderHeight,
+        bottomSize: [neckWidth, neckDepth],
+        topSize: [bayWidth * 0.92, shoulderDepth],
+        bottomOffset: [0, 0],
+        topOffset: [-individualShift * 0.45, 0],
+      })
+    }
   }
 
   pieces.push({
@@ -178,6 +196,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     )
   const bounds = sceneBounds(pieces)
   const [widthMm, depthMm, heightMm] = boundsSize(bounds)
+  const supportRowSpan =
+    (parameters.supportRowCount - 1) * parameters.rowSpacingMm + shoulderDepth
 
   return {
     recipe: 'piloti',
@@ -191,5 +211,17 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     estimatedMassKg:
       (concreteVolumeMm3 / 1_000_000_000) * CONCRETE_DENSITY_KG_M3,
     groundContactMm2,
+    supportLayout: {
+      columns: parameters.supportCount,
+      rows: parameters.supportRowCount,
+      totalSupports: parameters.supportCount * parameters.supportRowCount,
+      rowSpacingMm: parameters.rowSpacingMm,
+      shoulderDepthMm: shoulderDepth,
+      adjacentRowOverlapMm:
+        parameters.supportRowCount > 1
+          ? Math.max(0, shoulderDepth - parameters.rowSpacingMm)
+          : 0,
+      bearingOverhangMm: Math.max(0, (supportRowSpan - upperDepth) / 2),
+    },
   }
 }

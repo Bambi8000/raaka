@@ -1,0 +1,521 @@
+:root {
+  color: #171715;
+  background: #c8c8c2;
+  font-family: Inter, "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  --ink: #171715;
+  --muted: #666660;
+  --line: #a8a8a1;
+  --paper: #f4f4ef;
+  --panel: #e5e5df;
+  --concrete: #b8b8b1;
+  --yellow: #ffd400;
+  --pink: #e33b97;
+  --blue: #287bc1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: -3px;
+}
+
+.app-shell {
+  display: grid;
+  grid-template:
+    "top top top" 62px
+    "left work right" minmax(0, 1fr)
+    "status status status" 28px /
+    236px minmax(420px, 1fr) 314px;
+  width: 100%;
+  height: 100%;
+  background: var(--paper);
+}
+
+.topbar {
+  grid-area: top;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.brand-block,
+.project-name,
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.brand-block {
+  gap: 12px;
+  padding: 0 18px;
+}
+
+.brand-mark {
+  width: 15px;
+  height: 31px;
+  background: var(--yellow);
+  border: 1px solid var(--ink);
+  transform: skewY(-18deg);
+}
+
+.brand-block strong {
+  font-size: 24px;
+  font-weight: 950;
+  letter-spacing: -1.4px;
+}
+
+.brand-block > span:last-child,
+.project-name span,
+.eyebrow,
+.viewport-meta,
+.statusbar,
+.recipe-card small,
+.object-list small {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.brand-block > span:last-child {
+  color: var(--muted);
+}
+
+.project-name {
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 30px;
+  border-right: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  line-height: 1.15;
+}
+
+.project-name strong {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.topbar-actions {
+  justify-content: flex-end;
+}
+
+.button {
+  align-self: stretch;
+  min-width: 112px;
+  padding: 0 18px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: #dddcd5;
+}
+
+.button--primary {
+  position: relative;
+  background: var(--yellow);
+}
+
+.button--primary span {
+  display: block;
+  margin-top: 2px;
+  font-size: 7px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.panel {
+  min-height: 0;
+  overflow: auto;
+  background: var(--panel);
+}
+
+.left-panel {
+  grid-area: left;
+  border-right: 1px solid var(--ink);
+}
+
+.right-panel {
+  grid-area: right;
+  border-left: 1px solid var(--ink);
+}
+
+.panel-section {
+  padding: 15px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.section-heading {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: baseline;
+  margin-bottom: 13px;
+}
+
+.section-heading > span {
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.recipe-list {
+  display: grid;
+  gap: 4px;
+}
+
+.recipe-card {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 9px;
+  border: 1px solid #b6b6b0;
+  background: #deded8;
+  text-align: left;
+}
+
+.recipe-card > span {
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+}
+
+.recipe-card strong {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.recipe-card small {
+  color: var(--muted);
+}
+
+.recipe-card.is-active {
+  border-color: var(--ink);
+  background: var(--paper);
+  box-shadow: inset 5px 0 0 var(--yellow);
+}
+
+.recipe-card:disabled:not(.is-active) {
+  color: #85857f;
+}
+
+.object-section {
+  min-height: 240px;
+}
+
+.object-list {
+  display: grid;
+  gap: 1px;
+}
+
+.object-list button {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 7px;
+  align-items: center;
+  min-height: 29px;
+  padding: 0 7px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.object-list button:hover {
+  background: #d4d4ce;
+}
+
+.object-list button.is-selected {
+  background: var(--yellow);
+}
+
+.object-list button > span:nth-child(2) {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-dot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ink);
+  background: var(--concrete);
+}
+
+.role-dot--core {
+  background: var(--blue);
+}
+
+.role-dot--void {
+  background: var(--pink);
+}
+
+.workspace {
+  grid-area: work;
+  min-width: 0;
+  min-height: 0;
+}
+
+.viewport-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.viewport-shell canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.viewport-meta {
+  position: absolute;
+  bottom: 13px;
+  padding: 7px 9px;
+  border: 1px solid rgb(23 23 21 / 38%);
+  background: rgb(244 244 239 / 76%);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.viewport-meta--left {
+  left: 14px;
+}
+
+.viewport-meta--right {
+  right: 14px;
+}
+
+.inspector-lead {
+  min-height: 116px;
+  padding: 17px 15px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.eyebrow {
+  color: var(--muted);
+}
+
+.inspector-lead h1 {
+  margin: 14px 0 3px;
+  font-size: 29px;
+  font-weight: 950;
+  letter-spacing: -0.045em;
+}
+
+.inspector-lead p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.controls-section {
+  display: grid;
+  gap: 14px;
+}
+
+.controls-section .section-heading {
+  margin-bottom: 0;
+}
+
+.range-field {
+  display: grid;
+  gap: 7px;
+}
+
+.field-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.field-heading output {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--yellow);
+  cursor: ew-resize;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.metrics-grid div {
+  min-height: 58px;
+  padding: 8px;
+  background: var(--paper);
+}
+
+.metrics-grid dt {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metrics-grid dd {
+  margin: 0;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.metrics-grid .metric-alert {
+  background: #fff2b4;
+}
+
+.notice {
+  margin: 11px 0 0;
+  padding-left: 9px;
+  border-left: 3px solid var(--yellow);
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.statusbar {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 12px;
+  border-top: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.statusbar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--yellow);
+}
+
+.statusbar-end {
+  margin-left: auto;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    grid-template:
+      "top top" 62px
+      "work right" minmax(0, 1fr)
+      "status status" 28px /
+      minmax(360px, 1fr) 290px;
+  }
+
+  .left-panel {
+    display: none;
+  }
+
+  .brand-block > span:last-child,
+  .project-name {
+    display: none;
+  }
+
+  .topbar {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+@media (max-width: 680px) {
+  html,
+  body,
+  #root {
+    overflow: auto;
+  }
+
+  .app-shell {
+    grid-template:
+      "top" 56px
+      "work" 58vh
+      "right" auto
+      "status" 28px /
+      1fr;
+    min-height: 100%;
+    height: auto;
+  }
+
+  .right-panel {
+    border-top: 1px solid var(--ink);
+    border-left: 0;
+  }
+
+  .topbar-actions .button--quiet {
+    display: none;
+  }
+
+  .panel {
+    overflow: visible;
+  }
+}

@@ -1,0 +1,67 @@
+export type RecipeId =
+  | 'monolith'
+  | 'piloti'
+  | 'silos'
+  | 'ziggurat'
+  | 'lamella-tower'
+  | 'gate'
+
+export type PieceRole = 'mass' | 'support' | 'surface' | 'core' | 'void'
+
+export type Vec3 = readonly [x: number, y: number, z: number]
+export type Size2 = readonly [width: number, depth: number]
+
+export interface BoxPiece {
+  readonly kind: 'box'
+  readonly id: string
+  readonly label: string
+  readonly role: PieceRole
+  readonly position: Vec3
+  readonly size: Vec3
+}
+
+export interface FrustumPiece {
+  readonly kind: 'frustum'
+  readonly id: string
+  readonly label: string
+  readonly role: PieceRole
+  readonly position: Vec3
+  readonly height: number
+  readonly bottomSize: Size2
+  readonly topSize: Size2
+  readonly bottomOffset: readonly [x: number, y: number]
+  readonly topOffset: readonly [x: number, y: number]
+}
+
+export type ScenePiece = BoxPiece | FrustumPiece
+
+export interface PilotiParameters {
+  readonly seed: number
+  readonly heightMm: number
+  readonly supportCount: number
+  readonly supportHeightRatio: number
+  readonly shoulderRatio: number
+  readonly neckWidthRatio: number
+  readonly upperWidthRatio: number
+  readonly upperDepthRatio: number
+  readonly asymmetry: number
+}
+
+export interface MassStudy {
+  readonly recipe: RecipeId
+  readonly seed: number
+  readonly pieces: readonly ScenePiece[]
+  readonly widthMm: number
+  readonly depthMm: number
+  readonly heightMm: number
+  readonly concreteVolumeMm3: number
+  readonly estimatedMassKg: number
+  readonly groundContactMm2: number
+}
+
+export interface RecipeSummary {
+  readonly id: RecipeId
+  readonly name: string
+  readonly description: string
+  readonly available: boolean
+}

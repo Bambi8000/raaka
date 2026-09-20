@@ -90,6 +90,21 @@ distance by which the outer shoulder zone exceeds the upper mass. Model scale
 transforms those measured distances together with the geometry. The UI reports
 the condition instead of silently shrinking or moving supports.
 
+Version 0.1.7 adds a selected-support size override keyed by the same stable
+support ID as lean. Width scale transforms the stem foot, neck and shoulder
+bearing in X; depth scale transforms the corresponding Y dimensions. Height,
+position, seeded variation and endpoint offsets remain unchanged, and both
+members of the support pair receive matching interface dimensions. Bounds,
+volume and ground contact are recomputed from the resulting pieces.
+
+The project stores foot offsets and size scales in separate override arrays so
+recipe versions 1–4 migrate without changing their established lean data. The
+UI presents them as one selected-leg override: Create writes both, Use shared
+removes both, and one history snapshot covers the combined edit. Bearing
+analysis uses each shoulder's actual top rectangle. It reports maximum overlap
+between adjacent rows and columns plus maximum X and Y overhang beyond the
+upper mass; it never alters authored geometry to remove a warning.
+
 ## Data flow
 
 ```text
@@ -112,12 +127,13 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 4 stores every
+version and a separate recipe version. Piloti recipe version 5 stores every
 generator parameter, shared X/Y foot offsets, selected-leg overrides and one
-of the supported `modelScale` presets. Recipe version 3 is migrated to one row
+of the supported `modelScale` presets. Recipe version 4 receives an empty
+support-size override list; recipe version 3 additionally migrates to one row
 with the original support depth; recipe version 2 additionally receives an
-empty override list; recipe version 1 additionally receives zero shared
-offsets. A missing model
+empty foot-offset override list; recipe version 1 additionally receives zero
+shared offsets. A missing model
 scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.
@@ -143,10 +159,10 @@ flat-shaded Three.js buffer geometry.
 
 The volume equation integrates the product of linearly changing width and
 depth. The one-row default and non-overlapping grids can sum preview-piece
-volumes directly. An authored grid may deliberately overlap shoulder rows;
-until boolean union exists, RAAKA labels the result nominal and warns that the
-sum double-counts intersecting preview pieces. Future booleans must derive
-volume from the finished solid instead.
+volumes directly. An authored grid or selected size may deliberately overlap
+shoulders across rows or columns; until boolean union exists, RAAKA labels the
+result nominal and warns that the sum double-counts intersecting preview
+pieces. Future booleans must derive volume from the finished solid instead.
 
 Current pieces are separate closed preview meshes; shared contact faces have
 not been removed by a boolean union. They are not yet an export-ready single

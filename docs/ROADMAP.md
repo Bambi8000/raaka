@@ -12,7 +12,7 @@ leaning legs. These are specified in [Product definition](PRODUCT.md) and
 [Architecture](ARCHITECTURE.md). Shared foot offsets are implemented in 0.1.3;
 selected-leg overrides are implemented in 0.1.4; model-scale presets are
 implemented in 0.1.5; support grids and layout feedback are implemented in
-0.1.6.
+0.1.6; selected-support proportions are implemented in 0.1.7.
 
 ## 0.1 — foundation
 
@@ -31,6 +31,7 @@ measured geometry and viewport defects; version 0.1.2 begins durable study
 work with project files, recovery and history; version 0.1.3 adds authored
 shared leg lean; version 0.1.4 adds per-leg overrides; version 0.1.5 adds
 physical model scales; version 0.1.6 adds support grids.
+Version 0.1.7 adds selected-support proportions.
 
 ## 0.1.1 — correct the baseline
 
@@ -146,6 +147,26 @@ Done when a three-column/two-row study produces six grounded stems and six
 matching shoulders, later-row legs remain selectable and editable, layout
 problems are explicit, and save/recovery/history/model scale preserve the grid.
 
+## 0.1.7 — selected Piloti support proportions
+
+- [x] treat a selected stem and shoulder as one semantic support
+- [x] add bounded 55–145% width and depth scales relative to the shared leg
+- [x] preserve support position, height, seeded variation and joined interfaces
+- [x] keep neighbours unchanged when one support is resized
+- [x] recompute bounds, nominal volume, mass and ground contact
+- [x] measure adjacent-column overlap and side-bearing overhang from actual
+  shoulder footprints
+- [x] combine selected lean and size in one visible create/remove workflow and
+  one undo step
+- [x] persist size overrides in Piloti recipe version 5 and migrate versions
+  1–4 to shared support sizes
+- [x] scale selected proportions and layout feedback at 1:1, 1:2 and 1:4
+
+Done when either member of a selected support pair exposes the same width and
+depth override, another support remains byte-for-byte unchanged, unsafe layout
+growth is reported rather than corrected, and save/recovery/history retain the
+edit.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -158,6 +179,7 @@ problems are explicit, and save/recovery/history/model scale preserve the grid.
 - [x] shared Foot offset X/Y for deterministic leg lean, with ground faces at Z = 0
   and matching stem/shoulder interfaces
 - [x] explicit selected-leg offsets with visible shared/selected scope
+- [x] explicit selected-leg width and depth with the same visible scope
 - [ ] support placement offsets and asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata

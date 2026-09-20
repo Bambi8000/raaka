@@ -20,6 +20,19 @@ function expectFiniteStudy(parameters: PilotiParameters): void {
     study.concreteVolumeMm3,
     study.estimatedMassKg,
     study.groundContactMm2,
+    ...(study.supportLayout
+      ? [
+          study.supportLayout.columns,
+          study.supportLayout.rows,
+          study.supportLayout.totalSupports,
+          study.supportLayout.rowSpacingMm,
+          study.supportLayout.shoulderDepthMm,
+          study.supportLayout.adjacentRowOverlapMm,
+          study.supportLayout.adjacentColumnOverlapMm,
+          study.supportLayout.bearingOverhangMm,
+          study.supportLayout.sideBearingOverhangMm,
+        ]
+      : []),
     ...study.pieces.flatMap((piece) => [
       ...piece.position,
       ...(piece.kind === 'box'
@@ -361,6 +374,82 @@ describe('generatePiloti', () => {
     expect(neighbour?.bottomOffset).toEqual([40, -20])
   })
 
+  it('scales width and depth only for the named support pair', () => {
+    const baseParameters = {
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 3,
+      supportRowCount: 2,
+      supportDepthRatio: 0.48,
+    }
+    const shared = generatePiloti(baseParameters)
+    const overridden = generatePiloti({
+      ...baseParameters,
+      supportSizeOverrides: [
+        {
+          supportId: 'support-r2-c2',
+          widthScale: 1.25,
+          depthScale: 0.7,
+        },
+      ],
+    })
+
+    for (const prefix of ['support', 'shoulder'] as const) {
+      const basePiece = shared.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `${prefix}-r2-c2`,
+      )
+      const sizedPiece = overridden.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `${prefix}-r2-c2`,
+      )
+      expect(basePiece).toBeDefined()
+      expect(sizedPiece).toBeDefined()
+      if (!basePiece || !sizedPiece) continue
+
+      expect(sizedPiece.position).toEqual(basePiece.position)
+      expect(sizedPiece.height).toBe(basePiece.height)
+      expect(sizedPiece.bottomOffset).toEqual(basePiece.bottomOffset)
+      expect(sizedPiece.topOffset).toEqual(basePiece.topOffset)
+      expect(sizedPiece.bottomSize[0]).toBeCloseTo(
+        basePiece.bottomSize[0] * 1.25,
+        10,
+      )
+      expect(sizedPiece.bottomSize[1]).toBeCloseTo(
+        basePiece.bottomSize[1] * 0.7,
+        10,
+      )
+      expect(sizedPiece.topSize[0]).toBeCloseTo(
+        basePiece.topSize[0] * 1.25,
+        10,
+      )
+      expect(sizedPiece.topSize[1]).toBeCloseTo(
+        basePiece.topSize[1] * 0.7,
+        10,
+      )
+    }
+
+    expect(
+      overridden.pieces.find((piece) => piece.id === 'support-r2-c1'),
+    ).toEqual(shared.pieces.find((piece) => piece.id === 'support-r2-c1'))
+    expect(overridden.concreteVolumeMm3).not.toBe(shared.concreteVolumeMm3)
+    expect(overridden.groundContactMm2).not.toBe(shared.groundContactMm2)
+  })
+
+  it('reports overlap and side overhang from an oversized selected support', () => {
+    const study = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      asymmetry: 0,
+      supportSizeOverrides: [
+        {
+          supportId: 'support-1',
+          widthScale: 1.45,
+          depthScale: 1,
+        },
+      ],
+    })
+
+    expect(study.supportLayout?.adjacentColumnOverlapMm).toBeCloseTo(45.72, 10)
+    expect(study.supportLayout?.sideBearingOverhangMm).toBeCloseTo(60.12, 10)
+  })
+
   it('keeps geometry finite at both ends of every supported range', () => {
     expectFiniteStudy({
       seed: 0,
@@ -378,6 +467,7 @@ describe('generatePiloti', () => {
       footOffsetXMm: -300,
       footOffsetYMm: -300,
       footOffsetOverrides: [],
+      supportSizeOverrides: [],
     })
     expectFiniteStudy({
       seed: MAX_SEED,
@@ -399,6 +489,13 @@ describe('generatePiloti', () => {
           supportId: 'support-r3-c6',
           footOffsetXMm: -300,
           footOffsetYMm: -300,
+        },
+      ],
+      supportSizeOverrides: [
+        {
+          supportId: 'support-r3-c6',
+          widthScale: 1.45,
+          depthScale: 0.55,
         },
       ],
     })
@@ -477,6 +574,29 @@ describe('generatePiloti', () => {
         ],
       }),
     ).toThrow('Piloti foot offset override for "support-2" is duplicated.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        supportSizeOverrides: [
+          {
+            supportId: 'support-r2-c1',
+            widthScale: Number.NaN,
+            depthScale: 1,
+          },
+        ],
+      }),
+    ).toThrow('Piloti support size override "widthScale" must be finite.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        supportSizeOverrides: [
+          { supportId: 'support-1', widthScale: 1, depthScale: 1 },
+          { supportId: 'support-1', widthScale: 0.8, depthScale: 1.2 },
+        ],
+      }),
+    ).toThrow('Piloti support size override for "support-1" is duplicated.')
   })
 
   it('exposes the six agreed recipe families with only Piloti enabled', () => {

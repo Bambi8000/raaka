@@ -6,12 +6,12 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.6, the
+This document describes the product direction. In version 0.1.7, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
-overrides are implemented, together with 1:1, 1:2 and 1:4 model scales and
-multi-row support grids. Outputs, cores and the remaining recipe families are
-planned. See
+overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
+multi-row support grids and selected-support width/depth overrides. Outputs,
+cores and the remaining recipe families are planned. See
 [Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
@@ -105,6 +105,9 @@ a pair, as a row or as a grid.
 - Provide shared offsets for all legs and explicit selected-leg overrides.
   The UI must make the scope visible. Authored offsets use design millimetres;
   their effective physical values follow model scale.
+- A selected support may replace the shared width and depth with bounded scale
+  factors. The stem and shoulder remain one connected semantic leg; changing
+  one must not resize a neighbour or break their coincident interface.
 - Row/column identity and keyed variation must remain stable when another row
   is added or a different leg is edited. Update bounds, contact footprints and
   later centre-of-mass/bearing feedback from the actual tilted geometry.
@@ -117,8 +120,12 @@ inheritance. Overrides for temporarily hidden supports are retained when the
 support count is reduced. Version 0.1.6 adds one to three Y rows, stable
 row/column identities, centre-to-centre spacing, separate upper-mass and
 support-depth controls, and measured overlap and bearing-overhang feedback.
-The existing Asymmetry slider is seeded per-leg variation and stays separate
-from authored foot offsets.
+Version 0.1.7 adds 55–145% selected-support width and depth scales. The same
+explicit override owns the selected leg's lean and size in the UI, while the
+project keeps their validated arrays separate for backward compatibility.
+Column overlap and side-bearing overhang are measured from actual shoulder
+footprints. The existing Asymmetry slider is seeded per-leg variation and
+stays separate from authored overrides.
 
 ## Operations
 

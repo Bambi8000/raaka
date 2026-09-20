@@ -68,6 +68,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   footOffsetXMm: 0,
   footOffsetYMm: 0,
   footOffsetOverrides: [],
+  supportSizeOverrides: [],
 }
 
 function boxVolume(piece: BoxPiece): number {
@@ -108,6 +109,20 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       override,
     ]),
   )
+  const supportSizeOverrides = new Map(
+    parameters.supportSizeOverrides.map((override) => [
+      override.supportId,
+      override,
+    ]),
+  )
+  const shoulderBearings: {
+    readonly row: number
+    readonly column: number
+    readonly centreX: number
+    readonly centreY: number
+    readonly width: number
+    readonly depth: number
+  }[] = []
   const supportShift =
     randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.45
   const massShift =
@@ -127,16 +142,24 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
           : `r${rowNumber}-c${columnNumber}`
       const supportId = `support-${supportSuffix}`
       const footOffsetOverride = footOffsetOverrides.get(supportId)
+      const supportSizeOverride = supportSizeOverrides.get(supportId)
+      const widthScale = supportSizeOverride?.widthScale ?? 1
+      const depthScale = supportSizeOverride?.depthScale ?? 1
       const bayCentre =
         -upperWidth / 2 + bayWidth * (columnIndex + 0.5) + supportShift
       const individualShift =
         randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.16
-      const neckWidth = bayWidth * parameters.neckWidthRatio
+      const neckWidth = bayWidth * parameters.neckWidthRatio * widthScale
       const neckDepth =
         shoulderDepth *
-        ((0.34 + parameters.neckWidthRatio * 0.32) / 0.92)
+        ((0.34 + parameters.neckWidthRatio * 0.32) / 0.92) *
+        depthScale
       const footWidth = neckWidth * 1.18
       const footDepth = neckDepth * 1.16
+      const shoulderTopWidth = bayWidth * 0.92 * widthScale
+      const shoulderTopDepth = shoulderDepth * depthScale
+      const shoulderCentreX =
+        bayCentre + individualShift * 0.8 - individualShift * 0.45
 
       pieces.push({
         kind: 'frustum',
@@ -166,9 +189,17 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         ],
         height: shoulderHeight,
         bottomSize: [neckWidth, neckDepth],
-        topSize: [bayWidth * 0.92, shoulderDepth],
+        topSize: [shoulderTopWidth, shoulderTopDepth],
         bottomOffset: [0, 0],
         topOffset: [-individualShift * 0.45, 0],
+      })
+      shoulderBearings.push({
+        row: rowNumber,
+        column: columnNumber,
+        centreX: shoulderCentreX,
+        centreY: rowCentre,
+        width: shoulderTopWidth,
+        depth: shoulderTopDepth,
       })
     }
   }
@@ -196,8 +227,67 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     )
   const bounds = sceneBounds(pieces)
   const [widthMm, depthMm, heightMm] = boundsSize(bounds)
-  const supportRowSpan =
-    (parameters.supportRowCount - 1) * parameters.rowSpacingMm + shoulderDepth
+  const intervalOverlap = (
+    firstCentre: number,
+    firstSize: number,
+    secondCentre: number,
+    secondSize: number,
+  ) =>
+    Math.max(
+      0,
+      Math.min(firstCentre + firstSize / 2, secondCentre + secondSize / 2) -
+        Math.max(firstCentre - firstSize / 2, secondCentre - secondSize / 2),
+    )
+  let adjacentRowOverlapMm = 0
+  let adjacentColumnOverlapMm = 0
+  for (const first of shoulderBearings) {
+    for (const second of shoulderBearings) {
+      if (second.row === first.row + 1 && second.column === first.column) {
+        adjacentRowOverlapMm = Math.max(
+          adjacentRowOverlapMm,
+          intervalOverlap(
+            first.centreY,
+            first.depth,
+            second.centreY,
+            second.depth,
+          ),
+        )
+      }
+      if (second.column === first.column + 1 && second.row === first.row) {
+        adjacentColumnOverlapMm = Math.max(
+          adjacentColumnOverlapMm,
+          intervalOverlap(
+            first.centreX,
+            first.width,
+            second.centreX,
+            second.width,
+          ),
+        )
+      }
+    }
+  }
+  const massMinX = massShift - upperWidth / 2
+  const massMaxX = massShift + upperWidth / 2
+  const massMinY = -upperDepth / 2
+  const massMaxY = upperDepth / 2
+  const bearingOverhangMm = shoulderBearings.reduce(
+    (maximum, bearing) =>
+      Math.max(
+        maximum,
+        massMinY - (bearing.centreY - bearing.depth / 2),
+        bearing.centreY + bearing.depth / 2 - massMaxY,
+      ),
+    0,
+  )
+  const sideBearingOverhangMm = shoulderBearings.reduce(
+    (maximum, bearing) =>
+      Math.max(
+        maximum,
+        massMinX - (bearing.centreX - bearing.width / 2),
+        bearing.centreX + bearing.width / 2 - massMaxX,
+      ),
+    0,
+  )
 
   return {
     recipe: 'piloti',
@@ -217,11 +307,10 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       totalSupports: parameters.supportCount * parameters.supportRowCount,
       rowSpacingMm: parameters.rowSpacingMm,
       shoulderDepthMm: shoulderDepth,
-      adjacentRowOverlapMm:
-        parameters.supportRowCount > 1
-          ? Math.max(0, shoulderDepth - parameters.rowSpacingMm)
-          : 0,
-      bearingOverhangMm: Math.max(0, (supportRowSpan - upperDepth) / 2),
+      adjacentRowOverlapMm,
+      adjacentColumnOverlapMm,
+      bearingOverhangMm,
+      sideBearingOverhangMm,
     },
   }
 }

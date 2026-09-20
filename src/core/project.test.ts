@@ -36,6 +36,18 @@ describe('RAAKA project files', () => {
             footOffsetYMm: 0,
           },
         ],
+        supportSizeOverrides: [
+          {
+            supportId: 'support-2',
+            widthScale: 1.25,
+            depthScale: 0.8,
+          },
+          {
+            supportId: 'support-r3-c6',
+            widthScale: 0.7,
+            depthScale: 1.4,
+          },
+        ],
       },
       0.25,
     )
@@ -57,6 +69,7 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.footOffsetXMm
     delete legacy.parameters.footOffsetYMm
     delete legacy.parameters.footOffsetOverrides
+    delete legacy.parameters.supportSizeOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -64,6 +77,7 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.footOffsetXMm).toBe(0)
     expect(migrated.parameters.footOffsetYMm).toBe(0)
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
+    expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportRowCount).toBe(1)
     expect(migrated.parameters.rowSpacingMm).toBe(300)
     expect(migrated.parameters.supportDepthRatio).toBe(0.92)
@@ -81,11 +95,13 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.rowSpacingMm
     delete legacy.parameters.supportDepthRatio
     delete legacy.parameters.footOffsetOverrides
+    delete legacy.parameters.supportSizeOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
+    expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportRowCount).toBe(1)
   })
 
@@ -100,6 +116,7 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.supportRowCount
     delete legacy.parameters.rowSpacingMm
     delete legacy.parameters.supportDepthRatio
+    delete legacy.parameters.supportSizeOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -107,6 +124,23 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.supportRowCount).toBe(1)
     expect(migrated.parameters.rowSpacingMm).toBe(300)
     expect(migrated.parameters.supportDepthRatio).toBe(0.92)
+    expect(migrated.parameters.supportSizeOverrides).toEqual([])
+  })
+
+  it('migrates recipe version four files to shared support sizes', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 4
+    delete legacy.parameters.supportSizeOverrides
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+    expect(migrated.parameters.supportSizeOverrides).toEqual([])
   })
 
   it('requires an override list in the current recipe version', () => {
@@ -117,6 +151,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "footOffsetOverrides" must be an array.',
+    )
+  })
+
+  it('requires a support size override list in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.supportSizeOverrides
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "supportSizeOverrides" must be an array.',
     )
   })
 
@@ -202,6 +247,22 @@ describe('RAAKA project files', () => {
               supportId: 'support-2',
               footOffsetXMm: -10,
               footOffsetYMm: -20,
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'out-of-range selected support size',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          supportSizeOverrides: [
+            {
+              supportId: 'support-2',
+              widthScale: 1.8,
+              depthScale: 1,
             },
           ],
         },

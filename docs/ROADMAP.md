@@ -15,6 +15,9 @@ implemented in 0.1.5; support grids and layout feedback are implemented in
 0.1.6; selected-support proportions are implemented in 0.1.7.
 Selected-support placement is implemented in 0.1.8.
 Divided and shared shoulder rows are implemented in 0.1.9.
+Authored upper-mass placement is implemented in 0.1.10. A reusable high-rise
+articulation module with balconies, windows and exterior doors is planned after
+the initial recipe and drawing foundations.
 
 ## 0.1 — foundation
 
@@ -36,6 +39,7 @@ physical model scales; version 0.1.6 adds support grids.
 Version 0.1.7 adds selected-support proportions.
 Version 0.1.8 adds selected-support placement.
 Version 0.1.9 adds divided and shared shoulder topology.
+Version 0.1.10 adds authored upper-mass cantilever in X/Y.
 
 ## 0.1.1 — correct the baseline
 
@@ -205,6 +209,23 @@ Done when the unedited shared row has coincident neighbouring top boundaries,
 divided mode preserves the previous model, authored deviations produce explicit
 gap or overlap feedback, and save/recovery/history retain the topology.
 
+## 0.1.10 — authored upper-mass placement
+
+- [x] add independent upper-mass X/Y offsets in design millimetres
+- [x] preserve the existing seeded X shift as a separate deterministic choice
+- [x] leave divided supports unchanged when the upper mass moves
+- [x] align shared shoulder tops to the offset mass in X while retaining their
+  fixed neck and stem geometry
+- [x] derive X/Y bearing overhang from the actual translated mass bounds
+- [x] include the complete offset geometry and feedback in model scaling
+- [x] persist placement in Piloti recipe version 8 and migrate versions 1–7 to
+  zero upper-mass offsets
+- [x] include both controls in recovery and one-step slider undo/redo
+
+Done when an authored cantilever changes only the upper mass and the required
+shared shoulder top offsets, never rerolls a seeded choice, produces explicit
+bearing feedback and survives save, recovery, history and model-scale changes.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -219,7 +240,8 @@ gap or overlap feedback, and save/recovery/history retain the topology.
 - [x] explicit selected-leg offsets with visible shared/selected scope
 - [x] explicit selected-leg width and depth with the same visible scope
 - [x] selected support placement offsets
-- [ ] asymmetric upper masses
+- [x] authored X/Y upper-mass cantilever
+- [ ] stepped, tapered or multi-part asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [ ] focused solid-kernel spike before committing to a boolean dependency
@@ -285,6 +307,38 @@ Muusia; do not introduce a second machine exporter in RAAKA.
 Implement one recipe at a time against the shared save, analysis and output
 contracts. Each new family needs its own parameter-range, determinism and
 geometry fixtures; an enabled menu card is not a completed recipe.
+
+## 0.5 — high-rise articulation module
+
+This is a reusable architectural articulation layer for compatible masses,
+especially Piloti and Lamella tower, rather than a general building modeller or
+a viewport-only texture system.
+
+- [ ] define a face-anchored floor and bay grid with stable module IDs
+- [ ] keep implied architectural scale separate from sculpture and model scale
+- [ ] generate window families as recessed opening intent with controllable
+  width, height, sill, depth and repeated bands
+- [ ] generate projecting balcony slabs, recessed loggias and optional solid
+  parapets as selectable semantic features
+- [ ] generate exterior doors at valid base, terrace or balcony faces with
+  explicit opening and threshold intent
+- [ ] support seeded repetition, omissions and stagger while keeping local
+  edits from rerolling unrelated facade modules
+- [ ] add selected-module overrides and locks for individual balcony, window
+  and door cells
+- [ ] report details that become too thin or too small at the manufactured
+  model scale instead of silently resizing them
+- [ ] require windows and doors to participate in the finished solid and its
+  volume; do not ship them as decals or unmeasured preview cuts
+- [ ] expose facade roles to plans, elevations, sections and the Muusia path-set
+  boundary
+- [ ] persist the module schema and add deterministic geometry, migration and
+  scale fixtures
+
+Done when a saved mass can receive a repeatable high-rise facade whose
+balconies, windows and exterior doors are real selectable geometry, remain
+legible at the chosen scale and agree across preview, finished solid and vector
+drawings.
 
 ## Shared form vocabulary
 

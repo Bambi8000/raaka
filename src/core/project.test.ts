@@ -23,6 +23,8 @@ describe('RAAKA project files', () => {
         rowSpacingMm: 480,
         supportDepthRatio: 0.46,
         shoulderMode: 'shared',
+        upperOffsetXMm: 240,
+        upperOffsetYMm: -170,
         footOffsetXMm: 175,
         footOffsetYMm: -90,
         footOffsetOverrides: [
@@ -85,6 +87,8 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
     delete legacy.parameters.shoulderMode
+    delete legacy.parameters.upperOffsetXMm
+    delete legacy.parameters.upperOffsetYMm
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -95,6 +99,8 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
     expect(migrated.parameters.shoulderMode).toBe('divided')
+    expect(migrated.parameters.upperOffsetXMm).toBe(0)
+    expect(migrated.parameters.upperOffsetYMm).toBe(0)
     expect(migrated.parameters.supportRowCount).toBe(1)
     expect(migrated.parameters.rowSpacingMm).toBe(300)
     expect(migrated.parameters.supportDepthRatio).toBe(0.92)
@@ -115,6 +121,8 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
     delete legacy.parameters.shoulderMode
+    delete legacy.parameters.upperOffsetXMm
+    delete legacy.parameters.upperOffsetYMm
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -123,6 +131,8 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
     expect(migrated.parameters.shoulderMode).toBe('divided')
+    expect(migrated.parameters.upperOffsetXMm).toBe(0)
+    expect(migrated.parameters.upperOffsetYMm).toBe(0)
     expect(migrated.parameters.supportRowCount).toBe(1)
   })
 
@@ -140,6 +150,8 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
     delete legacy.parameters.shoulderMode
+    delete legacy.parameters.upperOffsetXMm
+    delete legacy.parameters.upperOffsetYMm
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -150,6 +162,8 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
     expect(migrated.parameters.shoulderMode).toBe('divided')
+    expect(migrated.parameters.upperOffsetXMm).toBe(0)
+    expect(migrated.parameters.upperOffsetYMm).toBe(0)
   })
 
   it('migrates recipe version four files to shared support sizes', () => {
@@ -163,6 +177,8 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
     delete legacy.parameters.shoulderMode
+    delete legacy.parameters.upperOffsetXMm
+    delete legacy.parameters.upperOffsetYMm
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -170,6 +186,8 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
     expect(migrated.parameters.shoulderMode).toBe('divided')
+    expect(migrated.parameters.upperOffsetXMm).toBe(0)
+    expect(migrated.parameters.upperOffsetYMm).toBe(0)
   })
 
   it('migrates recipe version five files to generated grid positions', () => {
@@ -182,12 +200,16 @@ describe('RAAKA project files', () => {
     legacy.recipeVersion = 5
     delete legacy.parameters.supportPositionOverrides
     delete legacy.parameters.shoulderMode
+    delete legacy.parameters.upperOffsetXMm
+    delete legacy.parameters.upperOffsetYMm
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
     expect(migrated.parameters.shoulderMode).toBe('divided')
+    expect(migrated.parameters.upperOffsetXMm).toBe(0)
+    expect(migrated.parameters.upperOffsetYMm).toBe(0)
   })
 
   it('migrates recipe version six files to divided shoulders', () => {
@@ -199,11 +221,33 @@ describe('RAAKA project files', () => {
     }
     legacy.recipeVersion = 6
     delete legacy.parameters.shoulderMode
+    delete legacy.parameters.upperOffsetXMm
+    delete legacy.parameters.upperOffsetYMm
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.shoulderMode).toBe('divided')
+    expect(migrated.parameters.upperOffsetXMm).toBe(0)
+    expect(migrated.parameters.upperOffsetYMm).toBe(0)
+  })
+
+  it('migrates recipe version seven files to a centred upper mass', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 7
+    delete legacy.parameters.upperOffsetXMm
+    delete legacy.parameters.upperOffsetYMm
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+    expect(migrated.parameters.upperOffsetXMm).toBe(0)
+    expect(migrated.parameters.upperOffsetYMm).toBe(0)
   })
 
   it('requires an override list in the current recipe version', () => {
@@ -247,6 +291,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "shoulderMode" must be "divided" or "shared".',
+    )
+  })
+
+  it('requires upper-mass offsets in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.upperOffsetXMm
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "upperOffsetXMm" must be a finite number.',
     )
   })
 

@@ -38,6 +38,8 @@ describe('scaleMassStudy', () => {
     supportRowCount: 2,
     rowSpacingMm: 360,
     supportDepthRatio: 0.48,
+    upperOffsetXMm: 220,
+    upperOffsetYMm: -130,
     footOffsetXMm: 120,
     footOffsetYMm: -80,
     footOffsetOverrides: [

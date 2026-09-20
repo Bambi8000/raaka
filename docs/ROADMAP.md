@@ -22,10 +22,10 @@ leaning legs. These are specified in [Product definition](PRODUCT.md) and
 - [x] summed piece volume, approximate mass and ground contact readings
 - [x] baseline code, geometry, browser and CI review recorded
 
-The baseline is a working study prototype. Export, saved projects, cores and
-five of the six recipe families are not yet implemented. Version 0.1.1 closes
-the measured geometry and viewport defects; remote CI event verification is
-recorded separately below.
+The baseline is a working study prototype. Manufacturing export, cores and five
+of the six recipe families are not yet implemented. Version 0.1.1 closes the
+measured geometry and viewport defects; version 0.1.2 begins durable study
+work with project files, recovery and history.
 
 ## 0.1.1 — correct the baseline
 
@@ -53,14 +53,14 @@ runs after the bot rebased PR #6.
 
 ## 0.1.2 — preserve and inspect a study
 
-- [ ] project save and open with format and recipe versions, seed, parameters
+- [x] project save and open with format and recipe versions, seed, parameters
   and model scale (defaulting to 1:1 for older studies)
-- [ ] validate complete files before replacing the current study
-- [ ] local recovery with explicit saved/recovered state
-- [ ] undo/redo, reset and direct seed entry; one undo step per slider gesture
+- [x] validate complete files before replacing the current study
+- [x] local recovery with explicit saved/recovered state
+- [x] undo/redo, reset and direct seed entry; one undo step per slider gesture
 - [ ] camera view presets: front, side, top and axonometric
 - [ ] numeric inputs alongside sliders; explicit mm and percentage readouts
-- [ ] separate composition controls from selected-object information
+- [x] separate composition controls from selected-object information
 - [ ] compact drawers/tabs that retain recipe, object and seed actions
 - [ ] expose selection to assistive technology and preserve keyboard access
 

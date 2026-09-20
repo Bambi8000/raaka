@@ -81,6 +81,26 @@ Recipe parameters + stable seed
 React owns interaction state. The generator owns form truth. Three.js receives
 scene pieces and must remain replaceable; renderer state is never project data.
 
+## Project persistence and history
+
+The portable project file is human-readable JSON with an explicit RAAKA format
+version and a separate recipe version. Version 1 stores the Piloti recipe,
+every generator parameter and `modelScale: 1`. A missing model scale is read as
+1 for compatibility; any unsupported format, recipe, scale or parameter is
+rejected before current state is replaced. The same canonical serializer feeds
+file downloads, dirty-state comparison and local recovery.
+
+The browser keeps a recovery copy under `raaka.recovery.v1` after every edit,
+undo and redo. Recovery is not a substitute for a project file: it belongs to
+one browser profile, while Save creates the portable artifact the owner can
+archive. Opening a project starts a new history; invalid input preserves the
+current study and reports the reason.
+
+Undo/redo stores immutable Piloti parameter snapshots, capped at 100 committed
+steps. Live slider values update the model and recovery copy continuously, but
+the pointer or keyboard gesture commits only its starting snapshot. Renderer
+and selection state are intentionally outside project history.
+
 ## Current vertical slice
 
 `src/core/generator.ts` creates the Piloti study as boxes and rectangular

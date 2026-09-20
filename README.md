@@ -10,6 +10,11 @@ carried by repeated faceted funnel supports. Its parameters update a live
 Three.js view, every object is selectable, and the inspector reports the solid
 volume, approximate concrete mass and ground contact area.
 
+Version 0.1.2 adds validated project files, automatic local recovery and a
+100-step undo/redo history. Use **Save project** for a portable `.raaka.json`
+file and **Open** to restore it. One slider drag is one undo step; direct seed
+entry, reset and seed changes participate in the same history.
+
 ## Run locally
 
 Requirements:
@@ -50,9 +55,10 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.1 is an early design and geometry prototype. Only Piloti is implemented.
-Projects are not saved: reloading the page restores the defaults. Export is
-not implemented yet. Other recipes, drawings, cores and stability feedback
-are planned. The current mass and ground-contact readings are estimates, not
-structural engineering approval. The displayed envelope is derived from every
-generated piece, including asymmetric loft offsets.
+RAAKA 0.1.2 is an early design and geometry prototype. Only Piloti is
+implemented. Study state is recoverable locally and can be saved as a
+versioned project file. Manufacturing export is not implemented yet. Other
+recipes, drawings, cores and stability feedback are planned. The current mass
+and ground-contact readings are estimates, not structural engineering
+approval. The displayed envelope is derived from every generated piece,
+including asymmetric loft offsets.

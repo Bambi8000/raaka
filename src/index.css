@@ -47,6 +47,7 @@ input:focus-visible {
   display: grid;
   grid-template:
     "top top top" 62px
+    "tools tools tools" 42px
     "left work right" minmax(0, 1fr)
     "status status status" 28px /
     236px minmax(420px, 1fr) 314px;
@@ -156,6 +157,120 @@ input:focus-visible {
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
+}
+
+.study-toolbar {
+  grid-area: tools;
+  display: flex;
+  min-width: 0;
+  border-bottom: 1px solid var(--ink);
+  background: #d5d5cf;
+  overflow-x: auto;
+}
+
+.project-state {
+  display: flex;
+  flex: 1 1 280px;
+  gap: 9px;
+  align-items: center;
+  min-width: 250px;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+.project-state > span,
+.seed-field span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.project-state strong {
+  padding: 3px 5px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
+.project-state strong.is-unsaved {
+  background: var(--yellow);
+}
+
+.project-state small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+}
+
+.project-state small.is-error {
+  color: #a02323;
+  font-weight: 800;
+}
+
+.seed-field {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px;
+  border-left: 1px solid var(--ink);
+}
+
+.seed-field input {
+  width: 104px;
+  height: 26px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--paper);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+}
+
+.study-toolbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.study-toolbar-actions button {
+  min-width: 66px;
+  padding: 0 11px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  background: transparent;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.study-toolbar-actions button:hover:not(:disabled) {
+  background: var(--paper);
+}
+
+.study-toolbar-actions button.is-primary {
+  min-width: 118px;
+  background: var(--yellow);
+}
+
+.study-toolbar-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.36;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .panel {
@@ -500,6 +615,7 @@ input[type="range"] {
   .app-shell {
     grid-template:
       "top top" 62px
+      "tools tools" 42px
       "work right" minmax(0, 1fr)
       "status status" 28px /
       minmax(360px, 1fr) 290px;
@@ -529,6 +645,7 @@ input[type="range"] {
   .app-shell {
     grid-template:
       "top" 56px
+      "tools" 105px
       "work" 58vh
       "right" auto
       "status" 28px /
@@ -544,6 +661,53 @@ input[type="range"] {
 
   .topbar-actions .button--quiet {
     display: none;
+  }
+
+  .study-toolbar {
+    position: relative;
+    flex-wrap: wrap;
+    overflow: hidden;
+  }
+
+  .project-state {
+    flex: 1 1 180px;
+    min-width: 180px;
+    height: 42px;
+  }
+
+  .project-state small {
+    position: absolute;
+    top: 84px;
+    left: 0;
+    width: 100%;
+    height: 21px;
+    padding: 4px 14px 0;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+    text-overflow: ellipsis;
+  }
+
+  .seed-field {
+    height: 42px;
+  }
+
+  .seed-field input {
+    width: 72px;
+  }
+
+  .study-toolbar-actions {
+    order: 3;
+    width: 100%;
+    height: 42px;
+    border-top: 1px solid var(--ink);
+  }
+
+  .study-toolbar-actions button,
+  .study-toolbar-actions button.is-primary {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 5px;
+    font-size: 8px;
   }
 
   .panel {

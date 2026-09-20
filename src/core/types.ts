@@ -62,6 +62,14 @@ export interface PilotiSupportPositionOverride {
   readonly positionYMm: number
 }
 
+export interface PilotiPartCopy {
+  readonly id: string
+  readonly sourceId: string
+  readonly offsetXMm: number
+  readonly offsetYMm: number
+  readonly offsetZMm: number
+}
+
 export interface PilotiParameters {
   readonly seed: number
   readonly heightMm: number
@@ -89,6 +97,7 @@ export interface PilotiParameters {
   readonly footOffsetOverrides: readonly PilotiFootOffsetOverride[]
   readonly supportSizeOverrides: readonly PilotiSupportSizeOverride[]
   readonly supportPositionOverrides: readonly PilotiSupportPositionOverride[]
+  readonly partCopies: readonly PilotiPartCopy[]
 }
 
 export interface SupportLayoutAnalysis {

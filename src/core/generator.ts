@@ -1,10 +1,11 @@
 import { mulberry32, randomBetween } from './random'
-import { boundsSize, sceneBounds } from './bounds'
+import { boundsSize, sceneBounds, scenePieceBounds } from './bounds'
 import { normalizePilotiParameters } from './pilotiParameters'
 import type {
   BoxPiece,
   FrustumPiece,
   MassStudy,
+  PilotiPartCopy,
   PilotiParameters,
   RecipeSummary,
   ScenePiece,
@@ -80,6 +81,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   footOffsetOverrides: [],
   supportSizeOverrides: [],
   supportPositionOverrides: [],
+  partCopies: [],
 }
 
 function boxVolume(piece: BoxPiece): number {
@@ -99,6 +101,24 @@ function frustumVolume(piece: FrustumPiece): number {
       (bottomWidth * depthDelta + bottomDepth * widthDelta) / 2 +
       (widthDelta * depthDelta) / 3)
   )
+}
+
+function copyPiece(
+  piece: ScenePiece,
+  id: string,
+  label: string,
+  copy: PilotiPartCopy,
+): ScenePiece {
+  return {
+    ...piece,
+    id,
+    label,
+    position: [
+      piece.position[0] + copy.offsetXMm,
+      piece.position[1] + copy.offsetYMm,
+      piece.position[2] + copy.offsetZMm,
+    ],
+  }
 }
 
 export function generatePiloti(input: PilotiParameters): MassStudy {
@@ -290,6 +310,44 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         },
   )
 
+  const sourcePieces = new Map(pieces.map((piece) => [piece.id, piece]))
+  for (const copy of parameters.partCopies) {
+    const copyNumber = copy.id.slice('copy-'.length)
+    if (copy.sourceId === 'upper-mass') {
+      const source = sourcePieces.get('upper-mass')
+      if (source) {
+        pieces.push(
+          copyPiece(
+            source,
+            `upper-mass-${copy.id}`,
+            `Upper mass copy ${copyNumber}`,
+            copy,
+          ),
+        )
+      }
+      continue
+    }
+
+    const sourceStem = sourcePieces.get(copy.sourceId)
+    const sourceSuffix = copy.sourceId.slice('support-'.length)
+    const sourceShoulder = sourcePieces.get(`shoulder-${sourceSuffix}`)
+    if (!sourceStem || !sourceShoulder) continue
+    pieces.push(
+      copyPiece(
+        sourceStem,
+        `support-${copy.id}`,
+        `Support copy ${copyNumber}`,
+        copy,
+      ),
+      copyPiece(
+        sourceShoulder,
+        `shoulder-${copy.id}`,
+        `Shoulder copy ${copyNumber}`,
+        copy,
+      ),
+    )
+  }
+
   const concreteVolumeMm3 = pieces.reduce(
     (sum, piece) =>
       sum + (piece.kind === 'box' ? boxVolume(piece) : frustumVolume(piece)),
@@ -298,6 +356,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   const groundContactMm2 = pieces
     .filter((piece): piece is FrustumPiece => piece.kind === 'frustum')
     .filter((piece) => piece.id.startsWith('support-'))
+    .filter((piece) => Math.abs(scenePieceBounds(piece).min[2]) < 1e-9)
     .reduce(
       (sum, piece) => sum + piece.bottomSize[0] * piece.bottomSize[1],
       0,

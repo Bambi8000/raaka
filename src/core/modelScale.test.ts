@@ -68,6 +68,22 @@ describe('scaleMassStudy', () => {
         positionYMm: -90,
       },
     ],
+    partCopies: [
+      {
+        id: 'copy-1',
+        sourceId: 'upper-mass',
+        offsetXMm: 540,
+        offsetYMm: -260,
+        offsetZMm: 180,
+      },
+      {
+        id: 'copy-2',
+        sourceId: 'support-r2-c2',
+        offsetXMm: -420,
+        offsetYMm: 240,
+        offsetZMm: 0,
+      },
+    ],
   })
 
   it.each([0.5, 0.25] as const)(

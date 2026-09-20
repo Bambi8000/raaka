@@ -6,15 +6,15 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.12, the
+This document describes the product direction. In version 0.1.13, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
 multi-row support grids, selected-support width/depth overrides, selected X/Y
-support placement and divided/shared shoulder rows. Outputs, cores and the
-remaining recipe families are planned. Authored X/Y upper-mass offsets add a
-controlled cantilever without replacing seeded asymmetry, and the upper mass
-can be a block or a tapered rectangular loft. See
+support placement, divided/shared shoulder rows and semantic part copies.
+Outputs, cores and the remaining recipe families are planned. Authored X/Y
+upper-mass offsets add a controlled cantilever without replacing seeded
+asymmetry, and the upper mass can be a block or a tapered rectangular loft. See
 [Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
@@ -128,6 +128,11 @@ a pair, as a row or as a grid.
   extend its depth. Detaching the footprint restores independent upper X/Y
   dimensions. Neither mode couples Z, and an individual support override stays
   local instead of resizing the complete upper mass.
+- A selected upper mass can be duplicated as one semantic mass, while a
+  selected stem or shoulder duplicates its complete support pair. Copies retain
+  their base source shape and own an independent X/Y/Z translation. They are
+  saved objects, not viewport instances; true merging waits for the solid
+  kernel and Fuse operation.
 - Row/column identity and keyed variation must remain stable when another row
   is added or a different leg is edited. Update bounds, contact footprints and
   later centre-of-mass/bearing feedback from the actual tilted geometry.
@@ -160,6 +165,10 @@ geometry.
 Version 0.1.12 adds linked and detached upper-footprint modes. New studies link
 the upper X/Y footprint to the support grid; existing projects migrate to
 detached mode so their established geometry remains exact.
+Version 0.1.13 adds source-linked upper-mass and complete-support copies with
+independent X/Y/Z placement. Copies participate in scale, project files,
+recovery and history. They remain separate closed preview solids, so overlap is
+nominally double-counted until a validated solid-kernel Fuse operation exists.
 
 ### Planned high-rise articulation module
 

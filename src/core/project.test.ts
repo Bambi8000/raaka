@@ -69,6 +69,22 @@ describe('RAAKA project files', () => {
             positionYMm: 220,
           },
         ],
+        partCopies: [
+          {
+            id: 'copy-1',
+            sourceId: 'upper-mass',
+            offsetXMm: 480,
+            offsetYMm: -220,
+            offsetZMm: 160,
+          },
+          {
+            id: 'copy-2',
+            sourceId: 'support-r3-c6',
+            offsetXMm: -360,
+            offsetYMm: 190,
+            offsetZMm: 0,
+          },
+        ],
       },
       0.25,
     )
@@ -302,6 +318,25 @@ describe('RAAKA project files', () => {
     },
   )
 
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])(
+    'migrates recipe version %i files to no part copies',
+    (recipeVersion) => {
+      const legacy = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as {
+        recipeVersion: number
+        parameters: Record<string, unknown>
+      }
+      legacy.recipeVersion = recipeVersion
+      delete legacy.parameters.partCopies
+
+      const migrated = parseProject(JSON.stringify(legacy))
+
+      expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+      expect(migrated.parameters.partCopies).toEqual([])
+    },
+  )
+
   it('requires an override list in the current recipe version', () => {
     const current = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -332,6 +367,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "supportPositionOverrides" must be an array.',
+    )
+  })
+
+  it('requires a part-copy list in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.partCopies
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "partCopies" must be an array.',
     )
   })
 
@@ -515,6 +561,67 @@ describe('RAAKA project files', () => {
         parameters: {
           ...DEFAULT_PILOTI_PARAMETERS,
           upperMassProfile: 'wedge',
+        },
+      }),
+    ],
+    [
+      'unsupported part-copy source',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          partCopies: [
+            {
+              id: 'copy-1',
+              sourceId: 'shoulder-1',
+              offsetXMm: 0,
+              offsetYMm: 0,
+              offsetZMm: 0,
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'out-of-range part-copy offset',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          partCopies: [
+            {
+              id: 'copy-1',
+              sourceId: 'upper-mass',
+              offsetXMm: 2_001,
+              offsetYMm: 0,
+              offsetZMm: 0,
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'duplicated part-copy ID',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          partCopies: [
+            {
+              id: 'copy-1',
+              sourceId: 'upper-mass',
+              offsetXMm: 0,
+              offsetYMm: 0,
+              offsetZMm: 0,
+            },
+            {
+              id: 'copy-1',
+              sourceId: 'support-1',
+              offsetXMm: 100,
+              offsetYMm: 0,
+              offsetZMm: 0,
+            },
+          ],
         },
       }),
     ],

@@ -75,6 +75,14 @@ rows or changing row spacing extends it in Y. **Detached** restores independent
 upper X/Y sizing. Both modes leave every Z proportion unchanged, and selected
 leg overrides remain local rather than resizing the whole composition.
 
+Version 0.1.13 adds saved semantic part copies. The upper mass duplicates as
+one live-source mass; a support duplicates as its complete connected stem and
+shoulder pair. Each copy has independent X/Y/Z translation in design
+millimetres, participates in scale, recovery and undo/redo, and can be removed
+without changing its source. Copies remain separate preview solids until the
+planned solid-kernel Fuse operation; intersecting volume is therefore still
+counted more than once and is labelled explicitly in the interface.
+
 ## Run locally
 
 Requirements:
@@ -115,11 +123,11 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.12 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.13 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass
 and ground-contact readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
 including seeded variation, support rows, explicit foot offsets and authored
-upper-mass placement.
+upper-mass placement, plus any translated part copies.

@@ -19,10 +19,20 @@ data and security must be designed as a separate change.
 - ESLint with type-aware async rules
 - pnpm with a committed lockfile
 
-Manifold is the leading candidate for boolean geometry, cross-sections and
-watertight mesh output, but it is not yet a dependency. It must first pass a
-focused spike covering deterministic booleans, planar face preservation,
-cross-section agreement, memory cleanup and long-session behaviour.
+Manifold 3.5.3 is the accepted solid kernel for boolean geometry,
+cross-sections and watertight mesh output. Version 0.1.14 adds it as a pinned
+dependency after a focused gate covering deterministic booleans, planar face
+contact, section agreement, topology and repeated memory cleanup. Three.js
+remains a renderer only and is not an input to the kernel.
+
+`src/core/solidKernel.ts` initializes the WASM module once, converts semantic
+boxes and rectangular lofts directly, copies finished mesh data back into
+owned JavaScript arrays and explicitly deletes every Manifold and CrossSection
+object. Its current union boundary returns bounds, finished-solid volume,
+component count and a closed indexed mesh. Horizontal sections are simplified
+before their polygons leave the kernel. A disconnected union is valid kernel
+output with more than one component; the future Fuse UI must refuse it clearly
+instead of presenting separate islands as one joined part.
 
 ## Coordinate convention
 
@@ -221,7 +231,7 @@ Recipe parameters + stable seed
               |
               +--> physical scene pieces --> Three.js preview
               +--> physical analysis
-              +--> future solid kernel --> mesh / sections / drawings
+              +--> validated solid kernel --> mesh / sections / drawings
 ```
 
 React owns interaction state. The generator owns form truth. Three.js receives

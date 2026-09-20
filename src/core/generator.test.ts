@@ -106,7 +106,87 @@ describe('generatePiloti', () => {
       adjacentRowOverlapMm: 0,
     })
     expect(study.supportLayout?.shoulderDepthMm).toBeCloseTo(255, 10)
-    expect(study.supportLayout?.bearingOverhangMm).toBeCloseTo(32.5, 10)
+    expect(study.supportLayout?.bearingOverhangMm).toBeCloseTo(0, 10)
+  })
+
+  it('links the upper X/Y footprint to support columns, rows and spacing', () => {
+    const base = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 440,
+      asymmetry: 0,
+      upperFootprintMode: 'linked',
+      supportCount: 3,
+      supportRowCount: 1,
+      rowSpacingMm: 360,
+    })
+    const expanded = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 440,
+      asymmetry: 0,
+      upperFootprintMode: 'linked',
+      supportCount: 5,
+      supportRowCount: 3,
+      rowSpacingMm: 360,
+    })
+    const baseMass = base.pieces.find((piece) => piece.id === 'upper-mass')
+    const expandedMass = expanded.pieces.find(
+      (piece) => piece.id === 'upper-mass',
+    )
+    const baseStem = base.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'support-1',
+    )
+    const expandedStem = expanded.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'support-1',
+    )
+
+    expect(baseMass?.kind).toBe('box')
+    expect(expandedMass?.kind).toBe('box')
+    expect(baseStem).toBeDefined()
+    expect(expandedStem).toBeDefined()
+    if (
+      !baseMass ||
+      baseMass.kind !== 'box' ||
+      !expandedMass ||
+      expandedMass.kind !== 'box' ||
+      !baseStem ||
+      !expandedStem
+    ) {
+      return
+    }
+
+    expect(expandedMass.size[0]).toBeCloseTo(baseMass.size[0] * (5 / 3), 10)
+    expect(expandedMass.size[1]).toBeCloseTo(baseMass.size[1] + 720, 10)
+    expect(expandedMass.size[2]).toBe(baseMass.size[2])
+    expect(expandedMass.position[2]).toBe(baseMass.position[2])
+    expect(expandedStem.bottomSize).toEqual(baseStem.bottomSize)
+    expect(expandedStem.topSize).toEqual(baseStem.topSize)
+  })
+
+  it('keeps the upper X/Y footprint independent when detached', () => {
+    const base = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 440,
+      asymmetry: 0,
+      upperFootprintMode: 'detached',
+      supportCount: 3,
+      supportRowCount: 1,
+      rowSpacingMm: 360,
+    })
+    const expanded = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 440,
+      asymmetry: 0,
+      upperFootprintMode: 'detached',
+      supportCount: 5,
+      supportRowCount: 3,
+      rowSpacingMm: 720,
+    })
+    const baseMass = base.pieces.find((piece) => piece.id === 'upper-mass')
+    const expandedMass = expanded.pieces.find(
+      (piece) => piece.id === 'upper-mass',
+    )
+
+    expect(baseMass).toEqual(expandedMass)
   })
 
   it('keeps first-row identities and authored shapes when rows are added', () => {
@@ -168,6 +248,7 @@ describe('generatePiloti', () => {
       ...DEFAULT_PILOTI_PARAMETERS,
       seed: 319,
       supportCount: 1,
+      upperFootprintMode: 'detached',
       neckWidthRatio: 0.18,
       asymmetry: 0.5,
     })
@@ -801,6 +882,7 @@ describe('generatePiloti', () => {
       neckWidthRatio: 0.18,
       upperWidthRatio: 0.4,
       upperDepthRatio: 0.2,
+      upperFootprintMode: 'linked',
       upperOffsetXMm: -400,
       upperOffsetYMm: -400,
       upperMassProfile: 'tapered',
@@ -828,6 +910,7 @@ describe('generatePiloti', () => {
       neckWidthRatio: 0.7,
       upperWidthRatio: 1.1,
       upperDepthRatio: 0.65,
+      upperFootprintMode: 'detached',
       upperOffsetXMm: 400,
       upperOffsetYMm: 400,
       upperMassProfile: 'tapered',
@@ -1002,6 +1085,17 @@ describe('generatePiloti', () => {
       }),
     ).toThrow(
       'Piloti parameter "upperMassProfile" must be "block" or "tapered".',
+    )
+  })
+
+  it('rejects an unsupported upper-footprint relationship', () => {
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        upperFootprintMode: 'free' as 'linked',
+      }),
+    ).toThrow(
+      'Piloti parameter "upperFootprintMode" must be "linked" or "detached".',
     )
   })
 

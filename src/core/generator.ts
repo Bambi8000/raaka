@@ -11,6 +11,7 @@ import type {
 } from './types'
 
 const CONCRETE_DENSITY_KG_M3 = 2_400
+const LINKED_FOOTPRINT_REFERENCE_COLUMNS = 3
 export { MAX_SEED } from './pilotiParameters'
 
 export const RECIPES: readonly RecipeSummary[] = [
@@ -65,6 +66,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   neckWidthRatio: 0.34,
   upperWidthRatio: 0.72,
   upperDepthRatio: 0.34,
+  upperFootprintMode: 'linked',
   upperOffsetXMm: 0,
   upperOffsetYMm: 0,
   upperMassProfile: 'block',
@@ -107,9 +109,22 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   const shoulderHeight = supportHeight * parameters.shoulderRatio
   const stemHeight = supportHeight - shoulderHeight
   const upperHeight = height - supportHeight
-  const upperWidth = height * parameters.upperWidthRatio
-  const upperDepth = height * parameters.upperDepthRatio
-  const shoulderDepth = upperDepth * parameters.supportDepthRatio
+  const baseUpperWidth = height * parameters.upperWidthRatio
+  const baseUpperDepth = height * parameters.upperDepthRatio
+  const upperWidth =
+    parameters.upperFootprintMode === 'linked'
+      ? baseUpperWidth *
+        (parameters.supportCount / LINKED_FOOTPRINT_REFERENCE_COLUMNS)
+      : baseUpperWidth
+  const upperDepth =
+    parameters.upperFootprintMode === 'linked'
+      ? baseUpperDepth +
+        parameters.rowSpacingMm * (parameters.supportRowCount - 1)
+      : baseUpperDepth
+  const shoulderDepth =
+    (parameters.upperFootprintMode === 'linked'
+      ? baseUpperDepth
+      : upperDepth) * parameters.supportDepthRatio
   const bayWidth = upperWidth / parameters.supportCount
   const pieces: ScenePiece[] = []
   const footOffsetOverrides = new Map(

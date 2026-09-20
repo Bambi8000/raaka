@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.11, the
+This document describes the product direction. In version 0.1.12, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -123,6 +123,11 @@ a pair, as a row or as a grid.
   bearing face to an independently sized and X/Y-shifted top face. This is a
   planar rectangular loft, not a mesh deformation, and it must not move or
   resize the supports below.
+- The upper mass and support grid are **linked in X/Y by default**. Column count
+  extends the composition by complete support bays; row count and row spacing
+  extend its depth. Detaching the footprint restores independent upper X/Y
+  dimensions. Neither mode couples Z, and an individual support override stays
+  local instead of resizing the complete upper mass.
 - Row/column identity and keyed variation must remain stable when another row
   is added or a different leg is edited. Update bounds, contact footprints and
   later centre-of-mass/bearing feedback from the actual tilted geometry.
@@ -152,6 +157,9 @@ existing bearing feedback follows the actual mass position.
 Version 0.1.11 adds the tapered profile with authored top width, depth and X/Y
 drift. Existing projects migrate to the block profile and retain their exact
 geometry.
+Version 0.1.12 adds linked and detached upper-footprint modes. New studies link
+the upper X/Y footprint to the support grid; existing projects migrate to
+detached mode so their established geometry remains exact.
 
 ### Planned high-rise articulation module
 

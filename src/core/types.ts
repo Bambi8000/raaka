@@ -13,6 +13,7 @@ export type Size2 = readonly [width: number, depth: number]
 export type ModelScale = 1 | 0.5 | 0.25
 export type PilotiShoulderMode = 'divided' | 'shared'
 export type PilotiUpperMassProfile = 'block' | 'tapered'
+export type PilotiUpperFootprintMode = 'linked' | 'detached'
 
 export interface Bounds3 {
   readonly min: Vec3
@@ -74,6 +75,7 @@ export interface PilotiParameters {
   readonly neckWidthRatio: number
   readonly upperWidthRatio: number
   readonly upperDepthRatio: number
+  readonly upperFootprintMode: PilotiUpperFootprintMode
   readonly upperOffsetXMm: number
   readonly upperOffsetYMm: number
   readonly upperMassProfile: PilotiUpperMassProfile

@@ -167,6 +167,24 @@ rectangular-loft volume equation and Three.js frustum adapter therefore serve
 both supports and the tapered mass without a new geometry dependency. Uniform
 model scale transforms both faces and the top offset together.
 
+### Upper/support footprint relationship
+
+Version 0.1.12 adds a recipe-level `upperFootprintMode`. `linked` treats the
+support grid as the upper mass's X/Y module system. The authored base width is
+the three-column reference width, so the actual upper width is the base width
+multiplied by `supportCount / 3`; changing the column count therefore adds or
+removes complete bays without shrinking the remaining supports. The authored
+base depth describes one row, and each additional row extends the upper depth
+by one `rowSpacingMm`. Support depth continues to use the single-row base depth
+so it does not inflate as rows are added.
+
+`detached` retains the earlier calculation: upper width and depth depend only
+on their authored ratios, while the support grid may extend beyond them and
+produce bearing feedback. Both modes preserve support and upper Z dimensions,
+seed order, placement offsets and the tapered top relationship. Selected-leg
+size or placement overrides remain local and may still produce explicit
+overhang instead of silently resizing the full composition.
+
 ## Data flow
 
 ```text
@@ -189,11 +207,13 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 9 stores every
-generator parameter, authored upper-mass placement and profile, shoulder
-topology, shared X/Y foot offsets, the three selected-leg override arrays and
-one of the supported `modelScale` presets. Recipe versions 1–8 receive the
-block upper-mass profile and latent tapered defaults; versions 1–7 additionally
+version and a separate recipe version. Piloti recipe version 10 stores every
+generator parameter, authored upper-mass placement, footprint relationship and
+profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
+override arrays and one of the supported `modelScale` presets. Recipe versions
+1–8 receive the block upper-mass profile and latent tapered defaults; recipe
+versions 1–9 receive the detached footprint relationship to preserve their
+exact geometry; versions 1–7 additionally
 receive zero upper-mass offsets; versions 1–6 additionally receive divided
 shoulders; version 5
 additionally receives an empty support-position override list; version 4

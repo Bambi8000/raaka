@@ -23,6 +23,7 @@ describe('RAAKA project files', () => {
         rowSpacingMm: 480,
         supportDepthRatio: 0.46,
         shoulderMode: 'shared',
+        upperFootprintMode: 'detached',
         upperOffsetXMm: 240,
         upperOffsetYMm: -170,
         upperMassProfile: 'tapered',
@@ -282,6 +283,25 @@ describe('RAAKA project files', () => {
     },
   )
 
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9])(
+    'migrates recipe version %i files to a detached upper footprint',
+    (recipeVersion) => {
+      const legacy = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as {
+        recipeVersion: number
+        parameters: Record<string, unknown>
+      }
+      legacy.recipeVersion = recipeVersion
+      delete legacy.parameters.upperFootprintMode
+
+      const migrated = parseProject(JSON.stringify(legacy))
+
+      expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+      expect(migrated.parameters.upperFootprintMode).toBe('detached')
+    },
+  )
+
   it('requires an override list in the current recipe version', () => {
     const current = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -345,6 +365,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "upperMassProfile" must be "block" or "tapered".',
+    )
+  })
+
+  it('requires an upper-footprint relationship in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.upperFootprintMode
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "upperFootprintMode" must be "linked" or "detached".',
     )
   })
 

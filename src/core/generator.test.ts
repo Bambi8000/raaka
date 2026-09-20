@@ -100,6 +100,8 @@ describe('generatePiloti', () => {
       seed: 220,
       supportCount: 6,
       asymmetry: 0.5,
+      footOffsetXMm: 180,
+      footOffsetYMm: -120,
     })
 
     for (let index = 1; index <= 6; index += 1) {
@@ -132,6 +134,70 @@ describe('generatePiloti', () => {
     expect(study.bounds.min[2]).toBeCloseTo(0, 10)
   })
 
+  it('moves every foot without moving its neck or changing physical estimates', () => {
+    const baseParameters = {
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 220,
+      supportCount: 4,
+      asymmetry: 0.5,
+    }
+    const straight = generatePiloti(baseParameters)
+    const leaned = generatePiloti({
+      ...baseParameters,
+      footOffsetXMm: 120,
+      footOffsetYMm: -80,
+    })
+
+    for (let index = 1; index <= baseParameters.supportCount; index += 1) {
+      const straightStem = straight.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `support-${index}`,
+      )
+      const leanedStem = leaned.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `support-${index}`,
+      )
+
+      expect(straightStem).toBeDefined()
+      expect(leanedStem).toBeDefined()
+      if (!straightStem || !leanedStem) continue
+
+      expect(
+        leanedStem.position[0] + leanedStem.bottomOffset[0] -
+          (straightStem.position[0] + straightStem.bottomOffset[0]),
+      ).toBeCloseTo(120, 10)
+      expect(
+        leanedStem.position[1] + leanedStem.bottomOffset[1] -
+          (straightStem.position[1] + straightStem.bottomOffset[1]),
+      ).toBeCloseTo(-80, 10)
+      expect(leanedStem.position[0] + leanedStem.topOffset[0]).toBeCloseTo(
+        straightStem.position[0] + straightStem.topOffset[0],
+        10,
+      )
+      expect(leanedStem.position[1] + leanedStem.topOffset[1]).toBeCloseTo(
+        straightStem.position[1] + straightStem.topOffset[1],
+        10,
+      )
+    }
+
+    expect(leaned.concreteVolumeMm3).toBeCloseTo(
+      straight.concreteVolumeMm3,
+      10,
+    )
+    expect(leaned.estimatedMassKg).toBeCloseTo(straight.estimatedMassKg, 10)
+    expect(leaned.groundContactMm2).toBeCloseTo(
+      straight.groundContactMm2,
+      10,
+    )
+    for (const piece of leaned.pieces) {
+      const bounds = scenePieceBounds(piece)
+      for (let axis = 0; axis < 3; axis += 1) {
+        expect(bounds.min[axis]).toBeGreaterThanOrEqual(
+          leaned.bounds.min[axis],
+        )
+        expect(bounds.max[axis]).toBeLessThanOrEqual(leaned.bounds.max[axis])
+      }
+    }
+  })
+
   it('keeps geometry finite at both ends of every supported range', () => {
     expectFiniteStudy({
       seed: 0,
@@ -143,6 +209,8 @@ describe('generatePiloti', () => {
       upperWidthRatio: 0.4,
       upperDepthRatio: 0.2,
       asymmetry: 0,
+      footOffsetXMm: -300,
+      footOffsetYMm: -300,
     })
     expectFiniteStudy({
       seed: MAX_SEED,
@@ -154,6 +222,8 @@ describe('generatePiloti', () => {
       upperWidthRatio: 1.1,
       upperDepthRatio: 0.65,
       asymmetry: 0.5,
+      footOffsetXMm: 300,
+      footOffsetYMm: 300,
     })
   })
 

@@ -50,6 +50,8 @@ export interface PilotiParameters {
   readonly upperWidthRatio: number
   readonly upperDepthRatio: number
   readonly asymmetry: number
+  readonly footOffsetXMm: number
+  readonly footOffsetYMm: number
 }
 
 export interface MassStudy {

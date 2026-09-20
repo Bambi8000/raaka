@@ -540,6 +540,51 @@ input[type="range"] {
   cursor: ew-resize;
 }
 
+.control-subsection {
+  display: grid;
+  gap: 4px;
+  margin: 2px -15px 0;
+  padding: 11px 15px 0 20px;
+  border-top: 1px solid var(--ink);
+  box-shadow: inset 5px 0 0 var(--yellow);
+}
+
+.control-subsection span,
+.lean-readout > span {
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+}
+
+.control-subsection small,
+.lean-readout small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.lean-readout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 12px;
+  padding: 9px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.lean-readout strong {
+  grid-row: span 3;
+  align-self: center;
+  color: var(--blue);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 25px;
+  letter-spacing: -0.06em;
+}
+
+.lean-readout small {
+  grid-column: 1;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

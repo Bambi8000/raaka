@@ -51,17 +51,24 @@ dimension labels describe the physical model. Machine stock and kerf remain
 unscaled settings in Kerros. Regression fixtures must cover `s`, `s²`, `s³`,
 ground-plane preservation and repeated switching back to 1:1.
 
-### Planned support grid and lean
+### Support lean and planned support grid
 
 Use a shared leg template and stable row/column identities to compose the
 support grid. Resolve global layout and selected-leg overrides before applying
 model scale. Adding rows changes placement without rerolling existing legs.
 
-Define foot offset as the bottom-centre displacement from the neck in the XY
-plane. The bottom stays at Z = 0 and the stem/shoulder interface stays
-coincident. Row placement translates the entire leg; lean changes its endpoint
-relationship. Keep these operations distinct, and include the effective
-endpoint positions in bounds, contact and overlap checks.
+Version 0.1.3 stores shared foot offset as the bottom-centre displacement from
+the neck in the XY plane, in design millimetres. The generator applies that
+same authored offset to every stem. The bottom stays at Z = 0 and the
+stem/shoulder interface stays coincident; the UI derives an angle for display
+without making that angle project truth. Seeded asymmetry remains an additive
+per-leg endpoint variation. Complete bounds include both loft endpoints, while
+volume and contact area remain unchanged by shear.
+
+The support grid and selected-leg overrides are still planned. Row placement
+must translate the entire leg, while lean changes its endpoint relationship.
+Keep these operations distinct, and include effective endpoints in bounds,
+contact and overlap checks.
 
 ## Data flow
 
@@ -84,11 +91,12 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Version 1 stores the Piloti recipe,
-every generator parameter and `modelScale: 1`. A missing model scale is read as
-1 for compatibility; any unsupported format, recipe, scale or parameter is
-rejected before current state is replaced. The same canonical serializer feeds
-file downloads, dirty-state comparison and local recovery.
+version and a separate recipe version. Piloti recipe version 2 stores every
+generator parameter, including shared X/Y foot offsets, and `modelScale: 1`.
+Recipe version 1 is migrated with both offsets set to zero. A missing model
+scale is read as 1 for compatibility; any unsupported format, recipe, scale or
+parameter is rejected before current state is replaced. The same canonical
+serializer feeds file downloads, dirty-state comparison and local recovery.
 
 The browser keeps a recovery copy under `raaka.recovery.v1` after every edit,
 undo and redo. Recovery is not a substitute for a project file: it belongs to

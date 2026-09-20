@@ -18,6 +18,8 @@ export const PILOTI_PARAMETER_RULES = {
   upperWidthRatio: { minimum: 0.4, maximum: 1.1 },
   upperDepthRatio: { minimum: 0.2, maximum: 0.65 },
   asymmetry: { minimum: 0, maximum: 0.5 },
+  footOffsetXMm: { minimum: -300, maximum: 300 },
+  footOffsetYMm: { minimum: -300, maximum: 300 },
 } satisfies Readonly<Record<keyof PilotiParameters, ParameterRule>>
 
 function normalizeValue(
@@ -53,6 +55,8 @@ export function normalizePilotiParameters(
     upperWidthRatio: normalizeValue(input.upperWidthRatio, 'upperWidthRatio'),
     upperDepthRatio: normalizeValue(input.upperDepthRatio, 'upperDepthRatio'),
     asymmetry: normalizeValue(input.asymmetry, 'asymmetry'),
+    footOffsetXMm: normalizeValue(input.footOffsetXMm, 'footOffsetXMm'),
+    footOffsetYMm: normalizeValue(input.footOffsetYMm, 'footOffsetYMm'),
   }
 }
 
@@ -83,11 +87,14 @@ export class ProjectValidationError extends Error {
   }
 }
 
-export function parsePilotiParameters(input: unknown): PilotiParameters {
+export function parsePilotiParameters(
+  input: unknown,
+  missingDefaults: Partial<PilotiParameters> = {},
+): PilotiParameters {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     throw new ProjectValidationError('Project parameters must be an object.')
   }
-  const record = input as Record<string, unknown>
+  const record = { ...missingDefaults, ...(input as Record<string, unknown>) }
   return {
     seed: readParameter(record, 'seed'),
     heightMm: readParameter(record, 'heightMm'),
@@ -98,5 +105,7 @@ export function parsePilotiParameters(input: unknown): PilotiParameters {
     upperWidthRatio: readParameter(record, 'upperWidthRatio'),
     upperDepthRatio: readParameter(record, 'upperDepthRatio'),
     asymmetry: readParameter(record, 'asymmetry'),
+    footOffsetXMm: readParameter(record, 'footOffsetXMm'),
+    footOffsetYMm: readParameter(record, 'footOffsetYMm'),
   }
 }

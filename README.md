@@ -15,6 +15,12 @@ Version 0.1.2 adds validated project files, automatic local recovery and a
 file and **Open** to restore it. One slider drag is one undo step; direct seed
 entry, reset and seed changes participate in the same history.
 
+Version 0.1.3 adds shared X/Y foot offsets to Piloti. The offsets move every
+support footprint in design millimetres while keeping each neck fixed and each
+bottom face horizontal on the ground. The inspector also reports the resulting
+authored lean angle and foot direction; seeded asymmetry remains a separate
+per-leg variation.
+
 ## Run locally
 
 Requirements:
@@ -55,10 +61,10 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.2 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.3 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass
 and ground-contact readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
-including asymmetric loft offsets.
+including seeded variation and explicit foot offsets.

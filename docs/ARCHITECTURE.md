@@ -338,6 +338,22 @@ supported scale and height.
 
 Roles are semantic model data. Colours are a UI projection of those roles.
 
+## Interface themes
+
+Version 0.1.16 defaults to a charcoal dark interface and provides an explicit
+top-bar switch to the original light interface. Both palettes preserve the
+same semantic accent roles: yellow is current selection, blue is constructive
+secondary geometry and magenta is destructive or void geometry. The Three.js
+viewport changes its background, ground, grid, neutral materials and ambient
+lighting with the interface while retaining the current camera and model.
+
+The preference is stored locally under `raaka.ui-theme.v1`. It is deliberately
+outside the portable project format, recovery payload and undo/redo history:
+changing viewing comfort must not make a geometry study dirty. Missing,
+invalid or unavailable storage resolves safely to dark. CSS variables own the
+application chrome palettes; Three.js consumes an equivalent typed palette and
+does not change model roles or geometry.
+
 ## File boundaries
 
 The first transfer to Kerros may use STL because Kerros already imports it.

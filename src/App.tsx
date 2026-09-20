@@ -36,6 +36,7 @@ import {
 } from './core/project'
 import { fuseScenePieces } from './core/solidKernel'
 import { resolveStudyFuses } from './core/studyFuses'
+import { readUiTheme, writeUiTheme } from './core/uiTheme'
 import type {
   MassStudy,
   ModelScale,
@@ -299,6 +300,9 @@ export default function App() {
   const [notice, setNotice] = useState<Notice | undefined>(
     initialSession.notice,
   )
+  const [uiTheme, setUiTheme] = useState(() =>
+    readUiTheme(window.localStorage),
+  )
   const [fuseSelectionPieceIds, setFuseSelectionPieceIds] = useState<
     readonly string[]
   >([])
@@ -316,6 +320,10 @@ export default function App() {
     [modelScale, parameters],
   )
   const projectJson = useMemo(() => serializeProject(project), [project])
+  useEffect(() => {
+    document.documentElement.dataset.theme = uiTheme
+    writeUiTheme(window.localStorage, uiTheme)
+  }, [uiTheme])
   const unfusedMasterStudy = useMemo(
     () => generatePiloti(parameters),
     [parameters],
@@ -901,7 +909,7 @@ export default function App() {
   const endGesture = () => dispatch({ type: 'commit-gesture' })
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" data-theme={uiTheme}>
       <header className="topbar">
         <div className="brand-block">
           <span className="brand-mark" aria-hidden="true" />
@@ -913,6 +921,17 @@ export default function App() {
           <strong>PILOTI / {String(parameters.seed).padStart(4, '0')}</strong>
         </div>
         <div className="topbar-actions">
+          <button
+            type="button"
+            className="button button--theme"
+            aria-label={`Switch to ${uiTheme === 'dark' ? 'light' : 'dark'} mode`}
+            aria-pressed={uiTheme === 'dark'}
+            onClick={() =>
+              setUiTheme((theme) => (theme === 'dark' ? 'light' : 'dark'))
+            }
+          >
+            {uiTheme === 'dark' ? 'LIGHT MODE' : 'DARK MODE'}
+          </button>
           <button
             type="button"
             className="button button--quiet"
@@ -1052,6 +1071,7 @@ export default function App() {
         <Viewport
           study={study}
           modelScale={modelScale}
+          uiTheme={uiTheme}
           selectedPieceId={selectedPieceId}
           fuseSelectionPieceIds={validFuseSelectionPieceIds}
           onSelect={selectPiece}
@@ -1960,7 +1980,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.15 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.16 / LOCAL</span>
       </footer>
     </main>
   )

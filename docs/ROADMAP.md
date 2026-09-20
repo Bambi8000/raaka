@@ -361,13 +361,43 @@ constrained massing workflow rather than accumulating general modelling tools.
 - cast direction and advisory undercut analysis
 - open void, removable core and retained core workflows
 - Kerros mould partitioning and sheet output
+- miniature-model moulds as printable STL part sets
 - layered foam core and hot-wire profile studies
 - mould assembly drawings routed to Muusia
 - 3MF or a versioned manufacturing bundle after the initial STL round trip
 
+### Miniature-model STL moulds
+
+This is a secondary prototyping route alongside laser-cut sheet moulds. RAAKA
+hands Kerros the finished solid at the selected physical model scale together
+with void, core and cast-direction intent. Kerros owns the negative cavity,
+parting and printable mould geometry. A mould STL is not the same output as the
+positive sculpture STL.
+
+- [ ] derive the cavity from the actual model-scaled finished solid, never from
+  camera scale or the unscaled design master
+- [ ] add explicit casting clearance and minimum printable wall thickness
+- [ ] split the negative into removable mould parts using a chosen cast and
+  release direction; report trapped geometry and unresolved undercuts
+- [ ] generate keyed registration, stable closures, a pour opening and air vents
+  as mould features rather than sculpture features
+- [ ] label every mould part and provide an assembly/exploded preview before
+  export
+- [ ] export each part as a watertight millimetre STL with consistent winding,
+  normals and documented print orientation
+- [ ] verify cavity dimensions, part fit and a complete cast-release cycle with
+  a printed miniature test before treating the workflow as production-ready
+- [ ] keep retained lightweight cores, removable cores and open visible voids
+  distinct when deriving the mould cavity
+
+Done when one saved 1:2 or 1:4 RAAKA study round-trips through Kerros into a
+printable, labelled STL mould set, produces a dimensionally measured cast and
+can be demoulded without destroying geometry that was marked reusable.
+
 Laser-cut sheet moulds remain the primary manufacturing direction. Layered
-foam and hot-wire profiles are later studies. Retained cores stay distinct
-from visible voids and removable cores throughout the handoff.
+foam, hot-wire profiles and printed miniature moulds are additional studies.
+Retained cores stay distinct from visible voids and removable cores throughout
+the handoff.
 
 Mould design remains in Kerros. RAAKA must preserve enough intent that Kerros
 does not have to infer everything back from an anonymous triangle mesh.

@@ -12,7 +12,7 @@ data and security must be designed as a separate change.
 
 ## Stack
 
-- TypeScript in strict mode
+- TypeScript 6 in strict mode (enabled by the compiler's default)
 - React and Vite for the application shell
 - Three.js for interactive rendering only
 - Vitest for unit tests
@@ -61,6 +61,13 @@ The volume equation integrates the product of linearly changing width and
 depth. Pieces only meet at boundaries in the current recipe, so their volumes
 can be summed without overlap correction. Future booleans must derive volume
 from the finished solid instead.
+
+Current pieces are separate closed preview meshes; shared contact faces have
+not been removed by a boolean union. They are not yet an export-ready single
+solid. The reported envelope also currently uses the upper mass dimensions,
+not all piece bounds. See findings A01 and A02 in the
+[baseline review](AUDIT-2026-09-20.md) before relying on the envelope or
+viewport shadows.
 
 ## Selection colours
 

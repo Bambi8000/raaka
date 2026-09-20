@@ -6,6 +6,12 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
+This document describes the product direction. In version 0.1.0, only the
+interactive Piloti study, selection and basic physical estimates are
+implemented. Saved projects, outputs, cores and the remaining recipe families
+are planned. See [Roadmap](ROADMAP.md) and the
+[baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
+
 The constraint is the identity: RAAKA is not a general-purpose modeller. Its
 primary geometry is made from planes, prisms, wedges, facets and explicit
 boolean relationships. This produces a coherent visual language and makes the

@@ -65,10 +65,18 @@ without making that angle project truth. Seeded asymmetry remains an additive
 per-leg endpoint variation. Complete bounds include both loft endpoints, while
 volume and contact area remain unchanged by shear.
 
-The support grid and selected-leg overrides are still planned. Row placement
-must translate the entire leg, while lean changes its endpoint relationship.
-Keep these operations distinct, and include effective endpoints in bounds,
-contact and overlap checks.
+Version 0.1.4 stores selected-leg overrides as a deterministic array keyed by
+the current semantic support ID. An override contains absolute design-mm X/Y
+values and replaces, rather than adds to, the shared offset. Both a stem and
+its shoulder resolve to the same support ID in the inspector. Reducing support
+count does not delete hidden overrides, so restoring the count restores the
+authored leg. The generator validates IDs and rejects duplicates before making
+an ID-to-override lookup.
+
+The support grid is still planned. Row placement must translate the entire
+leg, while lean changes its endpoint relationship. Keep these operations
+distinct, and include effective endpoints in bounds, contact and overlap
+checks. A future grid migration must preserve existing first-row identities.
 
 ## Data flow
 
@@ -91,9 +99,10 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 2 stores every
-generator parameter, including shared X/Y foot offsets, and `modelScale: 1`.
-Recipe version 1 is migrated with both offsets set to zero. A missing model
+version and a separate recipe version. Piloti recipe version 3 stores every
+generator parameter, shared X/Y foot offsets, selected-leg overrides and
+`modelScale: 1`. Recipe version 2 is migrated with an empty override list;
+recipe version 1 additionally receives zero shared offsets. A missing model
 scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.
@@ -107,7 +116,8 @@ current study and reports the reason.
 Undo/redo stores immutable Piloti parameter snapshots, capped at 100 committed
 steps. Live slider values update the model and recovery copy continuously, but
 the pointer or keyboard gesture commits only its starting snapshot. Renderer
-and selection state are intentionally outside project history.
+selection and active scope are intentionally outside project history; creating,
+editing or removing an override changes parameters and is therefore undoable.
 
 ## Current vertical slice
 

@@ -1,4 +1,7 @@
-import type { PilotiParameters } from './types'
+import type {
+  PilotiFootOffsetOverride,
+  PilotiParameters,
+} from './types'
 
 export const MAX_SEED = 0xffff_ffff
 
@@ -7,6 +10,11 @@ interface ParameterRule {
   readonly maximum: number
   readonly integer?: boolean
 }
+
+type NumericPilotiParameter = Exclude<
+  keyof PilotiParameters,
+  'footOffsetOverrides'
+>
 
 export const PILOTI_PARAMETER_RULES = {
   seed: { minimum: 0, maximum: MAX_SEED, integer: true },
@@ -20,11 +28,11 @@ export const PILOTI_PARAMETER_RULES = {
   asymmetry: { minimum: 0, maximum: 0.5 },
   footOffsetXMm: { minimum: -300, maximum: 300 },
   footOffsetYMm: { minimum: -300, maximum: 300 },
-} satisfies Readonly<Record<keyof PilotiParameters, ParameterRule>>
+} satisfies Readonly<Record<NumericPilotiParameter, ParameterRule>>
 
 function normalizeValue(
   value: number,
-  name: keyof PilotiParameters,
+  name: NumericPilotiParameter,
 ): number {
   const rule = PILOTI_PARAMETER_RULES[name]
   if (!Number.isFinite(value)) {
@@ -37,6 +45,49 @@ function normalizeValue(
   return 'integer' in rule && rule.integer
     ? Math.round(constrained)
     : constrained
+}
+
+export function isPilotiSupportId(value: string): boolean {
+  const match = /^support-(\d+)$/.exec(value)
+  if (!match) return false
+  const index = Number(match[1])
+  return (
+    Number.isInteger(index) &&
+    index >= 1 &&
+    index <= PILOTI_PARAMETER_RULES.supportCount.maximum &&
+    value === `support-${index}`
+  )
+}
+
+function normalizeFootOffsetOverrides(
+  input: readonly PilotiFootOffsetOverride[],
+): readonly PilotiFootOffsetOverride[] {
+  if (!Array.isArray(input)) {
+    throw new RangeError('Piloti foot offset overrides must be an array.')
+  }
+
+  const overrides: readonly PilotiFootOffsetOverride[] = input
+  const supportIds = new Set<string>()
+  return overrides.map((override) => {
+    if (
+      typeof override !== 'object' ||
+      override === null ||
+      !isPilotiSupportId(override.supportId)
+    ) {
+      throw new RangeError('Piloti foot offset override has an invalid support ID.')
+    }
+    if (supportIds.has(override.supportId)) {
+      throw new RangeError(
+        `Piloti foot offset override for "${override.supportId}" is duplicated.`,
+      )
+    }
+    supportIds.add(override.supportId)
+    return {
+      supportId: override.supportId,
+      footOffsetXMm: normalizeValue(override.footOffsetXMm, 'footOffsetXMm'),
+      footOffsetYMm: normalizeValue(override.footOffsetYMm, 'footOffsetYMm'),
+    }
+  })
 }
 
 export function normalizePilotiParameters(
@@ -57,12 +108,15 @@ export function normalizePilotiParameters(
     asymmetry: normalizeValue(input.asymmetry, 'asymmetry'),
     footOffsetXMm: normalizeValue(input.footOffsetXMm, 'footOffsetXMm'),
     footOffsetYMm: normalizeValue(input.footOffsetYMm, 'footOffsetYMm'),
+    footOffsetOverrides: normalizeFootOffsetOverrides(
+      input.footOffsetOverrides,
+    ),
   }
 }
 
 function readParameter(
   input: Record<string, unknown>,
-  name: keyof PilotiParameters,
+  name: NumericPilotiParameter,
 ): number {
   const value = input[name]
   const rule = PILOTI_PARAMETER_RULES[name]
@@ -78,6 +132,50 @@ function readParameter(
     throw new ProjectValidationError(`Parameter "${name}" must be an integer.`)
   }
   return value
+}
+
+function readFootOffsetOverrides(
+  input: Record<string, unknown>,
+): readonly PilotiFootOffsetOverride[] {
+  const value = input.footOffsetOverrides
+  if (!Array.isArray(value)) {
+    throw new ProjectValidationError(
+      'Parameter "footOffsetOverrides" must be an array.',
+    )
+  }
+
+  const supportIds = new Set<string>()
+  return value.map((candidate) => {
+    if (
+      typeof candidate !== 'object' ||
+      candidate === null ||
+      Array.isArray(candidate)
+    ) {
+      throw new ProjectValidationError(
+        'Every foot offset override must be an object.',
+      )
+    }
+    const override = candidate as Record<string, unknown>
+    if (
+      typeof override.supportId !== 'string' ||
+      !isPilotiSupportId(override.supportId)
+    ) {
+      throw new ProjectValidationError(
+        'Every foot offset override must name a supported support ID.',
+      )
+    }
+    if (supportIds.has(override.supportId)) {
+      throw new ProjectValidationError(
+        `Foot offset override for "${override.supportId}" is duplicated.`,
+      )
+    }
+    supportIds.add(override.supportId)
+    return {
+      supportId: override.supportId,
+      footOffsetXMm: readParameter(override, 'footOffsetXMm'),
+      footOffsetYMm: readParameter(override, 'footOffsetYMm'),
+    }
+  })
 }
 
 export class ProjectValidationError extends Error {
@@ -107,5 +205,6 @@ export function parsePilotiParameters(
     asymmetry: readParameter(record, 'asymmetry'),
     footOffsetXMm: readParameter(record, 'footOffsetXMm'),
     footOffsetYMm: readParameter(record, 'footOffsetYMm'),
+    footOffsetOverrides: readFootOffsetOverrides(record),
   }
 }

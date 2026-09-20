@@ -6,7 +6,7 @@ import type { PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 2
+export const PILOTI_RECIPE_VERSION = 3
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -42,7 +42,12 @@ export function createProject(parameters: PilotiParameters): RaakaProject {
     recipe: 'piloti',
     recipeVersion: PILOTI_RECIPE_VERSION,
     modelScale: 1,
-    parameters: { ...parameters },
+    parameters: {
+      ...parameters,
+      footOffsetOverrides: parameters.footOffsetOverrides.map((override) => ({
+        ...override,
+      })),
+    },
   }
 }
 
@@ -75,6 +80,7 @@ export function parseProject(serialized: string): RaakaProject {
   }
   if (
     input.recipeVersion !== 1 &&
+    input.recipeVersion !== 2 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -90,8 +96,14 @@ export function parseProject(serialized: string): RaakaProject {
 
   const missingDefaults =
     input.recipeVersion === 1
-      ? { footOffsetXMm: 0, footOffsetYMm: 0 }
-      : undefined
+      ? {
+          footOffsetXMm: 0,
+          footOffsetYMm: 0,
+          footOffsetOverrides: [],
+        }
+      : input.recipeVersion === 2
+        ? { footOffsetOverrides: [] }
+        : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
   )

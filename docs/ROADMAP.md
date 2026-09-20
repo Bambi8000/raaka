@@ -10,7 +10,8 @@ Confirmed additions from the owner on 2026-09-20: physical scale models at
 1:2 and 1:4, repeated support rows in depth, and explicit X/Y foot offsets for
 leaning legs. These are specified in [Product definition](PRODUCT.md) and
 [Architecture](ARCHITECTURE.md). Shared foot offsets are implemented in 0.1.3;
-model scaling, support rows and selected-leg overrides remain planned.
+selected-leg overrides are implemented in 0.1.4; model scaling and support rows
+remain planned.
 
 ## 0.1 — foundation
 
@@ -27,7 +28,7 @@ The baseline is a working study prototype. Manufacturing export, cores and five
 of the six recipe families are not yet implemented. Version 0.1.1 closes the
 measured geometry and viewport defects; version 0.1.2 begins durable study
 work with project files, recovery and history; version 0.1.3 adds authored
-shared leg lean.
+shared leg lean; version 0.1.4 adds per-leg overrides.
 
 ## 0.1.1 — correct the baseline
 
@@ -88,7 +89,22 @@ Done when positive and negative offsets remain finite at supported limits,
 every stem stays grounded and joined, older projects open unchanged, and the
 same authored offset visibly affects every current leg.
 
-## 0.1.4 — physical scale models for testing
+## 0.1.4 — selected Piloti leg overrides
+
+- [x] explicit Shared and Selected lean scopes in the inspector
+- [x] resolve a selected stem or shoulder to the same named support
+- [x] create an absolute selected-leg override from the current shared values
+- [x] remove an override with Use shared without changing other legs
+- [x] retain temporarily hidden overrides when support count is reduced
+- [x] reject invalid IDs, duplicate entries and invalid values before generation
+- [x] persist overrides in Piloti recipe version 3 and migrate versions 1 and 2
+- [x] include override creation, editing and removal in recovery and undo/redo
+
+Done when one selected leg can diverge from the shared X/Y offsets, the scope is
+always visible, another leg remains unchanged, and save/open plus history retain
+the distinction.
+
+## 0.1.5 — physical scale models for testing
 
 - [ ] preserve full-size master parameters and add a separate uniform Model scale
 - [ ] presets 1:1, 1:2 and 1:4, plus a validated custom scale or target height
@@ -118,7 +134,7 @@ milestones land; this stage does not imply that export already exists.
 - [ ] shared and divided shoulders
 - [x] shared Foot offset X/Y for deterministic leg lean, with ground faces at Z = 0
   and matching stem/shoulder interfaces
-- [ ] explicit selected-leg offsets with visible shared/selected scope
+- [x] explicit selected-leg offsets with visible shared/selected scope
 - [ ] support placement offsets and asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
@@ -195,7 +211,7 @@ geometry fixtures; an enabled menu card is not a completed recipe.
 | Faceted prism and taper | Planned | Silo tank and hopper |
 | Place, align, repeat, mirror, group | Placement and one row are recipe-specific | Shared support layouts |
 | Union, subtract, plane-cut, chamfer | Planned; requires solid-kernel evidence | Finished solids and voids |
-| Step, stagger, lean and vary | Shared Piloti foot lean and seeded variation implemented | Selected-leg overrides and Ziggurat |
+| Step, stagger, lean and vary | Shared and selected Piloti foot lean plus seeded variation implemented | Support grids and Ziggurat |
 | Lock and branch | Planned; requires persistence and stable identity | Repeatable variants |
 
 Build these only as needed by a concrete recipe or output. Preserve a

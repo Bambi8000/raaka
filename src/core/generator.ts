@@ -64,6 +64,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   asymmetry: 0.12,
   footOffsetXMm: 0,
   footOffsetYMm: 0,
+  footOffsetOverrides: [],
 }
 
 function boxVolume(piece: BoxPiece): number {
@@ -97,12 +98,20 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   const upperDepth = height * parameters.upperDepthRatio
   const bayWidth = upperWidth / parameters.supportCount
   const pieces: ScenePiece[] = []
+  const footOffsetOverrides = new Map(
+    parameters.footOffsetOverrides.map((override) => [
+      override.supportId,
+      override,
+    ]),
+  )
   const supportShift =
     randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.45
   const massShift =
     randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.65
 
   for (let index = 0; index < parameters.supportCount; index += 1) {
+    const supportId = `support-${index + 1}`
+    const footOffsetOverride = footOffsetOverrides.get(supportId)
     const bayCentre =
       -upperWidth / 2 + bayWidth * (index + 0.5) + supportShift
     const individualShift =
@@ -114,14 +123,17 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
 
     pieces.push({
       kind: 'frustum',
-      id: `support-${index + 1}`,
+      id: supportId,
       label: `Support ${index + 1}`,
       role: 'support',
       position: [bayCentre + individualShift, 0, stemHeight / 2],
       height: stemHeight,
       bottomSize: [footWidth, footDepth],
       topSize: [neckWidth, neckDepth],
-      bottomOffset: [parameters.footOffsetXMm, parameters.footOffsetYMm],
+      bottomOffset: [
+        footOffsetOverride?.footOffsetXMm ?? parameters.footOffsetXMm,
+        footOffsetOverride?.footOffsetYMm ?? parameters.footOffsetYMm,
+      ],
       topOffset: [-individualShift * 0.2, 0],
     })
 

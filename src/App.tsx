@@ -46,6 +46,7 @@ interface Notice {
 }
 
 type ProjectOrigin = 'DEFAULT' | 'RECOVERED' | 'SAVED'
+type FootOffsetScope = 'shared' | 'selected'
 
 interface InitialSession {
   readonly parameters: PilotiParameters
@@ -165,6 +166,11 @@ function selectionExists(
   )
 }
 
+function supportIdForPiece(pieceId: string): string | undefined {
+  const match = /^(?:support|shoulder)-(\d+)$/.exec(pieceId)
+  return match ? `support-${match[1]}` : undefined
+}
+
 export default function App() {
   const [initialSession] = useState(loadInitialSession)
   const [history, dispatch] = useReducer(
@@ -173,6 +179,8 @@ export default function App() {
     createHistory,
   )
   const [selectedPieceId, setSelectedPieceId] = useState('upper-mass')
+  const [footOffsetScope, setFootOffsetScope] =
+    useState<FootOffsetScope>('shared')
   const [baselineJson, setBaselineJson] = useState(initialSession.baseline)
   const [projectOrigin, setProjectOrigin] = useState<ProjectOrigin>(
     initialSession.origin,
@@ -185,21 +193,36 @@ export default function App() {
   const project = useMemo(() => createProject(parameters), [parameters])
   const projectJson = useMemo(() => serializeProject(project), [project])
   const study = useMemo(() => generatePiloti(parameters), [parameters])
+  const selectedSupportId = supportIdForPiece(selectedPieceId)
+  const selectedFootOffsetOverride = parameters.footOffsetOverrides.find(
+    (override) => override.supportId === selectedSupportId,
+  )
+  const activeFootOffsetScope =
+    footOffsetScope === 'selected' && selectedSupportId !== undefined
+      ? 'selected'
+      : 'shared'
+  const activeFootOffsetX =
+    activeFootOffsetScope === 'selected'
+      ? (selectedFootOffsetOverride?.footOffsetXMm ?? parameters.footOffsetXMm)
+      : parameters.footOffsetXMm
+  const activeFootOffsetY =
+    activeFootOffsetScope === 'selected'
+      ? (selectedFootOffsetOverride?.footOffsetYMm ?? parameters.footOffsetYMm)
+      : parameters.footOffsetYMm
   const stemHeightMm =
     parameters.heightMm *
     parameters.supportHeightRatio *
     (1 - parameters.shoulderRatio)
   const footOffsetMm = Math.hypot(
-    parameters.footOffsetXMm,
-    parameters.footOffsetYMm,
+    activeFootOffsetX,
+    activeFootOffsetY,
   )
   const authoredLeanAngleDeg =
     (Math.atan2(footOffsetMm, stemHeightMm) * 180) / Math.PI
   const footDirectionDeg =
     footOffsetMm === 0
       ? undefined
-      : ((Math.atan2(parameters.footOffsetYMm, parameters.footOffsetXMm) *
-          180) /
+      : ((Math.atan2(activeFootOffsetY, activeFootOffsetX) * 180) /
           Math.PI +
           360) %
         360
@@ -223,6 +246,14 @@ export default function App() {
   const reconcileSelection = (nextParameters: PilotiParameters) => {
     if (!selectionExists(selectedPieceId, nextParameters)) {
       setSelectedPieceId('upper-mass')
+      setFootOffsetScope('shared')
+    }
+  }
+
+  const selectPiece = (pieceId: string) => {
+    setSelectedPieceId(pieceId)
+    if (supportIdForPiece(pieceId) === undefined) {
+      setFootOffsetScope('shared')
     }
   }
 
@@ -260,6 +291,7 @@ export default function App() {
 
   const reset = () => {
     setSelectedPieceId('upper-mass')
+    setFootOffsetScope('shared')
     replaceParameters(DEFAULT_PILOTI_PARAMETERS)
     setNotice({ kind: 'info', text: 'Defaults restored. Undo is available.' })
   }
@@ -284,6 +316,7 @@ export default function App() {
       dispatch({ type: 'load', value: openedProject.parameters })
       persistRecovery(openedProject.parameters)
       setSelectedPieceId('upper-mass')
+      setFootOffsetScope('shared')
       setBaselineJson(openedJson)
       setProjectOrigin('SAVED')
       setNotice({ kind: 'info', text: `Opened ${file.name}.` })
@@ -314,6 +347,53 @@ export default function App() {
       return
     }
     update('seed', seed)
+  }
+
+  const replaceFootOffsetOverride = (
+    supportId: string,
+    footOffsetXMm?: number,
+    footOffsetYMm?: number,
+  ) => {
+    const retained = parameters.footOffsetOverrides.filter(
+      (override) => override.supportId !== supportId,
+    )
+    const nextOverrides =
+      footOffsetXMm === undefined || footOffsetYMm === undefined
+        ? retained
+        : [
+            ...retained,
+            { supportId, footOffsetXMm, footOffsetYMm },
+          ].sort(
+            (left, right) =>
+              Number(left.supportId.slice('support-'.length)) -
+              Number(right.supportId.slice('support-'.length)),
+          )
+    update('footOffsetOverrides', nextOverrides)
+  }
+
+  const createSelectedFootOffsetOverride = () => {
+    if (selectedSupportId === undefined || selectedFootOffsetOverride) return
+    replaceFootOffsetOverride(
+      selectedSupportId,
+      parameters.footOffsetXMm,
+      parameters.footOffsetYMm,
+    )
+  }
+
+  const updateSelectedFootOffset = (
+    axis: 'footOffsetXMm' | 'footOffsetYMm',
+    value: number,
+  ) => {
+    if (selectedSupportId === undefined || !selectedFootOffsetOverride) return
+    replaceFootOffsetOverride(
+      selectedSupportId,
+      axis === 'footOffsetXMm'
+        ? value
+        : selectedFootOffsetOverride.footOffsetXMm,
+      axis === 'footOffsetYMm'
+        ? value
+        : selectedFootOffsetOverride.footOffsetYMm,
+    )
   }
 
   const beginGesture = () => dispatch({ type: 'begin-gesture' })
@@ -448,7 +528,7 @@ export default function App() {
                 type="button"
                 key={piece.id}
                 className={piece.id === selectedPieceId ? 'is-selected' : ''}
-                onClick={() => setSelectedPieceId(piece.id)}
+                onClick={() => selectPiece(piece.id)}
                 aria-pressed={piece.id === selectedPieceId}
               >
                 <span className={`role-dot role-dot--${piece.role}`} />
@@ -464,7 +544,7 @@ export default function App() {
         <Viewport
           study={study}
           selectedPieceId={selectedPieceId}
-          onSelect={setSelectedPieceId}
+          onSelect={selectPiece}
         />
       </section>
 
@@ -546,33 +626,108 @@ export default function App() {
             onChange={(value) => update('asymmetry', value)}
           />
           <div className="control-subsection">
-            <span>SHARED LEG LEAN</span>
-            <small>Moves every foot. Necks remain fixed.</small>
+            <span>LEG LEAN SCOPE</span>
+            <small>Offsets move feet. Necks remain fixed.</small>
           </div>
-          <RangeField
-            label="Foot offset X"
-            value={parameters.footOffsetXMm}
-            minimum={-300}
-            maximum={300}
-            step={5}
-            suffix=" mm"
-            onInteractionStart={beginGesture}
-            onInteractionEnd={endGesture}
-            onChange={(value) => update('footOffsetXMm', value)}
-          />
-          <RangeField
-            label="Foot offset Y"
-            value={parameters.footOffsetYMm}
-            minimum={-300}
-            maximum={300}
-            step={5}
-            suffix=" mm"
-            onInteractionStart={beginGesture}
-            onInteractionEnd={endGesture}
-            onChange={(value) => update('footOffsetYMm', value)}
-          />
-          <div className="lean-readout" aria-label="Shared leg lean result">
-            <span>AUTHORED LEAN</span>
+          <div className="offset-scope-switch" aria-label="Leg lean scope">
+            <button
+              type="button"
+              className={activeFootOffsetScope === 'shared' ? 'is-active' : ''}
+              aria-pressed={activeFootOffsetScope === 'shared'}
+              onClick={() => setFootOffsetScope('shared')}
+            >
+              <span>SHARED</span>
+              <small>ALL LEGS</small>
+            </button>
+            <button
+              type="button"
+              className={activeFootOffsetScope === 'selected' ? 'is-active' : ''}
+              aria-pressed={activeFootOffsetScope === 'selected'}
+              disabled={selectedSupportId === undefined}
+              onClick={() => setFootOffsetScope('selected')}
+            >
+              <span>SELECTED</span>
+              <small>
+                {selectedSupportId?.replace('-', ' ').toUpperCase() ??
+                  'SELECT A LEG'}
+              </small>
+            </button>
+          </div>
+          {activeFootOffsetScope === 'selected' &&
+          selectedFootOffsetOverride === undefined ? (
+            <div className="offset-inheritance">
+              <span>INHERITS SHARED OFFSET</span>
+              <small>
+                X {parameters.footOffsetXMm} MM · Y {parameters.footOffsetYMm} MM
+              </small>
+              <button type="button" onClick={createSelectedFootOffsetOverride}>
+                CREATE OVERRIDE
+              </button>
+            </div>
+          ) : (
+            <>
+              {activeFootOffsetScope === 'selected' && selectedSupportId ? (
+                <div className="offset-override-heading">
+                  <span>{selectedSupportId.replace('-', ' ').toUpperCase()}</span>
+                  <button
+                    type="button"
+                    onClick={() => replaceFootOffsetOverride(selectedSupportId)}
+                  >
+                    USE SHARED
+                  </button>
+                </div>
+              ) : null}
+              <RangeField
+                label={
+                  activeFootOffsetScope === 'selected'
+                    ? 'Selected offset X'
+                    : 'Foot offset X'
+                }
+                value={activeFootOffsetX}
+                minimum={-300}
+                maximum={300}
+                step={5}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  activeFootOffsetScope === 'selected'
+                    ? updateSelectedFootOffset('footOffsetXMm', value)
+                    : update('footOffsetXMm', value)
+                }
+              />
+              <RangeField
+                label={
+                  activeFootOffsetScope === 'selected'
+                    ? 'Selected offset Y'
+                    : 'Foot offset Y'
+                }
+                value={activeFootOffsetY}
+                minimum={-300}
+                maximum={300}
+                step={5}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  activeFootOffsetScope === 'selected'
+                    ? updateSelectedFootOffset('footOffsetYMm', value)
+                    : update('footOffsetYMm', value)
+                }
+              />
+            </>
+          )}
+          <div
+            className="lean-readout"
+            aria-label={`${activeFootOffsetScope} leg lean result`}
+          >
+            <span>
+              {activeFootOffsetScope === 'selected'
+                ? selectedFootOffsetOverride
+                  ? 'SELECTED LEAN'
+                  : 'INHERITED LEAN'
+                : 'SHARED LEAN'}
+            </span>
             <strong>{authoredLeanAngleDeg.toFixed(1)}°</strong>
             <small>
               {formatNumber(footOffsetMm, 1)} MM OFFSET ·{' '}
@@ -580,7 +735,13 @@ export default function App() {
                 ? 'NO DIRECTION'
                 : `${footDirectionDeg.toFixed(0)}° FOOT DIRECTION`}
             </small>
-            <small>Seeded asymmetry adds per-leg variation.</small>
+            <small>
+              {activeFootOffsetScope === 'selected'
+                ? selectedFootOffsetOverride
+                  ? 'This leg replaces the shared offset.'
+                  : 'Create an override to separate this leg.'
+                : 'Seeded asymmetry adds per-leg variation.'}
+            </small>
           </div>
         </section>
 
@@ -625,7 +786,7 @@ export default function App() {
         </span>
         <span>SEED {parameters.seed}</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.3 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.4 / LOCAL</span>
       </footer>
     </main>
   )

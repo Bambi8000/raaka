@@ -61,6 +61,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   supportDepthRatio: 0.92,
   supportHeightRatio: 0.42,
   shoulderRatio: 0.48,
+  shoulderMode: 'divided',
   neckWidthRatio: 0.34,
   upperWidthRatio: 0.72,
   upperDepthRatio: 0.34,
@@ -157,6 +158,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       const positionY = supportPositionOverride?.positionYMm ?? 0
       const bayCentre =
         -upperWidth / 2 + bayWidth * (columnIndex + 0.5) + supportShift
+      const massBayCentre =
+        -upperWidth / 2 + bayWidth * (columnIndex + 0.5) + massShift
       const supportCentreX = bayCentre + positionX
       const supportCentreY = rowCentre + positionY
       const individualShift =
@@ -168,10 +171,15 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         depthScale
       const footWidth = neckWidth * 1.18
       const footDepth = neckDepth * 1.16
-      const shoulderTopWidth = bayWidth * 0.92 * widthScale
+      const shoulderTopWidth =
+        bayWidth * (parameters.shoulderMode === 'shared' ? 1 : 0.92) * widthScale
       const shoulderTopDepth = shoulderDepth * depthScale
-      const shoulderCentreX =
-        supportCentreX + individualShift * 0.8 - individualShift * 0.45
+      const shoulderPositionX = supportCentreX + individualShift * 0.8
+      const shoulderTopOffsetX =
+        parameters.shoulderMode === 'shared'
+          ? massBayCentre + positionX - shoulderPositionX
+          : -individualShift * 0.45
+      const shoulderCentreX = shoulderPositionX + shoulderTopOffsetX
 
       pieces.push({
         kind: 'frustum',
@@ -199,7 +207,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         label: `Shoulder C${columnNumber} / R${rowNumber}`,
         role: 'support',
         position: [
-          supportCentreX + individualShift * 0.8,
+          shoulderPositionX,
           supportCentreY,
           stemHeight + shoulderHeight / 2,
         ],
@@ -207,7 +215,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         bottomSize: [neckWidth, neckDepth],
         topSize: [shoulderTopWidth, shoulderTopDepth],
         bottomOffset: [0, 0],
-        topOffset: [-individualShift * 0.45, 0],
+        topOffset: [shoulderTopOffsetX, 0],
       })
       shoulderBearings.push({
         row: rowNumber,
@@ -254,8 +262,19 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       Math.min(firstCentre + firstSize / 2, secondCentre + secondSize / 2) -
         Math.max(firstCentre - firstSize / 2, secondCentre - secondSize / 2),
     )
+  const intervalGap = (
+    firstCentre: number,
+    firstSize: number,
+    secondCentre: number,
+    secondSize: number,
+  ) =>
+    Math.max(
+      0,
+      Math.abs(secondCentre - firstCentre) - (firstSize + secondSize) / 2,
+    )
   let adjacentRowOverlapMm = 0
   let adjacentColumnOverlapMm = 0
+  let adjacentColumnGapMm = 0
   let nonAdjacentBearingOverlapMm = 0
   for (let firstIndex = 0; firstIndex < shoulderBearings.length; firstIndex += 1) {
     const first = shoulderBearings[firstIndex]
@@ -277,20 +296,41 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         second.centreY,
         second.depth,
       )
-      if (overlapX === 0 || overlapY === 0) continue
-
-      if (
+      const isAdjacentRow =
         Math.abs(second.row - first.row) === 1 &&
         second.column === first.column
-      ) {
+      const isAdjacentColumn =
+        Math.abs(second.column - first.column) === 1 &&
+        second.row === first.row
+
+      if (isAdjacentColumn) {
+        adjacentColumnGapMm = Math.max(
+          adjacentColumnGapMm,
+          Math.hypot(
+            intervalGap(
+              first.centreX,
+              first.width,
+              second.centreX,
+              second.width,
+            ),
+            intervalGap(
+              first.centreY,
+              first.depth,
+              second.centreY,
+              second.depth,
+            ),
+          ),
+        )
+      }
+
+      if (overlapX === 0 || overlapY === 0) continue
+
+      if (isAdjacentRow) {
         adjacentRowOverlapMm = Math.max(
           adjacentRowOverlapMm,
           overlapY,
         )
-      } else if (
-        Math.abs(second.column - first.column) === 1 &&
-        second.row === first.row
-      ) {
+      } else if (isAdjacentColumn) {
         adjacentColumnOverlapMm = Math.max(
           adjacentColumnOverlapMm,
           overlapX,
@@ -346,6 +386,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       shoulderDepthMm: shoulderDepth,
       adjacentRowOverlapMm,
       adjacentColumnOverlapMm,
+      adjacentColumnGapMm,
       nonAdjacentBearingOverlapMm,
       bearingOverhangMm,
       sideBearingOverhangMm,

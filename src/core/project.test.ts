@@ -22,6 +22,7 @@ describe('RAAKA project files', () => {
         supportRowCount: 3,
         rowSpacingMm: 480,
         supportDepthRatio: 0.46,
+        shoulderMode: 'shared',
         footOffsetXMm: 175,
         footOffsetYMm: -90,
         footOffsetOverrides: [
@@ -83,6 +84,7 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.footOffsetOverrides
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
+    delete legacy.parameters.shoulderMode
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -92,6 +94,7 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
+    expect(migrated.parameters.shoulderMode).toBe('divided')
     expect(migrated.parameters.supportRowCount).toBe(1)
     expect(migrated.parameters.rowSpacingMm).toBe(300)
     expect(migrated.parameters.supportDepthRatio).toBe(0.92)
@@ -111,6 +114,7 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.footOffsetOverrides
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
+    delete legacy.parameters.shoulderMode
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -118,6 +122,7 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
+    expect(migrated.parameters.shoulderMode).toBe('divided')
     expect(migrated.parameters.supportRowCount).toBe(1)
   })
 
@@ -134,6 +139,7 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.supportDepthRatio
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
+    delete legacy.parameters.shoulderMode
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -143,6 +149,7 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.supportDepthRatio).toBe(0.92)
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
+    expect(migrated.parameters.shoulderMode).toBe('divided')
   })
 
   it('migrates recipe version four files to shared support sizes', () => {
@@ -155,12 +162,14 @@ describe('RAAKA project files', () => {
     legacy.recipeVersion = 4
     delete legacy.parameters.supportSizeOverrides
     delete legacy.parameters.supportPositionOverrides
+    delete legacy.parameters.shoulderMode
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
+    expect(migrated.parameters.shoulderMode).toBe('divided')
   })
 
   it('migrates recipe version five files to generated grid positions', () => {
@@ -172,11 +181,29 @@ describe('RAAKA project files', () => {
     }
     legacy.recipeVersion = 5
     delete legacy.parameters.supportPositionOverrides
+    delete legacy.parameters.shoulderMode
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.supportPositionOverrides).toEqual([])
+    expect(migrated.parameters.shoulderMode).toBe('divided')
+  })
+
+  it('migrates recipe version six files to divided shoulders', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 6
+    delete legacy.parameters.shoulderMode
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+    expect(migrated.parameters.shoulderMode).toBe('divided')
   })
 
   it('requires an override list in the current recipe version', () => {
@@ -209,6 +236,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "supportPositionOverrides" must be an array.',
+    )
+  })
+
+  it('requires a shoulder topology in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.shoulderMode
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "shoulderMode" must be "divided" or "shared".',
     )
   })
 
@@ -328,6 +366,16 @@ describe('RAAKA project files', () => {
               positionYMm: 0,
             },
           ],
+        },
+      }),
+    ],
+    [
+      'unsupported shoulder topology',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          shoulderMode: 'merged',
         },
       }),
     ],

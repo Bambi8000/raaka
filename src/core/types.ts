@@ -11,6 +11,7 @@ export type PieceRole = 'mass' | 'support' | 'surface' | 'core' | 'void'
 export type Vec3 = readonly [x: number, y: number, z: number]
 export type Size2 = readonly [width: number, depth: number]
 export type ModelScale = 1 | 0.5 | 0.25
+export type PilotiShoulderMode = 'divided' | 'shared'
 
 export interface Bounds3 {
   readonly min: Vec3
@@ -68,6 +69,7 @@ export interface PilotiParameters {
   readonly supportDepthRatio: number
   readonly supportHeightRatio: number
   readonly shoulderRatio: number
+  readonly shoulderMode: PilotiShoulderMode
   readonly neckWidthRatio: number
   readonly upperWidthRatio: number
   readonly upperDepthRatio: number
@@ -87,6 +89,7 @@ export interface SupportLayoutAnalysis {
   readonly shoulderDepthMm: number
   readonly adjacentRowOverlapMm: number
   readonly adjacentColumnOverlapMm: number
+  readonly adjacentColumnGapMm: number
   readonly nonAdjacentBearingOverlapMm: number
   readonly bearingOverhangMm: number
   readonly sideBearingOverhangMm: number

@@ -1,6 +1,7 @@
 import type {
   PilotiFootOffsetOverride,
   PilotiParameters,
+  PilotiShoulderMode,
   PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
 } from './types'
@@ -15,6 +16,7 @@ interface ParameterRule {
 
 type NumericPilotiParameter = Exclude<
   keyof PilotiParameters,
+  | 'shoulderMode'
   | 'footOffsetOverrides'
   | 'supportSizeOverrides'
   | 'supportPositionOverrides'
@@ -29,6 +31,21 @@ export const PILOTI_SUPPORT_POSITION_MM = {
   minimum: -300,
   maximum: 300,
 } as const
+
+export function isPilotiShoulderMode(
+  value: unknown,
+): value is PilotiShoulderMode {
+  return value === 'divided' || value === 'shared'
+}
+
+function normalizeShoulderMode(value: unknown): PilotiShoulderMode {
+  if (!isPilotiShoulderMode(value)) {
+    throw new RangeError(
+      'Piloti parameter "shoulderMode" must be "divided" or "shared".',
+    )
+  }
+  return value
+}
 
 export const PILOTI_PARAMETER_RULES = {
   seed: { minimum: 0, maximum: MAX_SEED, integer: true },
@@ -258,6 +275,7 @@ export function normalizePilotiParameters(
       'supportHeightRatio',
     ),
     shoulderRatio: normalizeValue(input.shoulderRatio, 'shoulderRatio'),
+    shoulderMode: normalizeShoulderMode(input.shoulderMode),
     neckWidthRatio: normalizeValue(input.neckWidthRatio, 'neckWidthRatio'),
     upperWidthRatio: normalizeValue(input.upperWidthRatio, 'upperWidthRatio'),
     upperDepthRatio: normalizeValue(input.upperDepthRatio, 'upperDepthRatio'),
@@ -292,6 +310,16 @@ function readParameter(
   }
   if ('integer' in rule && rule.integer && !Number.isInteger(value)) {
     throw new ProjectValidationError(`Parameter "${name}" must be an integer.`)
+  }
+  return value
+}
+
+function readShoulderMode(input: Record<string, unknown>): PilotiShoulderMode {
+  const value = input.shoulderMode
+  if (!isPilotiShoulderMode(value)) {
+    throw new ProjectValidationError(
+      'Parameter "shoulderMode" must be "divided" or "shared".',
+    )
   }
   return value
 }
@@ -494,6 +522,7 @@ export function parsePilotiParameters(
     supportDepthRatio: readParameter(record, 'supportDepthRatio'),
     supportHeightRatio: readParameter(record, 'supportHeightRatio'),
     shoulderRatio: readParameter(record, 'shoulderRatio'),
+    shoulderMode: readShoulderMode(record),
     neckWidthRatio: readParameter(record, 'neckWidthRatio'),
     upperWidthRatio: readParameter(record, 'upperWidthRatio'),
     upperDepthRatio: readParameter(record, 'upperDepthRatio'),

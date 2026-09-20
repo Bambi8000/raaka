@@ -6,13 +6,13 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.8, the
+This document describes the product direction. In version 0.1.9, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
-multi-row support grids, selected-support width/depth overrides and selected
-X/Y support placement. Outputs, cores and the remaining recipe families are
-planned. See
+multi-row support grids, selected-support width/depth overrides, selected X/Y
+support placement and divided/shared shoulder rows. Outputs, cores and the
+remaining recipe families are planned. See
 [Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
@@ -112,6 +112,11 @@ a pair, as a row or as a grid.
 - A selected support may move in X/Y relative to its generated grid position.
   This translates the complete stem-and-shoulder pair and stays distinct from
   foot offset, which changes lean by moving only the bottom endpoint.
+- **Divided shoulders** retain a deliberate gap between adjacent funnel tops.
+  **Shared shoulders** widen and align their top faces to meet across each X
+  row, producing the continuous folded base seen in the architectural reference.
+  Selected size and placement remain authoritative and may reopen a gap or
+  create an overlap; RAAKA reports either condition without correction.
 - Row/column identity and keyed variation must remain stable when another row
   is added or a different leg is edited. Update bounds, contact footprints and
   later centre-of-mass/bearing feedback from the actual tilted geometry.
@@ -132,7 +137,9 @@ Column overlap and side-bearing overhang are measured from actual shoulder
 footprints. The existing Asymmetry slider is seeded per-leg variation and
 stays separate from authored overrides. Version 0.1.8 adds ±300 mm selected
 X/Y placement. Bearing warnings require actual two-axis intersection and also
-report collisions between supports that are not grid neighbours.
+report collisions between supports that are not grid neighbours. Version 0.1.9
+adds divided and shared shoulder topology. Existing projects migrate to divided
+shoulders, preserving their previous form.
 
 ## Operations
 

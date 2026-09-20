@@ -14,6 +14,7 @@ selected-leg overrides are implemented in 0.1.4; model-scale presets are
 implemented in 0.1.5; support grids and layout feedback are implemented in
 0.1.6; selected-support proportions are implemented in 0.1.7.
 Selected-support placement is implemented in 0.1.8.
+Divided and shared shoulder rows are implemented in 0.1.9.
 
 ## 0.1 — foundation
 
@@ -34,6 +35,7 @@ shared leg lean; version 0.1.4 adds per-leg overrides; version 0.1.5 adds
 physical model scales; version 0.1.6 adds support grids.
 Version 0.1.7 adds selected-support proportions.
 Version 0.1.8 adds selected-support placement.
+Version 0.1.9 adds divided and shared shoulder topology.
 
 ## 0.1.1 — correct the baseline
 
@@ -186,6 +188,23 @@ Done when a selected support can move independently without deforming or
 disconnecting its pair, warnings follow the translated bearing rectangles, and
 save/recovery/history preserve the authored position.
 
+## 0.1.9 — divided and shared Piloti shoulders
+
+- [x] preserve the existing divided shoulder topology
+- [x] add shared shoulder tops that meet continuously across each X row
+- [x] retain seeded neck variation while aligning shared top faces
+- [x] keep stems, joined interfaces, support IDs and random streams unchanged
+- [x] let selected size and placement override shared-row continuity
+- [x] measure shared-row gaps and existing overlaps from actual top rectangles
+- [x] scale gap feedback at 1:1, 1:2 and 1:4
+- [x] persist topology in Piloti recipe version 7 and migrate versions 1–6 to
+  divided shoulders
+- [x] state explicitly that shared preview pieces are not yet a boolean union
+
+Done when the unedited shared row has coincident neighbouring top boundaries,
+divided mode preserves the previous model, authored deviations produce explicit
+gap or overlap feedback, and save/recovery/history retain the topology.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -194,7 +213,7 @@ save/recovery/history preserve the authored position.
   and Rows (Y); preserve the one-row default
 - [x] shared support template, explicit support depth and Y row spacing;
   repeat authored leg shapes and report overlaps or missing upper bearing
-- [ ] shared and divided shoulders
+- [x] shared and divided shoulders
 - [x] shared Foot offset X/Y for deterministic leg lean, with ground faces at Z = 0
   and matching stem/shoulder interfaces
 - [x] explicit selected-leg offsets with visible shared/selected scope

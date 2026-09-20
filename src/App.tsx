@@ -852,6 +852,33 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('shoulderRatio', value)}
           />
+          <div className="control-subsection">
+            <span>SHOULDER TOPOLOGY</span>
+            <small>Shared tops meet across each support row.</small>
+          </div>
+          <div
+            className="offset-scope-switch"
+            aria-label="Shoulder topology"
+          >
+            <button
+              type="button"
+              className={parameters.shoulderMode === 'divided' ? 'is-active' : ''}
+              aria-pressed={parameters.shoulderMode === 'divided'}
+              onClick={() => update('shoulderMode', 'divided')}
+            >
+              <span>DIVIDED</span>
+              <small>SEPARATE TOPS</small>
+            </button>
+            <button
+              type="button"
+              className={parameters.shoulderMode === 'shared' ? 'is-active' : ''}
+              aria-pressed={parameters.shoulderMode === 'shared'}
+              onClick={() => update('shoulderMode', 'shared')}
+            >
+              <span>SHARED</span>
+              <small>CONTINUOUS ROW</small>
+            </button>
+          </div>
           <RangeField
             label="Neck width"
             value={parameters.neckWidthRatio}
@@ -1110,6 +1137,8 @@ export default function App() {
           {masterStudy.supportLayout &&
           (masterStudy.supportLayout.adjacentRowOverlapMm > 0 ||
             masterStudy.supportLayout.adjacentColumnOverlapMm > 0 ||
+            (parameters.shoulderMode === 'shared' &&
+              masterStudy.supportLayout.adjacentColumnGapMm > 0) ||
             masterStudy.supportLayout.nonAdjacentBearingOverlapMm > 0 ||
             masterStudy.supportLayout.bearingOverhangMm > 0 ||
             masterStudy.supportLayout.sideBearingOverhangMm > 0) ? (
@@ -1153,6 +1182,28 @@ export default function App() {
                   <small>
                     Adjacent shoulder zones intersect across the width. The
                     nominal volume counts both preview pieces.
+                  </small>
+                </div>
+              ) : null}
+              {parameters.shoulderMode === 'shared' &&
+              masterStudy.supportLayout.adjacentColumnGapMm > 0 ? (
+                <div>
+                  <strong>SHARED SHOULDER GAP</strong>
+                  <span>
+                    {formatNumber(
+                      masterStudy.supportLayout.adjacentColumnGapMm,
+                      1,
+                    )}{' '}
+                    MM DESIGN ·{' '}
+                    {formatNumber(
+                      study.supportLayout?.adjacentColumnGapMm ?? 0,
+                      1,
+                    )}{' '}
+                    MM MODEL
+                  </span>
+                  <small>
+                    Adjacent shared shoulder tops no longer meet. Restore their
+                    size or position; RAAKA will not move them automatically.
                   </small>
                 </div>
               ) : null}
@@ -1240,7 +1291,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.8 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.9 / LOCAL</span>
       </footer>
     </main>
   )

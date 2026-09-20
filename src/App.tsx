@@ -32,6 +32,7 @@ import type {
   ModelScale,
   PilotiFootOffsetOverride,
   PilotiParameters,
+  PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
 } from './core/types'
 
@@ -256,9 +257,14 @@ export default function App() {
   const selectedSupportSizeOverride = parameters.supportSizeOverrides.find(
     (override) => override.supportId === selectedSupportId,
   )
+  const selectedSupportPositionOverride =
+    parameters.supportPositionOverrides.find(
+      (override) => override.supportId === selectedSupportId,
+    )
   const hasSelectedSupportOverride =
     selectedFootOffsetOverride !== undefined ||
-    selectedSupportSizeOverride !== undefined
+    selectedSupportSizeOverride !== undefined ||
+    selectedSupportPositionOverride !== undefined
   const activeSupportEditScope =
     supportEditScope === 'selected' && selectedSupportId !== undefined
       ? 'selected'
@@ -273,6 +279,10 @@ export default function App() {
       : parameters.footOffsetYMm
   const activeSupportWidthScale = selectedSupportSizeOverride?.widthScale ?? 1
   const activeSupportDepthScale = selectedSupportSizeOverride?.depthScale ?? 1
+  const activeSupportPositionX =
+    selectedSupportPositionOverride?.positionXMm ?? 0
+  const activeSupportPositionY =
+    selectedSupportPositionOverride?.positionYMm ?? 0
   const stemHeightMm =
     parameters.heightMm *
     parameters.supportHeightRatio *
@@ -302,6 +312,12 @@ export default function App() {
         window.localStorage,
         createProject(nextStudy.parameters, nextStudy.modelScale),
       )
+      if (
+        notice?.kind === 'error' &&
+        notice.text.startsWith('Recovery ignored:')
+      ) {
+        setNotice({ kind: 'info', text: 'Local recovery repaired.' })
+      }
     } catch {
       setNotice({
         kind: 'error',
@@ -429,11 +445,15 @@ export default function App() {
     supportId: string,
     footOffsetOverride?: Omit<PilotiFootOffsetOverride, 'supportId'>,
     supportSizeOverride?: Omit<PilotiSupportSizeOverride, 'supportId'>,
+    supportPositionOverride?: Omit<PilotiSupportPositionOverride, 'supportId'>,
   ) => {
     const retainedFootOffsets = parameters.footOffsetOverrides.filter(
       (override) => override.supportId !== supportId,
     )
     const retainedSizes = parameters.supportSizeOverrides.filter(
+      (override) => override.supportId !== supportId,
+    )
+    const retainedPositions = parameters.supportPositionOverrides.filter(
       (override) => override.supportId !== supportId,
     )
     const footOffsetOverrides = footOffsetOverride
@@ -448,12 +468,19 @@ export default function App() {
           { supportId, ...supportSizeOverride },
         ].sort(compareSupportIds)
       : retainedSizes
+    const supportPositionOverrides = supportPositionOverride
+      ? [
+          ...retainedPositions,
+          { supportId, ...supportPositionOverride },
+        ].sort(compareSupportIds)
+      : retainedPositions
     replaceStudy({
       ...studyState,
       parameters: {
         ...parameters,
         footOffsetOverrides,
         supportSizeOverrides,
+        supportPositionOverrides,
       },
     })
   }
@@ -467,6 +494,7 @@ export default function App() {
         footOffsetYMm: parameters.footOffsetYMm,
       },
       { widthScale: 1, depthScale: 1 },
+      { positionXMm: 0, positionYMm: 0 },
     )
   }
 
@@ -485,6 +513,10 @@ export default function App() {
         widthScale: activeSupportWidthScale,
         depthScale: activeSupportDepthScale,
       },
+      {
+        positionXMm: activeSupportPositionX,
+        positionYMm: activeSupportPositionY,
+      },
     )
   }
 
@@ -502,6 +534,32 @@ export default function App() {
       {
         widthScale: axis === 'widthScale' ? value : activeSupportWidthScale,
         depthScale: axis === 'depthScale' ? value : activeSupportDepthScale,
+      },
+      {
+        positionXMm: activeSupportPositionX,
+        positionYMm: activeSupportPositionY,
+      },
+    )
+  }
+
+  const updateSelectedSupportPosition = (
+    axis: 'positionXMm' | 'positionYMm',
+    value: number,
+  ) => {
+    if (selectedSupportId === undefined || !hasSelectedSupportOverride) return
+    replaceSelectedSupportOverride(
+      selectedSupportId,
+      {
+        footOffsetXMm: activeFootOffsetX,
+        footOffsetYMm: activeFootOffsetY,
+      },
+      {
+        widthScale: activeSupportWidthScale,
+        depthScale: activeSupportDepthScale,
+      },
+      {
+        positionXMm: axis === 'positionXMm' ? value : activeSupportPositionX,
+        positionYMm: axis === 'positionYMm' ? value : activeSupportPositionY,
       },
     )
   }
@@ -816,7 +874,7 @@ export default function App() {
           />
           <div className="control-subsection">
             <span>LEG EDIT SCOPE</span>
-            <small>Offsets move feet. Size preserves joined faces.</small>
+            <small>Foot offsets lean. Position moves the complete leg.</small>
           </div>
           <div className="offset-scope-switch" aria-label="Leg edit scope">
             <button
@@ -849,7 +907,8 @@ export default function App() {
               <span>INHERITS SHARED LEG</span>
               <small>
                 OFFSET X {parameters.footOffsetXMm} MM · Y{' '}
-                {parameters.footOffsetYMm} MM · SIZE 100 × 100%
+                {parameters.footOffsetYMm} MM · POSITION 0 × 0 MM · SIZE 100 ×
+                100%
               </small>
               <button type="button" onClick={createSelectedSupportOverride}>
                 CREATE OVERRIDE
@@ -873,7 +932,7 @@ export default function App() {
               <RangeField
                 label={
                   activeSupportEditScope === 'selected'
-                    ? 'Selected offset X'
+                    ? 'Selected foot X'
                     : 'Foot offset X'
                 }
                 value={activeFootOffsetX}
@@ -892,7 +951,7 @@ export default function App() {
               <RangeField
                 label={
                   activeSupportEditScope === 'selected'
-                    ? 'Selected offset Y'
+                    ? 'Selected foot Y'
                     : 'Foot offset Y'
                 }
                 value={activeFootOffsetY}
@@ -910,6 +969,40 @@ export default function App() {
               />
               {activeSupportEditScope === 'selected' ? (
                 <>
+                  <RangeField
+                    label="Selected position X"
+                    value={activeSupportPositionX}
+                    minimum={-300}
+                    maximum={300}
+                    step={5}
+                    suffix=" mm"
+                    onInteractionStart={beginGesture}
+                    onInteractionEnd={endGesture}
+                    onChange={(value) =>
+                      updateSelectedSupportPosition('positionXMm', value)
+                    }
+                  />
+                  <RangeField
+                    label="Selected position Y"
+                    value={activeSupportPositionY}
+                    minimum={-300}
+                    maximum={300}
+                    step={5}
+                    suffix=" mm"
+                    onInteractionStart={beginGesture}
+                    onInteractionEnd={endGesture}
+                    onChange={(value) =>
+                      updateSelectedSupportPosition('positionYMm', value)
+                    }
+                  />
+                  <div className="shape-readout">
+                    <span>SELECTED POSITION</span>
+                    <strong>
+                      X {formatNumber(activeSupportPositionX)} · Y{' '}
+                      {formatNumber(activeSupportPositionY)} MM
+                    </strong>
+                    <small>Translation from the generated grid position.</small>
+                  </div>
                   <RangeField
                     label="Selected width scale"
                     value={activeSupportWidthScale}
@@ -971,7 +1064,7 @@ export default function App() {
             <small>
               {activeSupportEditScope === 'selected'
                 ? hasSelectedSupportOverride
-                  ? 'This leg replaces shared offset and size values.'
+                  ? 'This leg uses selected lean, position and size values.'
                   : 'Create an override to separate this leg.'
                 : 'Seeded asymmetry adds per-leg variation.'}
             </small>
@@ -1017,6 +1110,7 @@ export default function App() {
           {masterStudy.supportLayout &&
           (masterStudy.supportLayout.adjacentRowOverlapMm > 0 ||
             masterStudy.supportLayout.adjacentColumnOverlapMm > 0 ||
+            masterStudy.supportLayout.nonAdjacentBearingOverlapMm > 0 ||
             masterStudy.supportLayout.bearingOverhangMm > 0 ||
             masterStudy.supportLayout.sideBearingOverhangMm > 0) ? (
             <div className="layout-advisories" aria-live="polite">
@@ -1062,6 +1156,27 @@ export default function App() {
                   </small>
                 </div>
               ) : null}
+              {masterStudy.supportLayout.nonAdjacentBearingOverlapMm > 0 ? (
+                <div>
+                  <strong>CROSS-GRID OVERLAP</strong>
+                  <span>
+                    {formatNumber(
+                      masterStudy.supportLayout.nonAdjacentBearingOverlapMm,
+                      1,
+                    )}{' '}
+                    MM DESIGN ·{' '}
+                    {formatNumber(
+                      study.supportLayout?.nonAdjacentBearingOverlapMm ?? 0,
+                      1,
+                    )}{' '}
+                    MM MODEL
+                  </span>
+                  <small>
+                    Non-neighbour shoulder zones intersect after placement.
+                    Move the selected leg; RAAKA will not correct it.
+                  </small>
+                </div>
+              ) : null}
               {masterStudy.supportLayout.bearingOverhangMm > 0 ? (
                 <div>
                   <strong>BEARING OVERHANG</strong>
@@ -1079,7 +1194,8 @@ export default function App() {
                   </span>
                   <small>
                     The outer shoulder zones extend beyond the upper mass.
-                    Adjust depth or spacing; RAAKA will not resize them.
+                    Adjust depth, spacing or selected position; RAAKA will not
+                    resize them.
                   </small>
                 </div>
               ) : null}
@@ -1100,7 +1216,8 @@ export default function App() {
                   </span>
                   <small>
                     A shoulder extends beyond the upper mass in X. Adjust its
-                    width or the shared upper width; RAAKA will not resize it.
+                    width, selected position or the shared upper width; RAAKA
+                    will not resize it.
                   </small>
                 </div>
               ) : null}
@@ -1123,7 +1240,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.7 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.8 / LOCAL</span>
       </footer>
     </main>
   )

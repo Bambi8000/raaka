@@ -29,6 +29,7 @@ function expectFiniteStudy(parameters: PilotiParameters): void {
           study.supportLayout.shoulderDepthMm,
           study.supportLayout.adjacentRowOverlapMm,
           study.supportLayout.adjacentColumnOverlapMm,
+          study.supportLayout.nonAdjacentBearingOverlapMm,
           study.supportLayout.bearingOverhangMm,
           study.supportLayout.sideBearingOverhangMm,
         ]
@@ -450,6 +451,128 @@ describe('generatePiloti', () => {
     expect(study.supportLayout?.sideBearingOverhangMm).toBeCloseTo(60.12, 10)
   })
 
+  it('translates only the named support pair while preserving its geometry', () => {
+    const baseParameters = {
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 3,
+      supportRowCount: 2,
+      footOffsetXMm: 80,
+      footOffsetYMm: -40,
+    }
+    const shared = generatePiloti(baseParameters)
+    const placed = generatePiloti({
+      ...baseParameters,
+      supportPositionOverrides: [
+        {
+          supportId: 'support-r2-c2',
+          positionXMm: 120,
+          positionYMm: -75,
+        },
+      ],
+    })
+
+    for (const prefix of ['support', 'shoulder'] as const) {
+      const original = shared.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `${prefix}-r2-c2`,
+      )
+      const translated = placed.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `${prefix}-r2-c2`,
+      )
+      expect(original).toBeDefined()
+      expect(translated).toBeDefined()
+      if (!original || !translated) continue
+
+      expect(translated).toEqual({
+        ...original,
+        position: [
+          original.position[0] + 120,
+          original.position[1] - 75,
+          original.position[2],
+        ],
+      })
+    }
+
+    const translatedStem = placed.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'support-r2-c2',
+    )
+    const translatedShoulder = placed.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'shoulder-r2-c2',
+    )
+    expect(translatedStem).toBeDefined()
+    expect(translatedShoulder).toBeDefined()
+    if (translatedStem && translatedShoulder) {
+      expect(
+        translatedStem.position[0] + translatedStem.topOffset[0],
+      ).toBeCloseTo(
+        translatedShoulder.position[0] + translatedShoulder.bottomOffset[0],
+        10,
+      )
+      expect(
+        translatedStem.position[1] + translatedStem.topOffset[1],
+      ).toBeCloseTo(
+        translatedShoulder.position[1] + translatedShoulder.bottomOffset[1],
+        10,
+      )
+      expect(translatedStem.topSize).toEqual(translatedShoulder.bottomSize)
+    }
+
+    expect(
+      placed.pieces.find((piece) => piece.id === 'support-r2-c1'),
+    ).toEqual(shared.pieces.find((piece) => piece.id === 'support-r2-c1'))
+    expect(placed.concreteVolumeMm3).toBeCloseTo(
+      shared.concreteVolumeMm3,
+      10,
+    )
+    expect(placed.estimatedMassKg).toBeCloseTo(shared.estimatedMassKg, 10)
+    expect(placed.groundContactMm2).toBeCloseTo(
+      shared.groundContactMm2,
+      10,
+    )
+  })
+
+  it('requires actual 2D intersection before reporting column overlap', () => {
+    const study = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      asymmetry: 0,
+      supportDepthRatio: 0.25,
+      supportSizeOverrides: [
+        {
+          supportId: 'support-1',
+          widthScale: 1.45,
+          depthScale: 1,
+        },
+      ],
+      supportPositionOverrides: [
+        {
+          supportId: 'support-1',
+          positionXMm: 0,
+          positionYMm: 300,
+        },
+      ],
+    })
+
+    expect(study.supportLayout?.adjacentColumnOverlapMm).toBe(0)
+  })
+
+  it('reports a cross-grid collision after a selected support is displaced', () => {
+    const study = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      asymmetry: 0,
+      supportCount: 2,
+      supportRowCount: 2,
+      rowSpacingMm: 300,
+      supportPositionOverrides: [
+        {
+          supportId: 'support-r2-c2',
+          positionXMm: -300,
+          positionYMm: 0,
+        },
+      ],
+    })
+
+    expect(study.supportLayout?.nonAdjacentBearingOverlapMm).toBeGreaterThan(0)
+  })
+
   it('keeps geometry finite at both ends of every supported range', () => {
     expectFiniteStudy({
       seed: 0,
@@ -468,6 +591,7 @@ describe('generatePiloti', () => {
       footOffsetYMm: -300,
       footOffsetOverrides: [],
       supportSizeOverrides: [],
+      supportPositionOverrides: [],
     })
     expectFiniteStudy({
       seed: MAX_SEED,
@@ -496,6 +620,13 @@ describe('generatePiloti', () => {
           supportId: 'support-r3-c6',
           widthScale: 1.45,
           depthScale: 0.55,
+        },
+      ],
+      supportPositionOverrides: [
+        {
+          supportId: 'support-r3-c6',
+          positionXMm: -300,
+          positionYMm: 300,
         },
       ],
     })
@@ -597,6 +728,29 @@ describe('generatePiloti', () => {
         ],
       }),
     ).toThrow('Piloti support size override for "support-1" is duplicated.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        supportPositionOverrides: [
+          {
+            supportId: 'support-r2-c1',
+            positionXMm: Number.NaN,
+            positionYMm: 0,
+          },
+        ],
+      }),
+    ).toThrow('Piloti support position override "positionXMm" must be finite.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        supportPositionOverrides: [
+          { supportId: 'support-1', positionXMm: 10, positionYMm: 20 },
+          { supportId: 'support-1', positionXMm: -10, positionYMm: -20 },
+        ],
+      }),
+    ).toThrow('Piloti support position override for "support-1" is duplicated.')
   })
 
   it('exposes the six agreed recipe families with only Piloti enabled', () => {

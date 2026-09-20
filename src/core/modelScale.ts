@@ -77,6 +77,8 @@ export function scaleMassStudy(
             masterStudy.supportLayout.adjacentRowOverlapMm * modelScale,
           adjacentColumnOverlapMm:
             masterStudy.supportLayout.adjacentColumnOverlapMm * modelScale,
+          nonAdjacentBearingOverlapMm:
+            masterStudy.supportLayout.nonAdjacentBearingOverlapMm * modelScale,
           bearingOverhangMm:
             masterStudy.supportLayout.bearingOverhangMm * modelScale,
           sideBearingOverhangMm:

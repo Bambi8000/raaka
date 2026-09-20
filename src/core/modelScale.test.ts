@@ -54,6 +54,13 @@ describe('scaleMassStudy', () => {
         depthScale: 0.7,
       },
     ],
+    supportPositionOverrides: [
+      {
+        supportId: 'support-r2-c2',
+        positionXMm: 140,
+        positionYMm: -90,
+      },
+    ],
   })
 
   it.each([0.5, 0.25] as const)(
@@ -96,6 +103,8 @@ describe('scaleMassStudy', () => {
           (master.supportLayout?.adjacentRowOverlapMm ?? 0) * scale,
         adjacentColumnOverlapMm:
           (master.supportLayout?.adjacentColumnOverlapMm ?? 0) * scale,
+        nonAdjacentBearingOverlapMm:
+          (master.supportLayout?.nonAdjacentBearingOverlapMm ?? 0) * scale,
         bearingOverhangMm:
           (master.supportLayout?.bearingOverhangMm ?? 0) * scale,
         sideBearingOverhangMm:

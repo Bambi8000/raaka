@@ -6,12 +6,13 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.7, the
+This document describes the product direction. In version 0.1.8, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
-multi-row support grids and selected-support width/depth overrides. Outputs,
-cores and the remaining recipe families are planned. See
+multi-row support grids, selected-support width/depth overrides and selected
+X/Y support placement. Outputs, cores and the remaining recipe families are
+planned. See
 [Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
@@ -108,6 +109,9 @@ a pair, as a row or as a grid.
 - A selected support may replace the shared width and depth with bounded scale
   factors. The stem and shoulder remain one connected semantic leg; changing
   one must not resize a neighbour or break their coincident interface.
+- A selected support may move in X/Y relative to its generated grid position.
+  This translates the complete stem-and-shoulder pair and stays distinct from
+  foot offset, which changes lean by moving only the bottom endpoint.
 - Row/column identity and keyed variation must remain stable when another row
   is added or a different leg is edited. Update bounds, contact footprints and
   later centre-of-mass/bearing feedback from the actual tilted geometry.
@@ -121,11 +125,14 @@ support count is reduced. Version 0.1.6 adds one to three Y rows, stable
 row/column identities, centre-to-centre spacing, separate upper-mass and
 support-depth controls, and measured overlap and bearing-overhang feedback.
 Version 0.1.7 adds 55–145% selected-support width and depth scales. The same
-explicit override owns the selected leg's lean and size in the UI, while the
-project keeps their validated arrays separate for backward compatibility.
+explicit override owns the selected leg's lean, size and position in the UI,
+while the project keeps their validated arrays separate for backward
+compatibility.
 Column overlap and side-bearing overhang are measured from actual shoulder
 footprints. The existing Asymmetry slider is seeded per-leg variation and
-stays separate from authored overrides.
+stays separate from authored overrides. Version 0.1.8 adds ±300 mm selected
+X/Y placement. Bearing warnings require actual two-axis intersection and also
+report collisions between supports that are not grid neighbours.
 
 ## Operations
 

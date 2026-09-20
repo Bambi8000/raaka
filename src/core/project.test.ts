@@ -48,6 +48,18 @@ describe('RAAKA project files', () => {
             depthScale: 1.4,
           },
         ],
+        supportPositionOverrides: [
+          {
+            supportId: 'support-2',
+            positionXMm: 75,
+            positionYMm: -45,
+          },
+          {
+            supportId: 'support-r3-c6',
+            positionXMm: -160,
+            positionYMm: 220,
+          },
+        ],
       },
       0.25,
     )
@@ -70,6 +82,7 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.footOffsetYMm
     delete legacy.parameters.footOffsetOverrides
     delete legacy.parameters.supportSizeOverrides
+    delete legacy.parameters.supportPositionOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -78,6 +91,7 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.footOffsetYMm).toBe(0)
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
+    expect(migrated.parameters.supportPositionOverrides).toEqual([])
     expect(migrated.parameters.supportRowCount).toBe(1)
     expect(migrated.parameters.rowSpacingMm).toBe(300)
     expect(migrated.parameters.supportDepthRatio).toBe(0.92)
@@ -96,12 +110,14 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.supportDepthRatio
     delete legacy.parameters.footOffsetOverrides
     delete legacy.parameters.supportSizeOverrides
+    delete legacy.parameters.supportPositionOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
+    expect(migrated.parameters.supportPositionOverrides).toEqual([])
     expect(migrated.parameters.supportRowCount).toBe(1)
   })
 
@@ -117,6 +133,7 @@ describe('RAAKA project files', () => {
     delete legacy.parameters.rowSpacingMm
     delete legacy.parameters.supportDepthRatio
     delete legacy.parameters.supportSizeOverrides
+    delete legacy.parameters.supportPositionOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
@@ -125,6 +142,7 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.rowSpacingMm).toBe(300)
     expect(migrated.parameters.supportDepthRatio).toBe(0.92)
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
+    expect(migrated.parameters.supportPositionOverrides).toEqual([])
   })
 
   it('migrates recipe version four files to shared support sizes', () => {
@@ -136,11 +154,29 @@ describe('RAAKA project files', () => {
     }
     legacy.recipeVersion = 4
     delete legacy.parameters.supportSizeOverrides
+    delete legacy.parameters.supportPositionOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.supportSizeOverrides).toEqual([])
+    expect(migrated.parameters.supportPositionOverrides).toEqual([])
+  })
+
+  it('migrates recipe version five files to generated grid positions', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 5
+    delete legacy.parameters.supportPositionOverrides
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+    expect(migrated.parameters.supportPositionOverrides).toEqual([])
   })
 
   it('requires an override list in the current recipe version', () => {
@@ -162,6 +198,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "supportSizeOverrides" must be an array.',
+    )
+  })
+
+  it('requires a support position override list in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.supportPositionOverrides
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "supportPositionOverrides" must be an array.',
     )
   })
 
@@ -263,6 +310,22 @@ describe('RAAKA project files', () => {
               supportId: 'support-2',
               widthScale: 1.8,
               depthScale: 1,
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'out-of-range selected support position',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          supportPositionOverrides: [
+            {
+              supportId: 'support-2',
+              positionXMm: 301,
+              positionYMm: 0,
             },
           ],
         },

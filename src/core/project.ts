@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 5
+export const PILOTI_RECIPE_VERSION = 6
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -54,6 +54,9 @@ export function createProject(
       supportSizeOverrides: parameters.supportSizeOverrides.map((override) => ({
         ...override,
       })),
+      supportPositionOverrides: parameters.supportPositionOverrides.map(
+        (override) => ({ ...override }),
+      ),
     },
   }
 }
@@ -90,6 +93,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 2 &&
     input.recipeVersion !== 3 &&
     input.recipeVersion !== 4 &&
+    input.recipeVersion !== 5 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -116,18 +120,29 @@ export function parseProject(serialized: string): RaakaProject {
           footOffsetYMm: 0,
           footOffsetOverrides: [],
           supportSizeOverrides: [],
+          supportPositionOverrides: [],
         }
       : input.recipeVersion === 2
         ? {
             ...supportGridDefaults,
             footOffsetOverrides: [],
             supportSizeOverrides: [],
+            supportPositionOverrides: [],
           }
         : input.recipeVersion === 3
-          ? { ...supportGridDefaults, supportSizeOverrides: [] }
+          ? {
+              ...supportGridDefaults,
+              supportSizeOverrides: [],
+              supportPositionOverrides: [],
+            }
           : input.recipeVersion === 4
-            ? { supportSizeOverrides: [] }
-            : undefined
+            ? {
+                supportSizeOverrides: [],
+                supportPositionOverrides: [],
+              }
+            : input.recipeVersion === 5
+              ? { supportPositionOverrides: [] }
+              : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
     modelScale,

@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 6
+export const PILOTI_RECIPE_VERSION = 7
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -94,6 +94,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 3 &&
     input.recipeVersion !== 4 &&
     input.recipeVersion !== 5 &&
+    input.recipeVersion !== 6 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -112,9 +113,11 @@ export function parseProject(serialized: string): RaakaProject {
     rowSpacingMm: 300,
     supportDepthRatio: 0.92,
   }
+  const shoulderModeDefault = { shoulderMode: 'divided' as const }
   const missingDefaults =
     input.recipeVersion === 1
       ? {
+          ...shoulderModeDefault,
           ...supportGridDefaults,
           footOffsetXMm: 0,
           footOffsetYMm: 0,
@@ -124,6 +127,7 @@ export function parseProject(serialized: string): RaakaProject {
         }
       : input.recipeVersion === 2
         ? {
+            ...shoulderModeDefault,
             ...supportGridDefaults,
             footOffsetOverrides: [],
             supportSizeOverrides: [],
@@ -131,18 +135,25 @@ export function parseProject(serialized: string): RaakaProject {
           }
         : input.recipeVersion === 3
           ? {
+              ...shoulderModeDefault,
               ...supportGridDefaults,
               supportSizeOverrides: [],
               supportPositionOverrides: [],
             }
           : input.recipeVersion === 4
             ? {
+                ...shoulderModeDefault,
                 supportSizeOverrides: [],
                 supportPositionOverrides: [],
               }
             : input.recipeVersion === 5
-              ? { supportPositionOverrides: [] }
-              : undefined
+              ? {
+                  ...shoulderModeDefault,
+                  supportPositionOverrides: [],
+                }
+              : input.recipeVersion === 6
+                ? shoulderModeDefault
+                : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
     modelScale,

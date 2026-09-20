@@ -103,6 +103,8 @@ describe('scaleMassStudy', () => {
           (master.supportLayout?.adjacentRowOverlapMm ?? 0) * scale,
         adjacentColumnOverlapMm:
           (master.supportLayout?.adjacentColumnOverlapMm ?? 0) * scale,
+        adjacentColumnGapMm:
+          (master.supportLayout?.adjacentColumnGapMm ?? 0) * scale,
         nonAdjacentBearingOverlapMm:
           (master.supportLayout?.nonAdjacentBearingOverlapMm ?? 0) * scale,
         bearingOverhangMm:

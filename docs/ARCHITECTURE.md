@@ -120,6 +120,21 @@ logical neighbour produces a separate cross-grid overlap reading using the
 minimum translation distance along X or Y. Bearing overhang continues to use
 each translated shoulder's actual top rectangle.
 
+Version 0.1.9 adds a recipe-level `shoulderMode`. `divided` preserves the
+historic 92% bay-width top and its seeded top offset. `shared` uses the full
+bay width and aligns each top face to the corresponding upper-mass bay centre,
+while retaining the independently seeded neck position below. Unedited shared
+neighbours therefore meet exactly at their X boundary and remain inside the
+upper mass even when asymmetry is non-zero. The operation does not change
+stems, neck interfaces, support IDs or the random sequence.
+
+Selected width and placement overrides remain authoritative in shared mode.
+Analysis measures the planar separation between adjacent top rectangles and
+reports the largest shared-row gap, while existing overlap checks still report
+intersections. The gap distance scales with model scale. Shared shoulder pieces
+remain separate closed preview frustums whose top boundaries coincide; the mode
+does not claim a boolean union or export-ready solid.
+
 ## Data flow
 
 ```text
@@ -142,14 +157,15 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 6 stores every
-generator parameter, shared X/Y foot offsets, the three selected-leg override
-arrays and one of the supported `modelScale` presets. Recipe version 5 receives
+version and a separate recipe version. Piloti recipe version 7 stores every
+generator parameter, shoulder topology, shared X/Y foot offsets, the three
+selected-leg override arrays and one of the supported `modelScale` presets.
+Recipe versions 1–6 receive divided shoulders; version 5 additionally receives
 an empty support-position override list; version 4 additionally receives an
 empty support-size override list; version 3 additionally migrates to one row
 with the original support depth; version 2 additionally receives an empty
-foot-offset override list; version 1 additionally receives zero shared
-offsets. A missing model
+foot-offset override list; version 1 additionally receives zero shared offsets.
+A missing model
 scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.

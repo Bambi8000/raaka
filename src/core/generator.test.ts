@@ -29,6 +29,7 @@ function expectFiniteStudy(parameters: PilotiParameters): void {
           study.supportLayout.shoulderDepthMm,
           study.supportLayout.adjacentRowOverlapMm,
           study.supportLayout.adjacentColumnOverlapMm,
+          study.supportLayout.adjacentColumnGapMm,
           study.supportLayout.nonAdjacentBearingOverlapMm,
           study.supportLayout.bearingOverhangMm,
           study.supportLayout.sideBearingOverhangMm,
@@ -451,6 +452,73 @@ describe('generatePiloti', () => {
     expect(study.supportLayout?.sideBearingOverhangMm).toBeCloseTo(60.12, 10)
   })
 
+  it('aligns shared shoulder tops into one continuous row', () => {
+    const divided = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 319,
+      asymmetry: 0.5,
+      shoulderMode: 'divided',
+    })
+    const shared = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 319,
+      asymmetry: 0.5,
+      shoulderMode: 'shared',
+    })
+
+    for (let column = 1; column < 3; column += 1) {
+      const left = shared.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `shoulder-${column}`,
+      )
+      const right = shared.pieces.find(
+        (piece): piece is FrustumPiece =>
+          piece.id === `shoulder-${column + 1}`,
+      )
+      expect(left).toBeDefined()
+      expect(right).toBeDefined()
+      if (!left || !right) continue
+
+      const leftEdge =
+        left.position[0] + left.topOffset[0] + left.topSize[0] / 2
+      const rightEdge =
+        right.position[0] + right.topOffset[0] - right.topSize[0] / 2
+      expect(leftEdge).toBeCloseTo(rightEdge, 10)
+    }
+
+    for (let column = 1; column <= 3; column += 1) {
+      expect(
+        shared.pieces.find((piece) => piece.id === `support-${column}`),
+      ).toEqual(
+        divided.pieces.find((piece) => piece.id === `support-${column}`),
+      )
+    }
+    expect(shared.supportLayout?.adjacentColumnGapMm).toBeCloseTo(0, 10)
+    expect(shared.supportLayout?.adjacentColumnOverlapMm).toBeCloseTo(0, 10)
+    expect(shared.supportLayout?.sideBearingOverhangMm).toBeCloseTo(0, 10)
+    expect(shared.concreteVolumeMm3).toBeGreaterThan(
+      divided.concreteVolumeMm3,
+    )
+    expect(shared.groundContactMm2).toBe(divided.groundContactMm2)
+  })
+
+  it('reports gaps and overlaps when a shared shoulder is moved', () => {
+    const study = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      asymmetry: 0,
+      shoulderMode: 'shared',
+      supportPositionOverrides: [
+        {
+          supportId: 'support-2',
+          positionXMm: 60,
+          positionYMm: 0,
+        },
+      ],
+    })
+
+    expect(study.supportLayout?.adjacentColumnGapMm).toBeCloseTo(60, 10)
+    expect(study.supportLayout?.adjacentColumnOverlapMm).toBeCloseTo(60, 10)
+  })
+
   it('translates only the named support pair while preserving its geometry', () => {
     const baseParameters = {
       ...DEFAULT_PILOTI_PARAMETERS,
@@ -583,6 +651,7 @@ describe('generatePiloti', () => {
       supportDepthRatio: 0.25,
       supportHeightRatio: 0.25,
       shoulderRatio: 0.2,
+      shoulderMode: 'divided',
       neckWidthRatio: 0.18,
       upperWidthRatio: 0.4,
       upperDepthRatio: 0.2,
@@ -602,6 +671,7 @@ describe('generatePiloti', () => {
       supportDepthRatio: 0.92,
       supportHeightRatio: 0.58,
       shoulderRatio: 0.8,
+      shoulderMode: 'shared',
       neckWidthRatio: 0.7,
       upperWidthRatio: 1.1,
       upperDepthRatio: 0.65,
@@ -751,6 +821,17 @@ describe('generatePiloti', () => {
         ],
       }),
     ).toThrow('Piloti support position override for "support-1" is duplicated.')
+  })
+
+  it('rejects an unsupported shoulder topology', () => {
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        shoulderMode: 'merged' as 'shared',
+      }),
+    ).toThrow(
+      'Piloti parameter "shoulderMode" must be "divided" or "shared".',
+    )
   })
 
   it('exposes the six agreed recipe families with only Piloti enabled', () => {

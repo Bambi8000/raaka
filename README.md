@@ -51,6 +51,12 @@ position, while foot offset remains a separate lean control. Actual bearing
 rectangles drive row, column, cross-grid and upper-mass overhang warnings, so a
 visual separation is not reported as a collision on only one axis.
 
+Version 0.1.9 adds divided and shared shoulder topologies. Divided preserves
+the separate funnel supports; shared aligns and widens the shoulder tops into a
+continuous folded row while leaving their necks and seeded variation intact.
+Selected size or placement may deliberately break that continuity, in which
+case RAAKA reports the resulting gap or overlap instead of moving the support.
+
 ## Run locally
 
 Requirements:
@@ -91,7 +97,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.8 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.9 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

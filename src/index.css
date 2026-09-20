@@ -1,18 +1,59 @@
 :root {
-  color: #171715;
-  background: #c8c8c2;
+  color: #f1f1eb;
+  background: #11110f;
+  color-scheme: dark;
   font-family: Inter, "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   font-synthesis: none;
   text-rendering: geometricPrecision;
+  --ink: #f1f1eb;
+  --muted: #a7a79f;
+  --line: #54544e;
+  --paper: #171715;
+  --panel: #232320;
+  --concrete: #999992;
+  --yellow: #ffd400;
+  --pink: #e33b97;
+  --blue: #287bc1;
+  --accent-ink: #171715;
+  --accent-on-colour: #fff;
+  --toolbar: #1d1d1a;
+  --hover: #30302c;
+  --card-border: #4b4b45;
+  --card: #292926;
+  --disabled: #777770;
+  --fuse-soft: #142c3e;
+  --overlay-border: rgb(244 244 239 / 40%);
+  --overlay: rgb(23 23 21 / 82%);
+  --metric-alert: #39320c;
+  --error-alert: #3c1828;
+  --error-text: #ff8585;
+  --statusbar: #0a0a09;
+  --statusbar-ink: #f4f4ef;
+}
+
+:root[data-theme="light"] {
+  color: #171715;
+  background: #c8c8c2;
+  color-scheme: light;
   --ink: #171715;
   --muted: #666660;
   --line: #a8a8a1;
   --paper: #f4f4ef;
   --panel: #e5e5df;
   --concrete: #b8b8b1;
-  --yellow: #ffd400;
-  --pink: #e33b97;
-  --blue: #287bc1;
+  --toolbar: #d5d5cf;
+  --hover: #dddcd5;
+  --card-border: #b6b6b0;
+  --card: #deded8;
+  --disabled: #85857f;
+  --fuse-soft: #dcecf8;
+  --overlay-border: rgb(23 23 21 / 50%);
+  --overlay: rgb(244 244 239 / 82%);
+  --metric-alert: #fff2b4;
+  --error-alert: #f7d7e7;
+  --error-text: #a02323;
+  --statusbar: #171715;
+  --statusbar-ink: #f4f4ef;
 }
 
 * {
@@ -140,12 +181,17 @@ input:focus-visible {
 }
 
 .button:hover:not(:disabled) {
-  background: #dddcd5;
+  background: var(--hover);
 }
 
 .button--primary {
   position: relative;
   background: var(--yellow);
+  color: var(--accent-ink);
+}
+
+.button--theme {
+  box-shadow: inset 0 -4px 0 var(--yellow);
 }
 
 .button--primary span {
@@ -164,7 +210,7 @@ input:focus-visible {
   display: flex;
   min-width: 0;
   border-bottom: 1px solid var(--ink);
-  background: #d5d5cf;
+  background: var(--toolbar);
   overflow-x: auto;
 }
 
@@ -196,6 +242,7 @@ input:focus-visible {
 
 .project-state strong.is-unsaved {
   background: var(--yellow);
+  color: var(--accent-ink);
 }
 
 .project-state small {
@@ -206,7 +253,7 @@ input:focus-visible {
 }
 
 .project-state small.is-error {
-  color: #a02323;
+  color: var(--error-text);
   font-weight: 800;
 }
 
@@ -254,6 +301,7 @@ input:focus-visible {
 .study-toolbar-actions button.is-primary {
   min-width: 118px;
   background: var(--yellow);
+  color: var(--accent-ink);
 }
 
 .study-toolbar-actions button:disabled {
@@ -326,8 +374,8 @@ input:focus-visible {
   align-items: center;
   min-height: 42px;
   padding: 0 9px;
-  border: 1px solid #b6b6b0;
-  background: #deded8;
+  border: 1px solid var(--card-border);
+  background: var(--card);
   text-align: left;
 }
 
@@ -353,7 +401,7 @@ input:focus-visible {
 }
 
 .recipe-card:disabled:not(.is-active) {
-  color: #85857f;
+  color: var(--disabled);
 }
 
 .object-section {
@@ -379,15 +427,16 @@ input:focus-visible {
 }
 
 .object-list button:hover {
-  background: #d4d4ce;
+  background: var(--hover);
 }
 
 .object-list button.is-selected {
   background: var(--yellow);
+  color: var(--accent-ink);
 }
 
 .object-list button.is-fuse-selected:not(.is-selected) {
-  background: #dcecf8;
+  background: var(--fuse-soft);
   box-shadow: inset 5px 0 0 var(--blue);
 }
 
@@ -439,8 +488,8 @@ input:focus-visible {
   top: 14px;
   right: 14px;
   display: flex;
-  border: 1px solid rgb(23 23 21 / 50%);
-  background: rgb(244 244 239 / 82%);
+  border: 1px solid var(--overlay-border);
+  background: var(--overlay);
   backdrop-filter: blur(8px);
 }
 
@@ -463,14 +512,15 @@ input:focus-visible {
 
 .viewport-controls button:hover {
   background: var(--yellow);
+  color: var(--accent-ink);
 }
 
 .viewport-meta {
   position: absolute;
   bottom: 13px;
   padding: 7px 9px;
-  border: 1px solid rgb(23 23 21 / 38%);
-  background: rgb(244 244 239 / 76%);
+  border: 1px solid var(--overlay-border);
+  background: var(--overlay);
   backdrop-filter: blur(8px);
   pointer-events: none;
 }
@@ -521,6 +571,7 @@ input:focus-visible {
   padding: 0 10px;
   border: 1px solid var(--ink);
   background: var(--yellow);
+  color: var(--accent-ink);
   font-size: 8px;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -529,12 +580,12 @@ input:focus-visible {
 
 .inspector-actions button.is-destructive {
   background: var(--pink);
-  color: white;
+  color: var(--accent-on-colour);
 }
 
 .inspector-actions button.is-constructive {
   background: var(--blue);
-  color: white;
+  color: var(--accent-on-colour);
 }
 
 .inspector-actions button:disabled {
@@ -550,7 +601,7 @@ input:focus-visible {
   margin-top: 10px;
   padding: 9px;
   border: 1px solid var(--ink);
-  background: #dcecf8;
+  background: var(--fuse-soft);
   box-shadow: inset 5px 0 0 var(--blue);
 }
 
@@ -590,7 +641,7 @@ input:focus-visible {
 
 .fuse-builder button.is-primary {
   background: var(--blue);
-  color: white;
+  color: var(--accent-on-colour);
 }
 
 .fuse-builder button:disabled {
@@ -683,6 +734,7 @@ input[type="range"] {
 
 .model-scale-presets button.is-active {
   background: var(--yellow);
+  color: var(--accent-ink);
 }
 
 .model-scale-summary {
@@ -754,6 +806,7 @@ input[type="range"] {
 
 .offset-scope-switch button.is-active {
   background: var(--yellow);
+  color: var(--accent-ink);
 }
 
 .offset-scope-switch button:disabled {
@@ -793,6 +846,7 @@ input[type="range"] {
   border: 0;
   border-left: 1px solid var(--ink);
   background: var(--yellow);
+  color: var(--accent-ink);
   font-size: 8px;
   font-weight: 950;
   letter-spacing: 0.07em;
@@ -822,6 +876,7 @@ input[type="range"] {
 
 .offset-override-heading button:hover {
   background: var(--yellow);
+  color: var(--accent-ink);
 }
 
 .lean-readout {
@@ -908,26 +963,26 @@ input[type="range"] {
 }
 
 .metrics-grid .metric-alert {
-  background: #fff2b4;
+  background: var(--metric-alert);
 }
 
 .layout-advisories {
   display: grid;
   gap: 1px;
   border: 1px solid var(--ink);
-  background: var(--ink);
+  background: var(--line);
 }
 
 .layout-advisories div {
   display: grid;
   gap: 4px;
   padding: 9px;
-  background: #fff2b4;
+  background: var(--metric-alert);
   box-shadow: inset 5px 0 0 var(--yellow);
 }
 
 .layout-advisories div.is-error {
-  background: #f7d7e7;
+  background: var(--error-alert);
   box-shadow: inset 5px 0 0 var(--pink);
 }
 
@@ -960,8 +1015,8 @@ input[type="range"] {
   gap: 22px;
   padding: 0 12px;
   border-top: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--statusbar);
+  color: var(--statusbar-ink);
 }
 
 .statusbar span {

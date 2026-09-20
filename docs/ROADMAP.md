@@ -23,6 +23,8 @@ Linked and detached upper/support footprints are implemented in 0.1.12.
 Semantic upper-mass and complete-support copies are implemented in 0.1.13.
 The Manifold solid-kernel gate is complete in 0.1.14.
 User-facing multi-selection, Fuse and Unfuse are implemented in 0.1.15.
+Default dark mode and the persistent Light/Dark switch are implemented in
+0.1.16.
 
 ## 0.1 — foundation
 
@@ -50,6 +52,7 @@ Version 0.1.12 links upper X/Y dimensions to the support grid by default.
 Version 0.1.13 adds source-linked semantic part copies and X/Y/Z placement.
 Version 0.1.14 validates the solid-kernel boundary before user-facing Fuse.
 Version 0.1.15 adds saved, measured Fuse groups and reversible Unfuse.
+Version 0.1.16 adds a default dark workspace and persistent Light/Dark switch.
 
 ## 0.1.1 — correct the baseline
 
@@ -335,6 +338,21 @@ faces, silent topology failure or unmanaged per-operation WASM objects.
 Done when a copied upper mass or support piece can join another touching part
 as one measured selectable solid, a separated pair is refused, Unfuse restores
 the sources, and project/history/model-scale round trips preserve the intent.
+
+## 0.1.16 — default dark workspace
+
+- [x] make the charcoal interface and matching 3D workspace the default
+- [x] add one direct top-bar control for switching to Light mode and back
+- [x] preserve yellow, blue and magenta semantic accent roles in both palettes
+- [x] update the viewport environment and neutral materials without resetting
+  geometry, selection or camera state
+- [x] retain the preference in the local browser profile
+- [x] keep theme outside project files, recovery and undo/redo history
+- [x] fall back safely to dark when stored preference access is unavailable
+
+Done when a new browser profile opens in Dark mode, either palette remains
+legible across the application and viewport, reloading restores the chosen
+mode, and switching themes never marks or mutates the current study.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

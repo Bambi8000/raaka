@@ -100,6 +100,12 @@ restores the editable source pieces, and saved Fuse groups recompute when their
 live source geometry changes. Fuse creation and removal participate in project
 files, recovery, undo/redo and all three model scales.
 
+Version 0.1.16 makes the full charcoal interface and 3D workspace the default.
+The top bar switches directly between **Light mode** and **Dark mode** without
+resetting the study, selection or camera. The preference is retained in the
+local browser profile and remains separate from portable project files and
+undo/redo history.
+
 ## Run locally
 
 Requirements:
@@ -140,7 +146,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.15 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.16 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

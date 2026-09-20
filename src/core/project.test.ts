@@ -25,6 +25,11 @@ describe('RAAKA project files', () => {
         shoulderMode: 'shared',
         upperOffsetXMm: 240,
         upperOffsetYMm: -170,
+        upperMassProfile: 'tapered',
+        upperTopWidthRatio: 0.61,
+        upperTopDepthRatio: 0.83,
+        upperTopOffsetXMm: 210,
+        upperTopOffsetYMm: -130,
         footOffsetXMm: 175,
         footOffsetYMm: -90,
         footOffsetOverrides: [
@@ -250,6 +255,33 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.upperOffsetYMm).toBe(0)
   })
 
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
+    'migrates recipe version %i files to a block upper-mass profile',
+    (recipeVersion) => {
+      const legacy = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as {
+        recipeVersion: number
+        parameters: Record<string, unknown>
+      }
+      legacy.recipeVersion = recipeVersion
+      delete legacy.parameters.upperMassProfile
+      delete legacy.parameters.upperTopWidthRatio
+      delete legacy.parameters.upperTopDepthRatio
+      delete legacy.parameters.upperTopOffsetXMm
+      delete legacy.parameters.upperTopOffsetYMm
+
+      const migrated = parseProject(JSON.stringify(legacy))
+
+      expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+      expect(migrated.parameters.upperMassProfile).toBe('block')
+      expect(migrated.parameters.upperTopWidthRatio).toBe(0.72)
+      expect(migrated.parameters.upperTopDepthRatio).toBe(0.84)
+      expect(migrated.parameters.upperTopOffsetXMm).toBe(120)
+      expect(migrated.parameters.upperTopOffsetYMm).toBe(0)
+    },
+  )
+
   it('requires an override list in the current recipe version', () => {
     const current = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -302,6 +334,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "upperOffsetXMm" must be a finite number.',
+    )
+  })
+
+  it('requires an upper-mass profile in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.upperMassProfile
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "upperMassProfile" must be "block" or "tapered".',
     )
   })
 
@@ -431,6 +474,16 @@ describe('RAAKA project files', () => {
         parameters: {
           ...DEFAULT_PILOTI_PARAMETERS,
           shoulderMode: 'merged',
+        },
+      }),
+    ],
+    [
+      'unsupported upper-mass profile',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          upperMassProfile: 'wedge',
         },
       }),
     ],

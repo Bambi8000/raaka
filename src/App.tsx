@@ -817,6 +817,78 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('upperOffsetYMm', value)}
           />
+          <div className="control-subsection">
+            <span>UPPER MASS PROFILE</span>
+            <small>The bottom bearing face stays fixed.</small>
+          </div>
+          <div className="offset-scope-switch" aria-label="Upper mass profile">
+            <button
+              type="button"
+              className={parameters.upperMassProfile === 'block' ? 'is-active' : ''}
+              aria-pressed={parameters.upperMassProfile === 'block'}
+              onClick={() => update('upperMassProfile', 'block')}
+            >
+              <span>BLOCK</span>
+              <small>PARALLEL SIDES</small>
+            </button>
+            <button
+              type="button"
+              className={
+                parameters.upperMassProfile === 'tapered' ? 'is-active' : ''
+              }
+              aria-pressed={parameters.upperMassProfile === 'tapered'}
+              onClick={() => update('upperMassProfile', 'tapered')}
+            >
+              <span>TAPERED</span>
+              <small>LOFTED TOP</small>
+            </button>
+          </div>
+          {parameters.upperMassProfile === 'tapered' ? (
+            <>
+              <RangeField
+                label="Top width share"
+                value={parameters.upperTopWidthRatio}
+                minimum={0.45}
+                maximum={1.25}
+                step={0.01}
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopWidthRatio', value)}
+              />
+              <RangeField
+                label="Top depth share"
+                value={parameters.upperTopDepthRatio}
+                minimum={0.45}
+                maximum={1.25}
+                step={0.01}
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopDepthRatio', value)}
+              />
+              <RangeField
+                label="Top drift X"
+                value={parameters.upperTopOffsetXMm}
+                minimum={-400}
+                maximum={400}
+                step={10}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopOffsetXMm', value)}
+              />
+              <RangeField
+                label="Top drift Y"
+                value={parameters.upperTopOffsetYMm}
+                minimum={-400}
+                maximum={400}
+                step={10}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopOffsetYMm', value)}
+              />
+            </>
+          ) : null}
           <RangeField
             label="Columns (X)"
             value={parameters.supportCount}
@@ -1317,7 +1389,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.10 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.11 / LOCAL</span>
       </footer>
     </main>
   )

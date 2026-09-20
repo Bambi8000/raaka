@@ -63,6 +63,12 @@ rerolling the seeded variation. Shared shoulder tops follow the upper mass in X
 while their necks remain fixed, producing a connected sloping transition.
 Bearing feedback follows the actual offset mass and model scale.
 
+Version 0.1.11 adds block and tapered upper-mass profiles. The tapered profile
+keeps the lower bearing face fixed while its top width, depth and X/Y drift form
+a planar rectangular loft. Supports and bearing feedback therefore retain the
+same interface while the envelope, volume and mass follow the complete tapered
+geometry.
+
 ## Run locally
 
 Requirements:
@@ -103,7 +109,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.10 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.11 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

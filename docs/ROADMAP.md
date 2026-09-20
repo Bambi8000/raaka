@@ -18,6 +18,7 @@ Divided and shared shoulder rows are implemented in 0.1.9.
 Authored upper-mass placement is implemented in 0.1.10. A reusable high-rise
 articulation module with balconies, windows and exterior doors is planned after
 the initial recipe and drawing foundations.
+Block and tapered upper-mass profiles are implemented in 0.1.11.
 
 ## 0.1 — foundation
 
@@ -40,6 +41,7 @@ Version 0.1.7 adds selected-support proportions.
 Version 0.1.8 adds selected-support placement.
 Version 0.1.9 adds divided and shared shoulder topology.
 Version 0.1.10 adds authored upper-mass cantilever in X/Y.
+Version 0.1.11 adds a tapered upper-mass profile.
 
 ## 0.1.1 — correct the baseline
 
@@ -226,6 +228,24 @@ Done when an authored cantilever changes only the upper mass and the required
 shared shoulder top offsets, never rerolls a seeded choice, produces explicit
 bearing feedback and survives save, recovery, history and model-scale changes.
 
+## 0.1.11 — tapered Piloti upper mass
+
+- [x] preserve the existing block profile exactly
+- [x] add a tapered rectangular-loft profile with an unchanged bottom bearing
+  face
+- [x] add independent top width and depth ratios
+- [x] add authored top X/Y drift in design millimetres
+- [x] preserve every support, shoulder interface, support ID and random stream
+- [x] derive bounds, nominal volume and mass from the complete tapered geometry
+- [x] scale both faces and top drift uniformly at 1:1, 1:2 and 1:4
+- [x] persist the profile in Piloti recipe version 9 and migrate versions 1–8
+  to the block profile
+- [x] include profile and tapered controls in recovery and undo/redo
+
+Done when switching to Tapered changes only the upper mass above its fixed
+bearing face, its physical readings follow the analytic loft, Block reproduces
+the previous model exactly and both profiles survive persistence and scaling.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -241,7 +261,8 @@ bearing feedback and survives save, recovery, history and model-scale changes.
 - [x] explicit selected-leg width and depth with the same visible scope
 - [x] selected support placement offsets
 - [x] authored X/Y upper-mass cantilever
-- [ ] stepped, tapered or multi-part asymmetric upper masses
+- [x] tapered upper mass with authored top proportions and drift
+- [ ] stepped or multi-part asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [ ] focused solid-kernel spike before committing to a boolean dependency
@@ -345,7 +366,7 @@ drawings.
 | Element or operation | Current status | Next use |
 | --- | --- | --- |
 | Box | Implemented as a semantic piece | Upper mass, plinth, bridge |
-| Rectangular loft/frustum | Implemented as a semantic piece | Stem, neck, faceted shoulder |
+| Rectangular loft/frustum | Implemented as a semantic piece | Stem, shoulder, tapered upper mass |
 | Faceted prism and taper | Planned | Silo tank and hopper |
 | Place, align, repeat, mirror, group | Placement and one row are recipe-specific | Shared support layouts |
 | Union, subtract, plane-cut, chamfer | Planned; requires solid-kernel evidence | Finished solids and voids |

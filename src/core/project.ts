@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 8
+export const PILOTI_RECIPE_VERSION = 9
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -96,6 +96,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 5 &&
     input.recipeVersion !== 6 &&
     input.recipeVersion !== 7 &&
+    input.recipeVersion !== 8 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -119,9 +120,17 @@ export function parseProject(serialized: string): RaakaProject {
     upperOffsetXMm: 0,
     upperOffsetYMm: 0,
   }
+  const upperMassProfileDefault = {
+    upperMassProfile: 'block' as const,
+    upperTopWidthRatio: 0.72,
+    upperTopDepthRatio: 0.84,
+    upperTopOffsetXMm: 120,
+    upperTopOffsetYMm: 0,
+  }
   const missingDefaults =
     input.recipeVersion === 1
       ? {
+          ...upperMassProfileDefault,
           ...upperMassOffsetDefault,
           ...shoulderModeDefault,
           ...supportGridDefaults,
@@ -133,6 +142,7 @@ export function parseProject(serialized: string): RaakaProject {
         }
       : input.recipeVersion === 2
         ? {
+            ...upperMassProfileDefault,
             ...upperMassOffsetDefault,
             ...shoulderModeDefault,
             ...supportGridDefaults,
@@ -142,6 +152,7 @@ export function parseProject(serialized: string): RaakaProject {
           }
         : input.recipeVersion === 3
           ? {
+              ...upperMassProfileDefault,
               ...upperMassOffsetDefault,
               ...shoulderModeDefault,
               ...supportGridDefaults,
@@ -150,6 +161,7 @@ export function parseProject(serialized: string): RaakaProject {
             }
           : input.recipeVersion === 4
             ? {
+                ...upperMassProfileDefault,
                 ...upperMassOffsetDefault,
                 ...shoulderModeDefault,
                 supportSizeOverrides: [],
@@ -157,18 +169,25 @@ export function parseProject(serialized: string): RaakaProject {
               }
             : input.recipeVersion === 5
               ? {
+                  ...upperMassProfileDefault,
                   ...upperMassOffsetDefault,
                   ...shoulderModeDefault,
                   supportPositionOverrides: [],
                 }
               : input.recipeVersion === 6
                 ? {
+                    ...upperMassProfileDefault,
                     ...upperMassOffsetDefault,
                     ...shoulderModeDefault,
                   }
                 : input.recipeVersion === 7
-                  ? upperMassOffsetDefault
-                  : undefined
+                  ? {
+                      ...upperMassProfileDefault,
+                      ...upperMassOffsetDefault,
+                    }
+                  : input.recipeVersion === 8
+                    ? upperMassProfileDefault
+                    : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
     modelScale,

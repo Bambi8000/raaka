@@ -20,6 +20,7 @@ articulation module with balconies, windows and exterior doors is planned after
 the initial recipe and drawing foundations.
 Block and tapered upper-mass profiles are implemented in 0.1.11.
 Linked and detached upper/support footprints are implemented in 0.1.12.
+Semantic upper-mass and complete-support copies are implemented in 0.1.13.
 
 ## 0.1 — foundation
 
@@ -44,6 +45,7 @@ Version 0.1.9 adds divided and shared shoulder topology.
 Version 0.1.10 adds authored upper-mass cantilever in X/Y.
 Version 0.1.11 adds a tapered upper-mass profile.
 Version 0.1.12 links upper X/Y dimensions to the support grid by default.
+Version 0.1.13 adds source-linked semantic part copies and X/Y/Z placement.
 
 ## 0.1.1 — correct the baseline
 
@@ -268,6 +270,29 @@ plan axis without changing its Z structure or shrinking existing leg modules,
 Detached reproduces the prior independent footprint, and both modes survive
 persistence, history and scaling.
 
+## 0.1.13 — semantic Piloti part copies
+
+- [x] duplicate a selected upper mass as one semantic mass
+- [x] duplicate either member of a selected support as its complete connected
+  stem-and-shoulder pair
+- [x] assign stable copy IDs and independent X/Y/Z translation in design
+  millimetres
+- [x] let duplicate-of-copy preserve the base source and continue from the
+  selected copy's offset
+- [x] retain copies of temporarily hidden support sources without generating
+  orphan preview pieces
+- [x] include copies in bounds, nominal volume and grounded-contact analysis
+- [x] scale copy geometry and translation uniformly at 1:1, 1:2 and 1:4
+- [x] include copy creation, placement and removal in project files, recovery,
+  undo/redo and Piloti recipe version 11
+- [x] label copies as separate preview solids whose intersections are
+  double-counted until Fuse exists
+
+Done when the inspector can duplicate and place either major Piloti part type,
+a copied leg retains its joined interface, hidden sources recover predictably,
+save/history/model scale preserve the result, and the interface never presents
+preview overlap as a completed union.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -285,6 +310,7 @@ persistence, history and scaling.
 - [x] authored X/Y upper-mass cantilever
 - [x] tapered upper mass with authored top proportions and drift
 - [x] linked/detached upper footprint with support-grid X/Y coupling only
+- [x] source-linked upper-mass and complete-support copies with X/Y/Z placement
 - [ ] stepped or multi-part asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
@@ -391,7 +417,7 @@ drawings.
 | Box | Implemented as a semantic piece | Upper mass, plinth, bridge |
 | Rectangular loft/frustum | Implemented as a semantic piece | Stem, shoulder, tapered upper mass |
 | Faceted prism and taper | Planned | Silo tank and hopper |
-| Place, align, repeat, mirror, group | Placement and one row are recipe-specific | Shared support layouts |
+| Place, align, repeat, mirror, group | Selected semantic parts can be translated and repeated; align, mirror and grouping remain planned | Shared composition tools |
 | Union, subtract, plane-cut, chamfer | Planned; requires solid-kernel evidence | Finished solids and voids |
 | Step, stagger, lean and vary | Shared and selected Piloti foot lean plus seeded variation implemented | Support grids and Ziggurat |
 | Lock and branch | Planned; requires persistence and stable identity | Repeatable variants |

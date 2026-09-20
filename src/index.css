@@ -504,6 +504,34 @@ input:focus-visible {
   letter-spacing: 0.1em;
 }
 
+.inspector-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 13px;
+}
+
+.inspector-actions button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--ink);
+  background: var(--yellow);
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.inspector-actions button.is-destructive {
+  background: var(--pink);
+  color: white;
+}
+
+.inspector-actions button:disabled {
+  background: var(--panel);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .controls-section {
   display: grid;
   gap: 14px;

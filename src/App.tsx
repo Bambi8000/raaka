@@ -20,7 +20,11 @@ import {
   type HistoryState,
 } from './core/history'
 import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
-import { pilotiSupportAddress } from './core/pilotiParameters'
+import {
+  PILOTI_PART_COPY_LIMIT,
+  PILOTI_PART_COPY_OFFSET_MM,
+  pilotiSupportAddress,
+} from './core/pilotiParameters'
 import {
   createProject,
   parseProject,
@@ -32,6 +36,7 @@ import type {
   ModelScale,
   PilotiFootOffsetOverride,
   PilotiParameters,
+  PilotiPartCopy,
   PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
 } from './core/types'
@@ -180,6 +185,18 @@ function selectionExists(
   parameters: PilotiParameters,
 ): boolean {
   if (selectedPieceId === 'upper-mass') return true
+  const copyId = partCopyIdForPiece(selectedPieceId)
+  if (copyId) {
+    const copy = parameters.partCopies.find((candidate) => candidate.id === copyId)
+    if (!copy) return false
+    if (copy.sourceId === 'upper-mass') return true
+    const sourceAddress = pilotiSupportAddress(copy.sourceId)
+    return (
+      sourceAddress !== undefined &&
+      sourceAddress.column <= parameters.supportCount &&
+      sourceAddress.row <= parameters.supportRowCount
+    )
+  }
   const selectedSupportId = supportIdForPiece(selectedPieceId)
   const address = selectedSupportId
     ? pilotiSupportAddress(selectedSupportId)
@@ -189,6 +206,20 @@ function selectionExists(
     address.column <= parameters.supportCount &&
     address.row <= parameters.supportRowCount
   )
+}
+
+function partCopyIdForPiece(pieceId: string): string | undefined {
+  return /^(?:upper-mass|support|shoulder)-(copy-\d+)$/.exec(pieceId)?.[1]
+}
+
+function partCopyPieceId(copy: PilotiPartCopy): string {
+  return copy.sourceId === 'upper-mass'
+    ? `upper-mass-${copy.id}`
+    : `support-${copy.id}`
+}
+
+function partCopyNumber(copyId: string): number {
+  return Number(copyId.slice('copy-'.length))
 }
 
 function supportIdForPiece(pieceId: string): string | undefined {
@@ -251,6 +282,10 @@ export default function App() {
     [masterStudy, modelScale],
   )
   const selectedSupportId = supportIdForPiece(selectedPieceId)
+  const selectedPartCopyId = partCopyIdForPiece(selectedPieceId)
+  const selectedPartCopy = parameters.partCopies.find(
+    (copy) => copy.id === selectedPartCopyId,
+  )
   const selectedFootOffsetOverride = parameters.footOffsetOverrides.find(
     (override) => override.supportId === selectedSupportId,
   )
@@ -303,6 +338,12 @@ export default function App() {
   const selectedPiece = study.pieces.find(
     (piece) => piece.id === selectedPieceId,
   )
+  const duplicateSourceId =
+    selectedPartCopy?.sourceId ??
+    (selectedPieceId === 'upper-mass' ? 'upper-mass' : selectedSupportId)
+  const canDuplicateSelectedPiece =
+    duplicateSourceId !== undefined &&
+    parameters.partCopies.length < PILOTI_PART_COPY_LIMIT
   const projectStatus: ProjectOrigin | 'UNSAVED' =
     projectJson === baselineJson ? projectOrigin : 'UNSAVED'
 
@@ -359,6 +400,78 @@ export default function App() {
   const updateModelScale = (nextModelScale: ModelScale) => {
     if (nextModelScale === modelScale) return
     replaceStudy({ ...studyState, modelScale: nextModelScale })
+  }
+
+  const replacePartCopy = (nextCopy: PilotiPartCopy) => {
+    replaceStudy({
+      ...studyState,
+      parameters: {
+        ...parameters,
+        partCopies: parameters.partCopies.map((copy) =>
+          copy.id === nextCopy.id ? nextCopy : copy,
+        ),
+      },
+    })
+  }
+
+  const updateSelectedPartCopyOffset = (
+    axis: 'offsetXMm' | 'offsetYMm' | 'offsetZMm',
+    value: number,
+  ) => {
+    if (!selectedPartCopy) return
+    replacePartCopy({
+      ...selectedPartCopy,
+      [axis]: value,
+    })
+  }
+
+  const duplicateSelectedPiece = () => {
+    if (!duplicateSourceId || !canDuplicateSelectedPiece) return
+    const nextNumber =
+      Math.max(0, ...parameters.partCopies.map((copy) => partCopyNumber(copy.id))) +
+      1
+    const sourceOffsetX = selectedPartCopy?.offsetXMm ?? 0
+    const sourceOffsetY = selectedPartCopy?.offsetYMm ?? 0
+    const sourceOffsetZ = selectedPartCopy?.offsetZMm ?? 0
+    const copy: PilotiPartCopy = {
+      id: `copy-${nextNumber}`,
+      sourceId: duplicateSourceId,
+      offsetXMm: sourceOffsetX + 120,
+      offsetYMm: sourceOffsetY + 120,
+      offsetZMm: sourceOffsetZ,
+    }
+    replaceStudy({
+      ...studyState,
+      parameters: {
+        ...parameters,
+        partCopies: [...parameters.partCopies, copy],
+      },
+    })
+    setSelectedPieceId(partCopyPieceId(copy))
+    setSupportEditScope('shared')
+    setNotice({
+      kind: 'info',
+      text: 'Part duplicated with a 120 mm X/Y nudge. Its source shape stays linked.',
+    })
+  }
+
+  const removeSelectedPartCopy = () => {
+    if (!selectedPartCopy) return
+    setSelectedPieceId(selectedPartCopy.sourceId)
+    setSupportEditScope('shared')
+    replaceStudy({
+      ...studyState,
+      parameters: {
+        ...parameters,
+        partCopies: parameters.partCopies.filter(
+          (copy) => copy.id !== selectedPartCopy.id,
+        ),
+      },
+    })
+    setNotice({
+      kind: 'info',
+      text: 'Part copy removed. Undo is available.',
+    })
   }
 
   const undo = () => {
@@ -726,6 +839,29 @@ export default function App() {
               ? `${selectedPiece.role.toUpperCase()} · ${selectedPiece.kind.toUpperCase()}`
               : 'Generated composition'}
           </p>
+          <div className="inspector-actions">
+            <button
+              type="button"
+              onClick={duplicateSelectedPiece}
+              disabled={!canDuplicateSelectedPiece}
+              title={
+                parameters.partCopies.length >= PILOTI_PART_COPY_LIMIT
+                  ? `The ${PILOTI_PART_COPY_LIMIT}-copy limit has been reached.`
+                  : 'Duplicate the selected semantic part.'
+              }
+            >
+              DUPLICATE
+            </button>
+            {selectedPartCopy ? (
+              <button
+                type="button"
+                className="is-destructive"
+                onClick={removeSelectedPartCopy}
+              >
+                REMOVE COPY
+              </button>
+            ) : null}
+          </div>
         </section>
 
         <section className="panel-section controls-section">
@@ -733,6 +869,68 @@ export default function App() {
             <span>03</span>
             <h2>Global composition</h2>
           </div>
+          {selectedPartCopy ? (
+            <>
+              <div className="control-subsection">
+                <span>COPY POSITION</span>
+                <small>
+                  Source{' '}
+                  {selectedPartCopy.sourceId === 'upper-mass'
+                    ? 'UPPER MASS'
+                    : formatSupportId(selectedPartCopy.sourceId)}{' '}
+                  supplies the live shape. This copy owns its translation.
+                </small>
+              </div>
+              <RangeField
+                label="Copy offset X"
+                value={selectedPartCopy.offsetXMm}
+                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
+                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
+                step={10}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  updateSelectedPartCopyOffset('offsetXMm', value)
+                }
+              />
+              <RangeField
+                label="Copy offset Y"
+                value={selectedPartCopy.offsetYMm}
+                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
+                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
+                step={10}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  updateSelectedPartCopyOffset('offsetYMm', value)
+                }
+              />
+              <RangeField
+                label="Copy offset Z"
+                value={selectedPartCopy.offsetZMm}
+                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
+                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
+                step={10}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  updateSelectedPartCopyOffset('offsetZMm', value)
+                }
+              />
+              <div className="shape-readout">
+                <span>COPY OFFSET</span>
+                <strong>
+                  {formatNumber(selectedPartCopy.offsetXMm)} ·{' '}
+                  {formatNumber(selectedPartCopy.offsetYMm)} ·{' '}
+                  {formatNumber(selectedPartCopy.offsetZMm)} MM
+                </strong>
+                <small>X · Y · Z in design millimetres.</small>
+              </div>
+            </>
+          ) : null}
           <RangeField
             label="Design height"
             value={parameters.heightMm}
@@ -1271,6 +1469,22 @@ export default function App() {
               <dd>{formatNumber(study.groundContactMm2 / 1_000_000, 3)} m²</dd>
             </div>
           </dl>
+          {parameters.partCopies.length > 0 ? (
+            <div className="layout-advisories" aria-live="polite">
+              <div>
+                <strong>SEPARATE PART COPIES</strong>
+                <span>
+                  {parameters.partCopies.length}{' '}
+                  {parameters.partCopies.length === 1 ? 'COPY' : 'COPIES'} · LIVE
+                  SOURCE SHAPES
+                </span>
+                <small>
+                  Copies are separate preview solids. Any overlap is counted
+                  more than once until solid-kernel Fuse is available.
+                </small>
+              </div>
+            </div>
+          ) : null}
           {masterStudy.supportLayout &&
           (masterStudy.supportLayout.adjacentRowOverlapMm > 0 ||
             masterStudy.supportLayout.adjacentColumnOverlapMm > 0 ||
@@ -1428,7 +1642,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.12 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.13 / LOCAL</span>
       </footer>
     </main>
   )

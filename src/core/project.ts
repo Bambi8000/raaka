@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 10
+export const PILOTI_RECIPE_VERSION = 11
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -57,6 +57,7 @@ export function createProject(
       supportPositionOverrides: parameters.supportPositionOverrides.map(
         (override) => ({ ...override }),
       ),
+      partCopies: parameters.partCopies.map((copy) => ({ ...copy })),
     },
   }
 }
@@ -98,6 +99,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 7 &&
     input.recipeVersion !== 8 &&
     input.recipeVersion !== 9 &&
+    input.recipeVersion !== 10 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -131,9 +133,11 @@ export function parseProject(serialized: string): RaakaProject {
   const upperFootprintModeDefault = {
     upperFootprintMode: 'detached' as const,
   }
+  const partCopiesDefault = { partCopies: [] }
   const missingDefaults =
     input.recipeVersion === 1
       ? {
+          ...partCopiesDefault,
           ...upperFootprintModeDefault,
           ...upperMassProfileDefault,
           ...upperMassOffsetDefault,
@@ -147,6 +151,7 @@ export function parseProject(serialized: string): RaakaProject {
         }
       : input.recipeVersion === 2
         ? {
+            ...partCopiesDefault,
             ...upperFootprintModeDefault,
             ...upperMassProfileDefault,
             ...upperMassOffsetDefault,
@@ -158,6 +163,7 @@ export function parseProject(serialized: string): RaakaProject {
           }
         : input.recipeVersion === 3
           ? {
+              ...partCopiesDefault,
               ...upperFootprintModeDefault,
               ...upperMassProfileDefault,
               ...upperMassOffsetDefault,
@@ -168,6 +174,7 @@ export function parseProject(serialized: string): RaakaProject {
             }
           : input.recipeVersion === 4
             ? {
+                ...partCopiesDefault,
                 ...upperFootprintModeDefault,
                 ...upperMassProfileDefault,
                 ...upperMassOffsetDefault,
@@ -177,6 +184,7 @@ export function parseProject(serialized: string): RaakaProject {
               }
             : input.recipeVersion === 5
               ? {
+                  ...partCopiesDefault,
                   ...upperFootprintModeDefault,
                   ...upperMassProfileDefault,
                   ...upperMassOffsetDefault,
@@ -185,6 +193,7 @@ export function parseProject(serialized: string): RaakaProject {
                 }
               : input.recipeVersion === 6
                 ? {
+                    ...partCopiesDefault,
                     ...upperFootprintModeDefault,
                     ...upperMassProfileDefault,
                     ...upperMassOffsetDefault,
@@ -192,18 +201,25 @@ export function parseProject(serialized: string): RaakaProject {
                   }
                 : input.recipeVersion === 7
                   ? {
+                      ...partCopiesDefault,
                       ...upperFootprintModeDefault,
                       ...upperMassProfileDefault,
                       ...upperMassOffsetDefault,
                     }
                   : input.recipeVersion === 8
                     ? {
+                        ...partCopiesDefault,
                         ...upperFootprintModeDefault,
                         ...upperMassProfileDefault,
                       }
                     : input.recipeVersion === 9
-                      ? upperFootprintModeDefault
-                      : undefined
+                      ? {
+                          ...partCopiesDefault,
+                          ...upperFootprintModeDefault,
+                        }
+                      : input.recipeVersion === 10
+                        ? partCopiesDefault
+                        : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
     modelScale,

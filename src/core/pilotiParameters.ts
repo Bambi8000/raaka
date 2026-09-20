@@ -1,5 +1,6 @@
 import type {
   PilotiFootOffsetOverride,
+  PilotiPartCopy,
   PilotiUpperFootprintMode,
   PilotiParameters,
   PilotiShoulderMode,
@@ -24,6 +25,7 @@ type NumericPilotiParameter = Exclude<
   | 'footOffsetOverrides'
   | 'supportSizeOverrides'
   | 'supportPositionOverrides'
+  | 'partCopies'
 >
 
 export const PILOTI_SUPPORT_SIZE_SCALE = {
@@ -34,6 +36,13 @@ export const PILOTI_SUPPORT_SIZE_SCALE = {
 export const PILOTI_SUPPORT_POSITION_MM = {
   minimum: -300,
   maximum: 300,
+} as const
+
+export const PILOTI_PART_COPY_LIMIT = 24
+
+export const PILOTI_PART_COPY_OFFSET_MM = {
+  minimum: -2_000,
+  maximum: 2_000,
 } as const
 
 export function isPilotiShoulderMode(
@@ -165,6 +174,71 @@ export function pilotiSupportAddress(
 
 export function isPilotiSupportId(value: string): boolean {
   return pilotiSupportAddress(value) !== undefined
+}
+
+export function isPilotiPartCopyId(value: string): boolean {
+  const match = /^copy-(\d+)$/.exec(value)
+  if (!match) return false
+  const number = Number(match[1])
+  return (
+    Number.isInteger(number) &&
+    number >= 1 &&
+    number <= 9_999 &&
+    value === `copy-${number}`
+  )
+}
+
+export function isPilotiPartCopySourceId(value: string): boolean {
+  return value === 'upper-mass' || isPilotiSupportId(value)
+}
+
+function normalizePartCopyOffset(value: number, name: string): number {
+  if (!Number.isFinite(value)) {
+    throw new RangeError(`Piloti part copy "${name}" must be finite.`)
+  }
+  return Math.min(
+    PILOTI_PART_COPY_OFFSET_MM.maximum,
+    Math.max(PILOTI_PART_COPY_OFFSET_MM.minimum, value),
+  )
+}
+
+function normalizePartCopies(
+  input: readonly PilotiPartCopy[],
+): readonly PilotiPartCopy[] {
+  if (!Array.isArray(input)) {
+    throw new RangeError('Piloti part copies must be an array.')
+  }
+  if (input.length > PILOTI_PART_COPY_LIMIT) {
+    throw new RangeError(
+      `Piloti supports at most ${PILOTI_PART_COPY_LIMIT} part copies.`,
+    )
+  }
+
+  const copies: readonly PilotiPartCopy[] = input
+  const copyIds = new Set<string>()
+  return copies.map((copy) => {
+    if (
+      typeof copy !== 'object' ||
+      copy === null ||
+      !isPilotiPartCopyId(copy.id)
+    ) {
+      throw new RangeError('Piloti part copy has an invalid copy ID.')
+    }
+    if (!isPilotiPartCopySourceId(copy.sourceId)) {
+      throw new RangeError('Piloti part copy has an invalid source ID.')
+    }
+    if (copyIds.has(copy.id)) {
+      throw new RangeError(`Piloti part copy "${copy.id}" is duplicated.`)
+    }
+    copyIds.add(copy.id)
+    return {
+      id: copy.id,
+      sourceId: copy.sourceId,
+      offsetXMm: normalizePartCopyOffset(copy.offsetXMm, 'offsetXMm'),
+      offsetYMm: normalizePartCopyOffset(copy.offsetYMm, 'offsetYMm'),
+      offsetZMm: normalizePartCopyOffset(copy.offsetZMm, 'offsetZMm'),
+    }
+  })
 }
 
 function normalizeFootOffsetOverrides(
@@ -353,6 +427,7 @@ export function normalizePilotiParameters(
     supportPositionOverrides: normalizeSupportPositionOverrides(
       input.supportPositionOverrides,
     ),
+    partCopies: normalizePartCopies(input.partCopies),
   }
 }
 
@@ -584,6 +659,79 @@ function readSupportPositionOverrides(
   })
 }
 
+function readPartCopyOffset(
+  input: Record<string, unknown>,
+  name: 'offsetXMm' | 'offsetYMm' | 'offsetZMm',
+): number {
+  const value = input[name]
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new ProjectValidationError(
+      `Part copy "${name}" must be a finite number.`,
+    )
+  }
+  if (
+    value < PILOTI_PART_COPY_OFFSET_MM.minimum ||
+    value > PILOTI_PART_COPY_OFFSET_MM.maximum
+  ) {
+    throw new ProjectValidationError(
+      `Part copy "${name}" must be between ${PILOTI_PART_COPY_OFFSET_MM.minimum} and ${PILOTI_PART_COPY_OFFSET_MM.maximum}.`,
+    )
+  }
+  return value
+}
+
+function readPartCopies(
+  input: Record<string, unknown>,
+): readonly PilotiPartCopy[] {
+  const value = input.partCopies
+  if (!Array.isArray(value)) {
+    throw new ProjectValidationError('Parameter "partCopies" must be an array.')
+  }
+  if (value.length > PILOTI_PART_COPY_LIMIT) {
+    throw new ProjectValidationError(
+      `Part copies must contain at most ${PILOTI_PART_COPY_LIMIT} entries.`,
+    )
+  }
+
+  const copyIds = new Set<string>()
+  return value.map((candidate) => {
+    if (
+      typeof candidate !== 'object' ||
+      candidate === null ||
+      Array.isArray(candidate)
+    ) {
+      throw new ProjectValidationError('Every part copy must be an object.')
+    }
+    const copy = candidate as Record<string, unknown>
+    if (typeof copy.id !== 'string' || !isPilotiPartCopyId(copy.id)) {
+      throw new ProjectValidationError(
+        'Every part copy must name a supported copy ID.',
+      )
+    }
+    if (
+      typeof copy.sourceId !== 'string' ||
+      !isPilotiPartCopySourceId(copy.sourceId)
+    ) {
+      throw new ProjectValidationError(
+        'Every part copy must name an upper-mass or support source ID.',
+      )
+    }
+    if (copyIds.has(copy.id)) {
+      throw new ProjectValidationError(
+        `Part copy "${copy.id}" is duplicated.`,
+      )
+    }
+    copyIds.add(copy.id)
+    return {
+      id: copy.id,
+      sourceId: copy.sourceId,
+      offsetXMm: readPartCopyOffset(copy, 'offsetXMm'),
+      offsetYMm: readPartCopyOffset(copy, 'offsetYMm'),
+      offsetZMm: readPartCopyOffset(copy, 'offsetZMm'),
+    }
+  })
+}
+
 export class ProjectValidationError extends Error {
   public constructor(message: string) {
     super(message)
@@ -626,5 +774,6 @@ export function parsePilotiParameters(
     footOffsetOverrides: readFootOffsetOverrides(record),
     supportSizeOverrides: readSupportSizeOverrides(record),
     supportPositionOverrides: readSupportPositionOverrides(record),
+    partCopies: readPartCopies(record),
   }
 }

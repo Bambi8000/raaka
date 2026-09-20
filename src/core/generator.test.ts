@@ -189,6 +189,157 @@ describe('generatePiloti', () => {
     expect(baseMass).toEqual(expandedMass)
   })
 
+  it('duplicates an upper mass as a stable translated semantic piece', () => {
+    const base = generatePiloti(DEFAULT_PILOTI_PARAMETERS)
+    const duplicated = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      partCopies: [
+        {
+          id: 'copy-1',
+          sourceId: 'upper-mass',
+          offsetXMm: 420,
+          offsetYMm: -180,
+          offsetZMm: 260,
+        },
+      ],
+    })
+    const source = duplicated.pieces.find((piece) => piece.id === 'upper-mass')
+    const copy = duplicated.pieces.find(
+      (piece) => piece.id === 'upper-mass-copy-1',
+    )
+
+    expect(source?.kind).toBe('box')
+    expect(copy?.kind).toBe('box')
+    if (!source || source.kind !== 'box' || !copy || copy.kind !== 'box') return
+    expect(copy).toEqual({
+      ...source,
+      id: 'upper-mass-copy-1',
+      label: 'Upper mass copy 1',
+      position: [
+        source.position[0] + 420,
+        source.position[1] - 180,
+        source.position[2] + 260,
+      ],
+    })
+    expect(duplicated.pieces).toHaveLength(base.pieces.length + 1)
+    expect(duplicated.concreteVolumeMm3 - base.concreteVolumeMm3).toBeCloseTo(
+      source.size[0] * source.size[1] * source.size[2],
+      10,
+    )
+    expect(duplicated.groundContactMm2).toBe(base.groundContactMm2)
+  })
+
+  it('duplicates a complete support pair and counts only grounded copies', () => {
+    const base = generatePiloti(DEFAULT_PILOTI_PARAMETERS)
+    const grounded = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      partCopies: [
+        {
+          id: 'copy-4',
+          sourceId: 'support-2',
+          offsetXMm: 500,
+          offsetYMm: -240,
+          offsetZMm: 0,
+        },
+      ],
+    })
+    const lifted = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      partCopies: [
+        {
+          id: 'copy-4',
+          sourceId: 'support-2',
+          offsetXMm: 500,
+          offsetYMm: -240,
+          offsetZMm: 100,
+        },
+      ],
+    })
+    const sourceStem = grounded.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'support-2',
+    )
+    const sourceShoulder = grounded.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'shoulder-2',
+    )
+    const copiedStem = grounded.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'support-copy-4',
+    )
+    const copiedShoulder = grounded.pieces.find(
+      (piece): piece is FrustumPiece => piece.id === 'shoulder-copy-4',
+    )
+
+    expect(sourceStem).toBeDefined()
+    expect(sourceShoulder).toBeDefined()
+    expect(copiedStem).toBeDefined()
+    expect(copiedShoulder).toBeDefined()
+    if (!sourceStem || !sourceShoulder || !copiedStem || !copiedShoulder) return
+    expect(copiedStem).toEqual({
+      ...sourceStem,
+      id: 'support-copy-4',
+      label: 'Support copy 4',
+      position: [
+        sourceStem.position[0] + 500,
+        sourceStem.position[1] - 240,
+        sourceStem.position[2],
+      ],
+    })
+    expect(copiedShoulder).toEqual({
+      ...sourceShoulder,
+      id: 'shoulder-copy-4',
+      label: 'Shoulder copy 4',
+      position: [
+        sourceShoulder.position[0] + 500,
+        sourceShoulder.position[1] - 240,
+        sourceShoulder.position[2],
+      ],
+    })
+    expect(copiedStem.position[2] + copiedStem.height / 2).toBeCloseTo(
+      copiedShoulder.position[2] - copiedShoulder.height / 2,
+      10,
+    )
+    expect(grounded.groundContactMm2 - base.groundContactMm2).toBeCloseTo(
+      sourceStem.bottomSize[0] * sourceStem.bottomSize[1],
+      10,
+    )
+    expect(lifted.groundContactMm2).toBeCloseTo(base.groundContactMm2, 10)
+    expect(lifted.concreteVolumeMm3).toBeCloseTo(
+      grounded.concreteVolumeMm3,
+      10,
+    )
+  })
+
+  it('retains a support copy while its source is outside the visible grid', () => {
+    const partCopies = [
+      {
+        id: 'copy-2',
+        sourceId: 'support-3',
+        offsetXMm: 300,
+        offsetYMm: 0,
+        offsetZMm: 0,
+      },
+    ] as const
+    const hidden = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 1,
+      partCopies,
+    })
+    const restored = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      supportCount: 3,
+      partCopies,
+    })
+
+    expect(hidden.pieces.some((piece) => piece.id === 'support-copy-2')).toBe(
+      false,
+    )
+    expect(restored.pieces.some((piece) => piece.id === 'support-copy-2')).toBe(
+      true,
+    )
+    expect(restored.pieces.some((piece) => piece.id === 'shoulder-copy-2')).toBe(
+      true,
+    )
+  })
+
   it('keeps first-row identities and authored shapes when rows are added', () => {
     const oneRow = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
@@ -896,6 +1047,7 @@ describe('generatePiloti', () => {
       footOffsetOverrides: [],
       supportSizeOverrides: [],
       supportPositionOverrides: [],
+      partCopies: [],
     })
     expectFiniteStudy({
       seed: MAX_SEED,
@@ -940,6 +1092,15 @@ describe('generatePiloti', () => {
           supportId: 'support-r3-c6',
           positionXMm: -300,
           positionYMm: 300,
+        },
+      ],
+      partCopies: [
+        {
+          id: 'copy-9999',
+          sourceId: 'upper-mass',
+          offsetXMm: 2_000,
+          offsetYMm: -2_000,
+          offsetZMm: 2_000,
         },
       ],
     })
@@ -1064,6 +1225,75 @@ describe('generatePiloti', () => {
         ],
       }),
     ).toThrow('Piloti support position override for "support-1" is duplicated.')
+  })
+
+  it('rejects malformed or duplicated part copies', () => {
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        partCopies: [
+          {
+            id: 'copy-1',
+            sourceId: 'upper-mass',
+            offsetXMm: Number.NaN,
+            offsetYMm: 0,
+            offsetZMm: 0,
+          },
+        ],
+      }),
+    ).toThrow('Piloti part copy "offsetXMm" must be finite.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        partCopies: [
+          {
+            id: 'copy-01',
+            sourceId: 'upper-mass',
+            offsetXMm: 0,
+            offsetYMm: 0,
+            offsetZMm: 0,
+          },
+        ],
+      }),
+    ).toThrow('Piloti part copy has an invalid copy ID.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        partCopies: [
+          {
+            id: 'copy-1',
+            sourceId: 'shoulder-1',
+            offsetXMm: 0,
+            offsetYMm: 0,
+            offsetZMm: 0,
+          },
+        ],
+      }),
+    ).toThrow('Piloti part copy has an invalid source ID.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        partCopies: [
+          {
+            id: 'copy-1',
+            sourceId: 'upper-mass',
+            offsetXMm: 0,
+            offsetYMm: 0,
+            offsetZMm: 0,
+          },
+          {
+            id: 'copy-1',
+            sourceId: 'support-2',
+            offsetXMm: 100,
+            offsetYMm: 0,
+            offsetZMm: 0,
+          },
+        ],
+      }),
+    ).toThrow('Piloti part copy "copy-1" is duplicated.')
   })
 
   it('rejects an unsupported shoulder topology', () => {

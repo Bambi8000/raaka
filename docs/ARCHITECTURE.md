@@ -185,6 +185,29 @@ seed order, placement offsets and the tapered top relationship. Selected-leg
 size or placement overrides remain local and may still produce explicit
 overhang instead of silently resizing the full composition.
 
+### Semantic part copies
+
+Version 0.1.13 stores up to 24 source-linked part copies. A copy has a stable
+`copy-N` ID, one base source ID and an independent X/Y/Z translation in design
+millimetres. An upper-mass source produces one copied mass. A support source
+produces both its stem and matching shoulder, preserving their coincident
+interface and treating the pair as one semantic leg. Duplicating a copy keeps
+the same base source and adds to the existing translation.
+
+Copy geometry is resolved after the base recipe so later global or source-shape
+changes propagate into every copy without duplicating parameter schemas. A copy
+of a temporarily hidden grid support remains in project data but generates no
+scene pieces until its source row and column are visible again. Uniform model
+scale transforms copied dimensions and translations with the rest of the
+study. Only copied stems whose actual lower bound remains on Z = 0 contribute
+ground contact.
+
+Copies are deliberately separate closed preview solids. Their bounds and
+nominal volume contribute to the study, but intersecting volume is counted once
+per piece. This milestone does not imply boolean union, manufacture-ready mesh
+output or independent proportion edits. Those require the validated solid
+kernel and an explicit Fuse operation.
+
 ## Data flow
 
 ```text
@@ -207,11 +230,12 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 10 stores every
+version and a separate recipe version. Piloti recipe version 11 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
-override arrays and one of the supported `modelScale` presets. Recipe versions
-1–8 receive the block upper-mass profile and latent tapered defaults; recipe
+override arrays, semantic part copies and one of the supported `modelScale`
+presets. Recipe versions 1–10 receive an empty part-copy list; versions 1–8
+receive the block upper-mass profile and latent tapered defaults; recipe
 versions 1–9 receive the detached footprint relationship to preserve their
 exact geometry; versions 1–7 additionally
 receive zero upper-mass offsets; versions 1–6 additionally receive divided
@@ -246,10 +270,11 @@ flat-shaded Three.js buffer geometry.
 
 The volume equation integrates the product of linearly changing width and
 depth. The one-row default and non-overlapping grids can sum preview-piece
-volumes directly. An authored grid, selected size or selected placement may
-deliberately overlap shoulders; until boolean union exists, RAAKA labels the
-result nominal and warns that the sum double-counts intersecting preview pieces.
-Future booleans must derive volume from the finished solid instead.
+volumes directly. An authored grid, selected size, selected placement or part
+copy may deliberately overlap another piece; until boolean union exists, RAAKA
+labels the result nominal and warns that the sum double-counts intersecting
+preview pieces. Future booleans must derive volume from the finished solid
+instead.
 
 Current pieces are separate closed preview meshes; shared contact faces have
 not been removed by a boolean union. They are not yet an export-ready single

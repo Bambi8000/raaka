@@ -67,6 +67,11 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   upperDepthRatio: 0.34,
   upperOffsetXMm: 0,
   upperOffsetYMm: 0,
+  upperMassProfile: 'block',
+  upperTopWidthRatio: 0.72,
+  upperTopDepthRatio: 0.84,
+  upperTopOffsetXMm: 120,
+  upperTopOffsetYMm: 0,
   asymmetry: 0.12,
   footOffsetXMm: 0,
   footOffsetYMm: 0,
@@ -232,14 +237,43 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     }
   }
 
-  pieces.push({
-    kind: 'box',
-    id: 'upper-mass',
-    label: 'Upper mass',
-    role: 'mass',
-    position: [upperCentreX, upperCentreY, supportHeight + upperHeight / 2],
-    size: [upperWidth, upperDepth, upperHeight],
-  })
+  pieces.push(
+    parameters.upperMassProfile === 'block'
+      ? {
+          kind: 'box',
+          id: 'upper-mass',
+          label: 'Upper mass',
+          role: 'mass',
+          position: [
+            upperCentreX,
+            upperCentreY,
+            supportHeight + upperHeight / 2,
+          ],
+          size: [upperWidth, upperDepth, upperHeight],
+        }
+      : {
+          kind: 'frustum',
+          id: 'upper-mass',
+          label: 'Upper mass',
+          role: 'mass',
+          position: [
+            upperCentreX,
+            upperCentreY,
+            supportHeight + upperHeight / 2,
+          ],
+          height: upperHeight,
+          bottomSize: [upperWidth, upperDepth],
+          topSize: [
+            upperWidth * parameters.upperTopWidthRatio,
+            upperDepth * parameters.upperTopDepthRatio,
+          ],
+          bottomOffset: [0, 0],
+          topOffset: [
+            parameters.upperTopOffsetXMm,
+            parameters.upperTopOffsetYMm,
+          ],
+        },
+  )
 
   const concreteVolumeMm3 = pieces.reduce(
     (sum, piece) =>

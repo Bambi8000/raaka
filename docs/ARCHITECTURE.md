@@ -152,6 +152,21 @@ An authored Y offset moves only the mass; actual shoulder rectangles and the
 translated mass bounds drive the existing Y-bearing feedback. The later model
 scale stage scales the complete resulting geometry and all distance feedback.
 
+### Upper-mass profile
+
+Version 0.1.11 adds a recipe-level `upperMassProfile`. `block` preserves the
+existing box exactly. `tapered` replaces only that box with one rectangular
+frustum whose bottom size, position and elevation equal the box it replaces.
+The authored top-width and top-depth ratios scale that bottom face, and the
+top X/Y offsets drift its top centre relative to the fixed bottom centre.
+
+The operation consumes no randomness and changes no support piece. Shoulder
+bearing analysis continues to use the unchanged bottom footprint; complete
+scene bounds, volume and mass use the actual frustum. The existing analytic
+rectangular-loft volume equation and Three.js frustum adapter therefore serve
+both supports and the tapered mass without a new geometry dependency. Uniform
+model scale transforms both faces and the top offset together.
+
 ## Data flow
 
 ```text
@@ -174,11 +189,13 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 8 stores every
-generator parameter, authored upper-mass placement, shoulder topology, shared
-X/Y foot offsets, the three selected-leg override arrays and one of the
-supported `modelScale` presets. Recipe versions 1–7 receive zero upper-mass
-offsets; versions 1–6 additionally receive divided shoulders; version 5
+version and a separate recipe version. Piloti recipe version 9 stores every
+generator parameter, authored upper-mass placement and profile, shoulder
+topology, shared X/Y foot offsets, the three selected-leg override arrays and
+one of the supported `modelScale` presets. Recipe versions 1–8 receive the
+block upper-mass profile and latent tapered defaults; versions 1–7 additionally
+receive zero upper-mass offsets; versions 1–6 additionally receive divided
+shoulders; version 5
 additionally receives an empty support-position override list; version 4
 additionally receives an empty support-size override list; version 3
 additionally migrates to one row with the original support depth; version 2

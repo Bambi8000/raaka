@@ -593,6 +593,60 @@ describe('generatePiloti', () => {
     expect(shifted.supportLayout?.sideBearingOverhangMm).toBeCloseTo(0, 10)
   })
 
+  it('tapers and drifts the upper mass without changing its bearing face', () => {
+    const block = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 640,
+      upperMassProfile: 'block',
+    })
+    const tapered = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 640,
+      upperMassProfile: 'tapered',
+      upperTopWidthRatio: 0.64,
+      upperTopDepthRatio: 0.78,
+      upperTopOffsetXMm: 170,
+      upperTopOffsetYMm: -90,
+    })
+    const blockMass = block.pieces.find((piece) => piece.id === 'upper-mass')
+    const taperedMass = tapered.pieces.find(
+      (piece): piece is FrustumPiece =>
+        piece.id === 'upper-mass' && piece.kind === 'frustum',
+    )
+
+    expect(blockMass?.kind).toBe('box')
+    expect(taperedMass).toBeDefined()
+    if (!blockMass || blockMass.kind !== 'box' || !taperedMass) return
+    expect(taperedMass.position).toEqual(blockMass.position)
+    expect(taperedMass.height).toBe(blockMass.size[2])
+    expect(taperedMass.bottomSize).toEqual([
+      blockMass.size[0],
+      blockMass.size[1],
+    ])
+    expect(taperedMass.topSize).toEqual([
+      blockMass.size[0] * 0.64,
+      blockMass.size[1] * 0.78,
+    ])
+    expect(taperedMass.bottomOffset).toEqual([0, 0])
+    expect(taperedMass.topOffset).toEqual([170, -90])
+    for (const piece of block.pieces.filter(
+      (candidate) => candidate.role === 'support',
+    )) {
+      expect(tapered.pieces.find((candidate) => candidate.id === piece.id)).toEqual(
+        piece,
+      )
+    }
+    expect(tapered.supportLayout).toEqual(block.supportLayout)
+    expect(tapered.groundContactMm2).toBe(block.groundContactMm2)
+    expect(tapered.concreteVolumeMm3).toBeLessThan(block.concreteVolumeMm3)
+
+    const taperedBounds = scenePieceBounds(taperedMass)
+    expect(tapered.bounds.min[0]).toBeLessThanOrEqual(taperedBounds.min[0])
+    expect(tapered.bounds.max[0]).toBeGreaterThanOrEqual(taperedBounds.max[0])
+    expect(tapered.bounds.min[1]).toBeLessThanOrEqual(taperedBounds.min[1])
+    expect(tapered.bounds.max[1]).toBeGreaterThanOrEqual(taperedBounds.max[1])
+  })
+
   it('reports gaps and overlaps when a shared shoulder is moved', () => {
     const study = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
@@ -749,6 +803,11 @@ describe('generatePiloti', () => {
       upperDepthRatio: 0.2,
       upperOffsetXMm: -400,
       upperOffsetYMm: -400,
+      upperMassProfile: 'tapered',
+      upperTopWidthRatio: 0.45,
+      upperTopDepthRatio: 0.45,
+      upperTopOffsetXMm: -400,
+      upperTopOffsetYMm: -400,
       asymmetry: 0,
       footOffsetXMm: -300,
       footOffsetYMm: -300,
@@ -771,6 +830,11 @@ describe('generatePiloti', () => {
       upperDepthRatio: 0.65,
       upperOffsetXMm: 400,
       upperOffsetYMm: 400,
+      upperMassProfile: 'tapered',
+      upperTopWidthRatio: 1.25,
+      upperTopDepthRatio: 1.25,
+      upperTopOffsetXMm: 400,
+      upperTopOffsetYMm: 400,
       asymmetry: 0.5,
       footOffsetXMm: 300,
       footOffsetYMm: 300,
@@ -927,6 +991,17 @@ describe('generatePiloti', () => {
       }),
     ).toThrow(
       'Piloti parameter "shoulderMode" must be "divided" or "shared".',
+    )
+  })
+
+  it('rejects an unsupported upper-mass profile', () => {
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        upperMassProfile: 'wedge' as 'tapered',
+      }),
+    ).toThrow(
+      'Piloti parameter "upperMassProfile" must be "block" or "tapered".',
     )
   })
 

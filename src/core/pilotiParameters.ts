@@ -4,6 +4,7 @@ import type {
   PilotiShoulderMode,
   PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
+  PilotiUpperMassProfile,
 } from './types'
 
 export const MAX_SEED = 0xffff_ffff
@@ -17,6 +18,7 @@ interface ParameterRule {
 type NumericPilotiParameter = Exclude<
   keyof PilotiParameters,
   | 'shoulderMode'
+  | 'upperMassProfile'
   | 'footOffsetOverrides'
   | 'supportSizeOverrides'
   | 'supportPositionOverrides'
@@ -47,6 +49,21 @@ function normalizeShoulderMode(value: unknown): PilotiShoulderMode {
   return value
 }
 
+export function isPilotiUpperMassProfile(
+  value: unknown,
+): value is PilotiUpperMassProfile {
+  return value === 'block' || value === 'tapered'
+}
+
+function normalizeUpperMassProfile(value: unknown): PilotiUpperMassProfile {
+  if (!isPilotiUpperMassProfile(value)) {
+    throw new RangeError(
+      'Piloti parameter "upperMassProfile" must be "block" or "tapered".',
+    )
+  }
+  return value
+}
+
 export const PILOTI_PARAMETER_RULES = {
   seed: { minimum: 0, maximum: MAX_SEED, integer: true },
   heightMm: { minimum: 1_000, maximum: 2_000 },
@@ -61,6 +78,10 @@ export const PILOTI_PARAMETER_RULES = {
   upperDepthRatio: { minimum: 0.2, maximum: 0.65 },
   upperOffsetXMm: { minimum: -400, maximum: 400 },
   upperOffsetYMm: { minimum: -400, maximum: 400 },
+  upperTopWidthRatio: { minimum: 0.45, maximum: 1.25 },
+  upperTopDepthRatio: { minimum: 0.45, maximum: 1.25 },
+  upperTopOffsetXMm: { minimum: -400, maximum: 400 },
+  upperTopOffsetYMm: { minimum: -400, maximum: 400 },
   asymmetry: { minimum: 0, maximum: 0.5 },
   footOffsetXMm: { minimum: -300, maximum: 300 },
   footOffsetYMm: { minimum: -300, maximum: 300 },
@@ -283,6 +304,23 @@ export function normalizePilotiParameters(
     upperDepthRatio: normalizeValue(input.upperDepthRatio, 'upperDepthRatio'),
     upperOffsetXMm: normalizeValue(input.upperOffsetXMm, 'upperOffsetXMm'),
     upperOffsetYMm: normalizeValue(input.upperOffsetYMm, 'upperOffsetYMm'),
+    upperMassProfile: normalizeUpperMassProfile(input.upperMassProfile),
+    upperTopWidthRatio: normalizeValue(
+      input.upperTopWidthRatio,
+      'upperTopWidthRatio',
+    ),
+    upperTopDepthRatio: normalizeValue(
+      input.upperTopDepthRatio,
+      'upperTopDepthRatio',
+    ),
+    upperTopOffsetXMm: normalizeValue(
+      input.upperTopOffsetXMm,
+      'upperTopOffsetXMm',
+    ),
+    upperTopOffsetYMm: normalizeValue(
+      input.upperTopOffsetYMm,
+      'upperTopOffsetYMm',
+    ),
     asymmetry: normalizeValue(input.asymmetry, 'asymmetry'),
     footOffsetXMm: normalizeValue(input.footOffsetXMm, 'footOffsetXMm'),
     footOffsetYMm: normalizeValue(input.footOffsetYMm, 'footOffsetYMm'),
@@ -323,6 +361,18 @@ function readShoulderMode(input: Record<string, unknown>): PilotiShoulderMode {
   if (!isPilotiShoulderMode(value)) {
     throw new ProjectValidationError(
       'Parameter "shoulderMode" must be "divided" or "shared".',
+    )
+  }
+  return value
+}
+
+function readUpperMassProfile(
+  input: Record<string, unknown>,
+): PilotiUpperMassProfile {
+  const value = input.upperMassProfile
+  if (!isPilotiUpperMassProfile(value)) {
+    throw new ProjectValidationError(
+      'Parameter "upperMassProfile" must be "block" or "tapered".',
     )
   }
   return value
@@ -532,6 +582,11 @@ export function parsePilotiParameters(
     upperDepthRatio: readParameter(record, 'upperDepthRatio'),
     upperOffsetXMm: readParameter(record, 'upperOffsetXMm'),
     upperOffsetYMm: readParameter(record, 'upperOffsetYMm'),
+    upperMassProfile: readUpperMassProfile(record),
+    upperTopWidthRatio: readParameter(record, 'upperTopWidthRatio'),
+    upperTopDepthRatio: readParameter(record, 'upperTopDepthRatio'),
+    upperTopOffsetXMm: readParameter(record, 'upperTopOffsetXMm'),
+    upperTopOffsetYMm: readParameter(record, 'upperTopOffsetYMm'),
     asymmetry: readParameter(record, 'asymmetry'),
     footOffsetXMm: readParameter(record, 'footOffsetXMm'),
     footOffsetYMm: readParameter(record, 'footOffsetYMm'),

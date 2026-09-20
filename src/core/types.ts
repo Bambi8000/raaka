@@ -12,6 +12,7 @@ export type Vec3 = readonly [x: number, y: number, z: number]
 export type Size2 = readonly [width: number, depth: number]
 export type ModelScale = 1 | 0.5 | 0.25
 export type PilotiShoulderMode = 'divided' | 'shared'
+export type PilotiUpperMassProfile = 'block' | 'tapered'
 
 export interface Bounds3 {
   readonly min: Vec3
@@ -75,6 +76,11 @@ export interface PilotiParameters {
   readonly upperDepthRatio: number
   readonly upperOffsetXMm: number
   readonly upperOffsetYMm: number
+  readonly upperMassProfile: PilotiUpperMassProfile
+  readonly upperTopWidthRatio: number
+  readonly upperTopDepthRatio: number
+  readonly upperTopOffsetXMm: number
+  readonly upperTopOffsetYMm: number
   readonly asymmetry: number
   readonly footOffsetXMm: number
   readonly footOffsetYMm: number

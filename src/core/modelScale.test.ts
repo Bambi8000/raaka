@@ -40,6 +40,11 @@ describe('scaleMassStudy', () => {
     supportDepthRatio: 0.48,
     upperOffsetXMm: 220,
     upperOffsetYMm: -130,
+    upperMassProfile: 'tapered',
+    upperTopWidthRatio: 0.68,
+    upperTopDepthRatio: 0.82,
+    upperTopOffsetXMm: 190,
+    upperTopOffsetYMm: -110,
     footOffsetXMm: 120,
     footOffsetYMm: -80,
     footOffsetOverrides: [

@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 3
+export const PILOTI_RECIPE_VERSION = 4
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -85,6 +85,7 @@ export function parseProject(serialized: string): RaakaProject {
   if (
     input.recipeVersion !== 1 &&
     input.recipeVersion !== 2 &&
+    input.recipeVersion !== 3 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -98,16 +99,24 @@ export function parseProject(serialized: string): RaakaProject {
     )
   }
 
+  const supportGridDefaults = {
+    supportRowCount: 1,
+    rowSpacingMm: 300,
+    supportDepthRatio: 0.92,
+  }
   const missingDefaults =
     input.recipeVersion === 1
       ? {
+          ...supportGridDefaults,
           footOffsetXMm: 0,
           footOffsetYMm: 0,
           footOffsetOverrides: [],
         }
       : input.recipeVersion === 2
-        ? { footOffsetOverrides: [] }
-        : undefined
+        ? { ...supportGridDefaults, footOffsetOverrides: [] }
+        : input.recipeVersion === 3
+          ? supportGridDefaults
+          : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
     modelScale,

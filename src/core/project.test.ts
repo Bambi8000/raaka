@@ -19,6 +19,9 @@ describe('RAAKA project files', () => {
         seed: 319,
         heightMm: 2_000,
         supportCount: 6,
+        supportRowCount: 3,
+        rowSpacingMm: 480,
+        supportDepthRatio: 0.46,
         footOffsetXMm: 175,
         footOffsetYMm: -90,
         footOffsetOverrides: [
@@ -28,7 +31,7 @@ describe('RAAKA project files', () => {
             footOffsetYMm: 80,
           },
           {
-            supportId: 'support-6',
+            supportId: 'support-r3-c6',
             footOffsetXMm: 200,
             footOffsetYMm: 0,
           },
@@ -48,6 +51,9 @@ describe('RAAKA project files', () => {
       parameters: Record<string, unknown>
     }
     legacy.recipeVersion = 1
+    delete legacy.parameters.supportRowCount
+    delete legacy.parameters.rowSpacingMm
+    delete legacy.parameters.supportDepthRatio
     delete legacy.parameters.footOffsetXMm
     delete legacy.parameters.footOffsetYMm
     delete legacy.parameters.footOffsetOverrides
@@ -58,6 +64,9 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.footOffsetXMm).toBe(0)
     expect(migrated.parameters.footOffsetYMm).toBe(0)
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
+    expect(migrated.parameters.supportRowCount).toBe(1)
+    expect(migrated.parameters.rowSpacingMm).toBe(300)
+    expect(migrated.parameters.supportDepthRatio).toBe(0.92)
   })
 
   it('migrates recipe version two files to an empty override list', () => {
@@ -68,12 +77,36 @@ describe('RAAKA project files', () => {
       parameters: Record<string, unknown>
     }
     legacy.recipeVersion = 2
+    delete legacy.parameters.supportRowCount
+    delete legacy.parameters.rowSpacingMm
+    delete legacy.parameters.supportDepthRatio
     delete legacy.parameters.footOffsetOverrides
 
     const migrated = parseProject(JSON.stringify(legacy))
 
     expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
     expect(migrated.parameters.footOffsetOverrides).toEqual([])
+    expect(migrated.parameters.supportRowCount).toBe(1)
+  })
+
+  it('migrates recipe version three files to the original one-row layout', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 3
+    delete legacy.parameters.supportRowCount
+    delete legacy.parameters.rowSpacingMm
+    delete legacy.parameters.supportDepthRatio
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+    expect(migrated.parameters.supportRowCount).toBe(1)
+    expect(migrated.parameters.rowSpacingMm).toBe(300)
+    expect(migrated.parameters.supportDepthRatio).toBe(0.92)
   })
 
   it('requires an override list in the current recipe version', () => {
@@ -84,6 +117,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "footOffsetOverrides" must be an array.',
+    )
+  })
+
+  it('requires support-grid parameters in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.supportRowCount
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "supportRowCount" must be a finite number.',
     )
   })
 

@@ -20,6 +20,7 @@ import {
   type HistoryState,
 } from './core/history'
 import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
+import { pilotiSupportAddress } from './core/pilotiParameters'
 import {
   createProject,
   parseProject,
@@ -173,16 +174,29 @@ function selectionExists(
   parameters: PilotiParameters,
 ): boolean {
   if (selectedPieceId === 'upper-mass') return true
-  const selectedSupport = /^(?:support|shoulder)-(\d+)$/.exec(selectedPieceId)
+  const selectedSupportId = supportIdForPiece(selectedPieceId)
+  const address = selectedSupportId
+    ? pilotiSupportAddress(selectedSupportId)
+    : undefined
   return (
-    selectedSupport !== null &&
-    Number(selectedSupport[1]) <= parameters.supportCount
+    address !== undefined &&
+    address.column <= parameters.supportCount &&
+    address.row <= parameters.supportRowCount
   )
 }
 
 function supportIdForPiece(pieceId: string): string | undefined {
-  const match = /^(?:support|shoulder)-(\d+)$/.exec(pieceId)
-  return match ? `support-${match[1]}` : undefined
+  const supportId = pieceId.startsWith('shoulder-')
+    ? `support-${pieceId.slice('shoulder-'.length)}`
+    : pieceId
+  return pilotiSupportAddress(supportId) ? supportId : undefined
+}
+
+function formatSupportId(supportId: string): string {
+  const address = pilotiSupportAddress(supportId)
+  return address
+    ? `ROW ${address.row} · COLUMN ${address.column}`
+    : supportId.toUpperCase()
 }
 
 export default function App() {
@@ -400,9 +414,15 @@ export default function App() {
             ...retained,
             { supportId, footOffsetXMm, footOffsetYMm },
           ].sort(
-            (left, right) =>
-              Number(left.supportId.slice('support-'.length)) -
-              Number(right.supportId.slice('support-'.length)),
+            (left, right) => {
+              const leftAddress = pilotiSupportAddress(left.supportId)
+              const rightAddress = pilotiSupportAddress(right.supportId)
+              if (!leftAddress || !rightAddress) return 0
+              return (
+                leftAddress.row - rightAddress.row ||
+                leftAddress.column - rightAddress.column
+              )
+            },
           )
     update('footOffsetOverrides', nextOverrides)
   }
@@ -640,7 +660,27 @@ export default function App() {
             </div>
           </div>
           <RangeField
-            label="Supports"
+            label="Upper width share"
+            value={parameters.upperWidthRatio}
+            minimum={0.4}
+            maximum={1.1}
+            step={0.01}
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('upperWidthRatio', value)}
+          />
+          <RangeField
+            label="Upper depth share"
+            value={parameters.upperDepthRatio}
+            minimum={0.2}
+            maximum={0.65}
+            step={0.01}
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('upperDepthRatio', value)}
+          />
+          <RangeField
+            label="Columns (X)"
             value={parameters.supportCount}
             minimum={1}
             maximum={6}
@@ -648,6 +688,37 @@ export default function App() {
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('supportCount', value)}
+          />
+          <RangeField
+            label="Rows (Y)"
+            value={parameters.supportRowCount}
+            minimum={1}
+            maximum={3}
+            step={1}
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('supportRowCount', value)}
+          />
+          <RangeField
+            label="Row spacing"
+            value={parameters.rowSpacingMm}
+            minimum={100}
+            maximum={800}
+            step={10}
+            suffix=" mm"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('rowSpacingMm', value)}
+          />
+          <RangeField
+            label="Support depth share"
+            value={parameters.supportDepthRatio}
+            minimum={0.25}
+            maximum={0.92}
+            step={0.01}
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('supportDepthRatio', value)}
           />
           <RangeField
             label="Support height"
@@ -712,8 +783,9 @@ export default function App() {
             >
               <span>SELECTED</span>
               <small>
-                {selectedSupportId?.replace('-', ' ').toUpperCase() ??
-                  'SELECT A LEG'}
+                {selectedSupportId
+                  ? formatSupportId(selectedSupportId)
+                  : 'SELECT A LEG'}
               </small>
             </button>
           </div>
@@ -732,7 +804,7 @@ export default function App() {
             <>
               {activeFootOffsetScope === 'selected' && selectedSupportId ? (
                 <div className="offset-override-heading">
-                  <span>{selectedSupportId.replace('-', ' ').toUpperCase()}</span>
+                  <span>{formatSupportId(selectedSupportId)}</span>
                   <button
                     type="button"
                     onClick={() => replaceFootOffsetOverride(selectedSupportId)}
@@ -849,9 +921,57 @@ export default function App() {
               <dd>{formatNumber(study.groundContactMm2 / 1_000_000, 3)} m²</dd>
             </div>
           </dl>
+          {masterStudy.supportLayout &&
+          (masterStudy.supportLayout.adjacentRowOverlapMm > 0 ||
+            masterStudy.supportLayout.bearingOverhangMm > 0) ? (
+            <div className="layout-advisories" aria-live="polite">
+              {masterStudy.supportLayout.adjacentRowOverlapMm > 0 ? (
+                <div>
+                  <strong>ROW OVERLAP</strong>
+                  <span>
+                    {formatNumber(
+                      masterStudy.supportLayout.adjacentRowOverlapMm,
+                      1,
+                    )}{' '}
+                    MM DESIGN ·{' '}
+                    {formatNumber(
+                      study.supportLayout?.adjacentRowOverlapMm ?? 0,
+                      1,
+                    )}{' '}
+                    MM MODEL
+                  </span>
+                  <small>
+                    Shoulder zones intersect. The nominal volume counts both
+                    preview pieces until solid union is available.
+                  </small>
+                </div>
+              ) : null}
+              {masterStudy.supportLayout.bearingOverhangMm > 0 ? (
+                <div>
+                  <strong>BEARING OVERHANG</strong>
+                  <span>
+                    {formatNumber(
+                      masterStudy.supportLayout.bearingOverhangMm,
+                      1,
+                    )}{' '}
+                    MM / SIDE DESIGN ·{' '}
+                    {formatNumber(
+                      study.supportLayout?.bearingOverhangMm ?? 0,
+                      1,
+                    )}{' '}
+                    MM MODEL
+                  </span>
+                  <small>
+                    The outer shoulder zones extend beyond the upper mass.
+                    Adjust depth or spacing; RAAKA will not resize them.
+                  </small>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <p className="notice">
-            Manufactured solid estimate at 2,400 kg/m³. Structural approval,
-            reinforcement and anchoring are outside this study.
+            Manufactured nominal solid estimate at 2,400 kg/m³. Structural
+            approval, reinforcement and anchoring are outside this study.
           </p>
         </section>
       </aside>
@@ -862,8 +982,11 @@ export default function App() {
         </span>
         <span>SEED {parameters.seed}</span>
         <span>SCALE 1:{modelScaleDenominator}</span>
+        <span>
+          {parameters.supportCount} × {parameters.supportRowCount} GRID
+        </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.5 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.6 / LOCAL</span>
       </footer>
     </main>
   )

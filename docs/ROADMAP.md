@@ -11,7 +11,8 @@ Confirmed additions from the owner on 2026-09-20: physical scale models at
 leaning legs. These are specified in [Product definition](PRODUCT.md) and
 [Architecture](ARCHITECTURE.md). Shared foot offsets are implemented in 0.1.3;
 selected-leg overrides are implemented in 0.1.4; model-scale presets are
-implemented in 0.1.5. Support rows remain planned.
+implemented in 0.1.5; support grids and layout feedback are implemented in
+0.1.6.
 
 ## 0.1 — foundation
 
@@ -29,7 +30,7 @@ of the six recipe families are not yet implemented. Version 0.1.1 closes the
 measured geometry and viewport defects; version 0.1.2 begins durable study
 work with project files, recovery and history; version 0.1.3 adds authored
 shared leg lean; version 0.1.4 adds per-leg overrides; version 0.1.5 adds
-physical model scales.
+physical model scales; version 0.1.6 adds support grids.
 
 ## 0.1.1 — correct the baseline
 
@@ -117,7 +118,7 @@ the distinction.
 - [x] persist scale and include it in undo/recovery; repeatable return to 1:1
 - [x] test linear dimensions by `s`, areas by `s²`, volumes and fixed-density
   mass by `s³`, including asymmetric and selected-leg-leaning studies
-- [ ] repeat the scale fixtures when multi-row studies exist
+- [x] repeat the scale fixtures when multi-row studies exist
 - [x] preserve view direction and automatically reframe after scale changes
 - [ ] require future mesh/drawing exports to use this same physical geometry,
   with drawing paper scale and Kerros stock/kerf kept separate
@@ -127,13 +128,31 @@ with unchanged seed/master parameters, correct physical readings and no drift
 when switching scales repeatedly. Export verification follows as the output
 milestones land; this stage does not imply that export already exists.
 
+## 0.1.6 — Piloti support grids
+
+- [x] preserve one-row defaults and existing first-row IDs
+- [x] repeat one to six X columns through one to three Y rows
+- [x] expose upper width, upper depth, support depth and Y row spacing
+- [x] keep seeded first-row shapes stable when rows are added
+- [x] address later-row stems and shoulders with stable row/column IDs
+- [x] apply shared and selected X/Y foot offsets to every visible row
+- [x] report adjacent shoulder overlap and upper-bearing overhang without
+  silently resizing authored geometry
+- [x] scale grid geometry and layout feedback at 1:1, 1:2 and 1:4
+- [x] persist grid parameters in Piloti recipe version 4 and migrate versions
+  1–3 to the original one-row layout
+
+Done when a three-column/two-row study produces six grounded stems and six
+matching shoulders, later-row legs remain selectable and editable, layout
+problems are explicit, and save/recovery/history/model scale preserve the grid.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
-- [ ] independent upper width and depth controls
+- [x] independent upper width and depth controls
 - [ ] reusable stem/neck/shoulder/bearing support family
-- [ ] single, pair, row and grid support topology with independent Columns (X)
+- [x] single, pair, row and grid support topology with independent Columns (X)
   and Rows (Y); preserve the one-row default
-- [ ] shared support template, explicit support depth and Y row spacing;
+- [x] shared support template, explicit support depth and Y row spacing;
   repeat authored leg shapes and report overlaps or missing upper bearing
 - [ ] shared and divided shoulders
 - [x] shared Foot offset X/Y for deterministic leg lean, with ground faces at Z = 0
@@ -145,7 +164,7 @@ milestones land; this stage does not imply that export already exists.
 - [ ] focused solid-kernel spike before committing to a boolean dependency
 - [ ] union preview pieces and resolve internal contact faces
 - [ ] editable density, centre-of-mass projection and support-polygon feedback
-- [ ] geometric bearing/contact feedback without automatic aesthetic correction
+- [x] geometric bearing/contact feedback without automatic aesthetic correction
 - [ ] retained lightweight core intent, preview and matching solid subtraction
 - [ ] separate concrete/core volume and mass, with explicit material assumptions
 - [ ] STL export from the finished watertight solid

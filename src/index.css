@@ -786,6 +786,34 @@ input[type="range"] {
   background: #fff2b4;
 }
 
+.layout-advisories {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.layout-advisories div {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  background: #fff2b4;
+  box-shadow: inset 5px 0 0 var(--yellow);
+}
+
+.layout-advisories strong,
+.layout-advisories span {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.layout-advisories small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
 .notice {
   margin: 11px 0 0;
   padding-left: 9px;
@@ -929,7 +957,8 @@ input[type="range"] {
     gap: 12px;
   }
 
-  .statusbar > span:nth-child(4) {
+  .statusbar > span:nth-child(4),
+  .statusbar > span:nth-child(5) {
     display: none;
   }
 }

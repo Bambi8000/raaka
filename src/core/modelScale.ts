@@ -29,6 +29,15 @@ function scalePiece(piece: ScenePiece, scale: ModelScale): ScenePiece {
       size: scaleVec3(piece.size, scale),
     }
   }
+  if (piece.kind === 'mesh') {
+    return {
+      ...piece,
+      position: scaleVec3(piece.position, scale),
+      positions: piece.positions.map((value) => value * scale),
+      volumeMm3: piece.volumeMm3 * scale ** 3,
+      groundContactMm2: piece.groundContactMm2 * scale ** 2,
+    }
+  }
   return {
     ...piece,
     position: scaleVec3(piece.position, scale),

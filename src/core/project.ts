@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 11
+export const PILOTI_RECIPE_VERSION = 12
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -58,6 +58,10 @@ export function createProject(
         (override) => ({ ...override }),
       ),
       partCopies: parameters.partCopies.map((copy) => ({ ...copy })),
+      fuseGroups: parameters.fuseGroups.map((group) => ({
+        ...group,
+        pieceIds: [...group.pieceIds],
+      })),
     },
   }
 }
@@ -100,6 +104,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 8 &&
     input.recipeVersion !== 9 &&
     input.recipeVersion !== 10 &&
+    input.recipeVersion !== 11 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -134,10 +139,15 @@ export function parseProject(serialized: string): RaakaProject {
     upperFootprintMode: 'detached' as const,
   }
   const partCopiesDefault = { partCopies: [] }
+  const fuseGroupsDefault = { fuseGroups: [] }
+  const legacyCompositionDefaults = {
+    ...partCopiesDefault,
+    ...fuseGroupsDefault,
+  }
   const missingDefaults =
     input.recipeVersion === 1
       ? {
-          ...partCopiesDefault,
+          ...legacyCompositionDefaults,
           ...upperFootprintModeDefault,
           ...upperMassProfileDefault,
           ...upperMassOffsetDefault,
@@ -151,7 +161,7 @@ export function parseProject(serialized: string): RaakaProject {
         }
       : input.recipeVersion === 2
         ? {
-            ...partCopiesDefault,
+            ...legacyCompositionDefaults,
             ...upperFootprintModeDefault,
             ...upperMassProfileDefault,
             ...upperMassOffsetDefault,
@@ -163,7 +173,7 @@ export function parseProject(serialized: string): RaakaProject {
           }
         : input.recipeVersion === 3
           ? {
-              ...partCopiesDefault,
+              ...legacyCompositionDefaults,
               ...upperFootprintModeDefault,
               ...upperMassProfileDefault,
               ...upperMassOffsetDefault,
@@ -174,7 +184,7 @@ export function parseProject(serialized: string): RaakaProject {
             }
           : input.recipeVersion === 4
             ? {
-                ...partCopiesDefault,
+                ...legacyCompositionDefaults,
                 ...upperFootprintModeDefault,
                 ...upperMassProfileDefault,
                 ...upperMassOffsetDefault,
@@ -184,7 +194,7 @@ export function parseProject(serialized: string): RaakaProject {
               }
             : input.recipeVersion === 5
               ? {
-                  ...partCopiesDefault,
+                  ...legacyCompositionDefaults,
                   ...upperFootprintModeDefault,
                   ...upperMassProfileDefault,
                   ...upperMassOffsetDefault,
@@ -193,7 +203,7 @@ export function parseProject(serialized: string): RaakaProject {
                 }
               : input.recipeVersion === 6
                 ? {
-                    ...partCopiesDefault,
+                    ...legacyCompositionDefaults,
                     ...upperFootprintModeDefault,
                     ...upperMassProfileDefault,
                     ...upperMassOffsetDefault,
@@ -201,25 +211,27 @@ export function parseProject(serialized: string): RaakaProject {
                   }
                 : input.recipeVersion === 7
                   ? {
-                      ...partCopiesDefault,
+                      ...legacyCompositionDefaults,
                       ...upperFootprintModeDefault,
                       ...upperMassProfileDefault,
                       ...upperMassOffsetDefault,
                     }
                   : input.recipeVersion === 8
                     ? {
-                        ...partCopiesDefault,
+                        ...legacyCompositionDefaults,
                         ...upperFootprintModeDefault,
                         ...upperMassProfileDefault,
                       }
                     : input.recipeVersion === 9
                       ? {
-                          ...partCopiesDefault,
+                          ...legacyCompositionDefaults,
                           ...upperFootprintModeDefault,
                         }
                       : input.recipeVersion === 10
-                        ? partCopiesDefault
-                        : undefined
+                        ? legacyCompositionDefaults
+                        : input.recipeVersion === 11
+                          ? fuseGroupsDefault
+                          : undefined
   return createProject(
     parsePilotiParameters(input.parameters, missingDefaults),
     modelScale,

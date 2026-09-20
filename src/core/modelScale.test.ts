@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PILOTI_PARAMETERS, generatePiloti } from './generator'
 import { scaleMassStudy } from './modelScale'
-import type { ScenePiece } from './types'
+import type { MassStudy, MeshPiece, ScenePiece } from './types'
 
 function expectPieceScaled(
   master: ScenePiece,
@@ -145,6 +145,46 @@ describe('scaleMassStudy', () => {
 
     expect(restored).toBe(master)
     expect(secondQuarter).toEqual(firstQuarter)
+  })
+
+  it('scales finished solid meshes without changing their topology', () => {
+    const mesh: MeshPiece = {
+      kind: 'mesh',
+      id: 'fuse-1',
+      label: 'Fuse 1',
+      role: 'mass',
+      position: [0, 0, 0],
+      positions: new Float32Array([0, 0, 0, 100, 0, 0, 0, 80, 0, 0, 0, 60]),
+      triangles: new Uint32Array([0, 2, 1, 0, 1, 3, 1, 2, 3, 2, 0, 3]),
+      volumeMm3: 80_000,
+      groundContactMm2: 4_000,
+      sourcePieceIds: ['upper-mass', 'upper-mass-copy-1'],
+    }
+    const fusedStudy: MassStudy = {
+      recipe: 'piloti',
+      seed: 1,
+      pieces: [mesh],
+      bounds: { min: [0, 0, 0], max: [100, 80, 60] },
+      widthMm: 100,
+      depthMm: 80,
+      heightMm: 60,
+      concreteVolumeMm3: 80_000,
+      estimatedMassKg: 0.192,
+      groundContactMm2: 4_000,
+    }
+
+    const scaled = scaleMassStudy(fusedStudy, 0.25)
+    const scaledMesh = scaled.pieces[0]
+
+    expect(scaledMesh.kind).toBe('mesh')
+    if (scaledMesh.kind !== 'mesh') return
+    expect(scaledMesh.positions).toEqual(
+      new Float32Array([0, 0, 0, 25, 0, 0, 0, 20, 0, 0, 0, 15]),
+    )
+    expect(scaledMesh.triangles).toBe(mesh.triangles)
+    expect(scaledMesh.volumeMm3).toBe(1_250)
+    expect(scaledMesh.groundContactMm2).toBe(250)
+    expect(scaled.bounds).toEqual({ min: [0, 0, 0], max: [25, 20, 15] })
   })
 
   it('rejects unsupported scales at the core boundary', () => {

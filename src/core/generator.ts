@@ -1,9 +1,12 @@
 import { mulberry32, randomBetween } from './random'
-import { boundsSize, sceneBounds, scenePieceBounds } from './bounds'
+import { boundsSize, sceneBounds } from './bounds'
 import { normalizePilotiParameters } from './pilotiParameters'
+import {
+  CONCRETE_DENSITY_KG_M3,
+  scenePieceGroundContact,
+  scenePieceVolume,
+} from './pieceMetrics'
 import type {
-  BoxPiece,
-  FrustumPiece,
   MassStudy,
   PilotiPartCopy,
   PilotiParameters,
@@ -11,7 +14,6 @@ import type {
   ScenePiece,
 } from './types'
 
-const CONCRETE_DENSITY_KG_M3 = 2_400
 const LINKED_FOOTPRINT_REFERENCE_COLUMNS = 3
 export { MAX_SEED } from './pilotiParameters'
 
@@ -82,25 +84,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   supportSizeOverrides: [],
   supportPositionOverrides: [],
   partCopies: [],
-}
-
-function boxVolume(piece: BoxPiece): number {
-  return piece.size[0] * piece.size[1] * piece.size[2]
-}
-
-/** Volume of a rectangular loft whose width and depth vary linearly. */
-function frustumVolume(piece: FrustumPiece): number {
-  const [bottomWidth, bottomDepth] = piece.bottomSize
-  const [topWidth, topDepth] = piece.topSize
-  const widthDelta = topWidth - bottomWidth
-  const depthDelta = topDepth - bottomDepth
-
-  return (
-    piece.height *
-    (bottomWidth * bottomDepth +
-      (bottomWidth * depthDelta + bottomDepth * widthDelta) / 2 +
-      (widthDelta * depthDelta) / 3)
-  )
+  fuseGroups: [],
 }
 
 function copyPiece(
@@ -349,18 +333,11 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   }
 
   const concreteVolumeMm3 = pieces.reduce(
-    (sum, piece) =>
-      sum + (piece.kind === 'box' ? boxVolume(piece) : frustumVolume(piece)),
+    (sum, piece) => sum + scenePieceVolume(piece),
     0,
   )
   const groundContactMm2 = pieces
-    .filter((piece): piece is FrustumPiece => piece.kind === 'frustum')
-    .filter((piece) => piece.id.startsWith('support-'))
-    .filter((piece) => Math.abs(scenePieceBounds(piece).min[2]) < 1e-9)
-    .reduce(
-      (sum, piece) => sum + piece.bottomSize[0] * piece.bottomSize[1],
-      0,
-    )
+    .reduce((sum, piece) => sum + scenePieceGroundContact(piece), 0)
   const bounds = sceneBounds(pieces)
   const [widthMm, depthMm, heightMm] = boundsSize(bounds)
   const intervalOverlap = (

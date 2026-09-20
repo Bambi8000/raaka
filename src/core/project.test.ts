@@ -85,6 +85,16 @@ describe('RAAKA project files', () => {
             offsetZMm: 0,
           },
         ],
+        fuseGroups: [
+          {
+            id: 'fuse-1',
+            pieceIds: ['upper-mass', 'upper-mass-copy-1'],
+          },
+          {
+            id: 'fuse-2',
+            pieceIds: ['support-r3-c6', 'support-copy-2'],
+          },
+        ],
       },
       0.25,
     )
@@ -337,6 +347,25 @@ describe('RAAKA project files', () => {
     },
   )
 
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])(
+    'migrates recipe version %i files to no fuse groups',
+    (recipeVersion) => {
+      const legacy = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as {
+        recipeVersion: number
+        parameters: Record<string, unknown>
+      }
+      legacy.recipeVersion = recipeVersion
+      delete legacy.parameters.fuseGroups
+
+      const migrated = parseProject(JSON.stringify(legacy))
+
+      expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+      expect(migrated.parameters.fuseGroups).toEqual([])
+    },
+  )
+
   it('requires an override list in the current recipe version', () => {
     const current = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -378,6 +407,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "partCopies" must be an array.',
+    )
+  })
+
+  it('requires a fuse-group list in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.fuseGroups
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "fuseGroups" must be an array.',
     )
   })
 
@@ -620,6 +660,55 @@ describe('RAAKA project files', () => {
               offsetXMm: 100,
               offsetYMm: 0,
               offsetZMm: 0,
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'invalid fuse-group piece ID',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          fuseGroups: [
+            {
+              id: 'fuse-1',
+              pieceIds: ['upper-mass', 'fuse-9'],
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'repeated piece inside a fuse group',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          fuseGroups: [
+            {
+              id: 'fuse-1',
+              pieceIds: ['upper-mass', 'upper-mass'],
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'piece shared by two fuse groups',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          fuseGroups: [
+            {
+              id: 'fuse-1',
+              pieceIds: ['upper-mass', 'support-1'],
+            },
+            {
+              id: 'fuse-2',
+              pieceIds: ['upper-mass', 'support-2'],
             },
           ],
         },

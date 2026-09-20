@@ -1,5 +1,6 @@
 import type {
   PilotiFootOffsetOverride,
+  PilotiFuseGroup,
   PilotiPartCopy,
   PilotiUpperFootprintMode,
   PilotiParameters,
@@ -26,6 +27,7 @@ type NumericPilotiParameter = Exclude<
   | 'supportSizeOverrides'
   | 'supportPositionOverrides'
   | 'partCopies'
+  | 'fuseGroups'
 >
 
 export const PILOTI_SUPPORT_SIZE_SCALE = {
@@ -39,6 +41,8 @@ export const PILOTI_SUPPORT_POSITION_MM = {
 } as const
 
 export const PILOTI_PART_COPY_LIMIT = 24
+export const PILOTI_FUSE_GROUP_LIMIT = 12
+export const PILOTI_FUSE_PART_LIMIT = 24
 
 export const PILOTI_PART_COPY_OFFSET_MM = {
   minimum: -2_000,
@@ -190,6 +194,95 @@ export function isPilotiPartCopyId(value: string): boolean {
 
 export function isPilotiPartCopySourceId(value: string): boolean {
   return value === 'upper-mass' || isPilotiSupportId(value)
+}
+
+export function isPilotiFuseGroupId(value: string): boolean {
+  const match = /^fuse-(\d+)$/.exec(value)
+  if (!match) return false
+  const number = Number(match[1])
+  return (
+    Number.isInteger(number) &&
+    number >= 1 &&
+    number <= 9_999 &&
+    value === `fuse-${number}`
+  )
+}
+
+export function isPilotiFusePieceId(value: string): boolean {
+  if (value === 'upper-mass' || isPilotiSupportId(value)) return true
+  if (
+    value.startsWith('shoulder-') &&
+    isPilotiSupportId(`support-${value.slice('shoulder-'.length)}`)
+  ) {
+    return true
+  }
+  const copyMatch = /^(?:upper-mass|support|shoulder)-(copy-\d+)$/.exec(value)
+  return copyMatch !== null && isPilotiPartCopyId(copyMatch[1])
+}
+
+function normalizeFuseGroups(
+  input: readonly PilotiFuseGroup[],
+): readonly PilotiFuseGroup[] {
+  if (!Array.isArray(input)) {
+    throw new RangeError('Piloti fuse groups must be an array.')
+  }
+  if (input.length > PILOTI_FUSE_GROUP_LIMIT) {
+    throw new RangeError(
+      `Piloti supports at most ${PILOTI_FUSE_GROUP_LIMIT} fuse groups.`,
+    )
+  }
+
+  const groups: readonly PilotiFuseGroup[] = input
+  const groupIds = new Set<string>()
+  const usedPieceIds = new Set<string>()
+  return groups.map((group) => {
+    if (
+      typeof group !== 'object' ||
+      group === null ||
+      !isPilotiFuseGroupId(group.id)
+    ) {
+      throw new RangeError('Piloti fuse group has an invalid group ID.')
+    }
+    if (groupIds.has(group.id)) {
+      throw new RangeError(`Piloti fuse group "${group.id}" is duplicated.`)
+    }
+    if (!Array.isArray(group.pieceIds)) {
+      throw new RangeError(`Piloti fuse group "${group.id}" needs a piece list.`)
+    }
+    const inputPieceIds: readonly string[] = group.pieceIds
+    if (
+      inputPieceIds.length < 2 ||
+      inputPieceIds.length > PILOTI_FUSE_PART_LIMIT
+    ) {
+      throw new RangeError(
+        `Piloti fuse group "${group.id}" must contain 2–${PILOTI_FUSE_PART_LIMIT} pieces.`,
+      )
+    }
+
+    const localIds = new Set<string>()
+    const pieceIds = inputPieceIds.map((pieceId) => {
+      if (!isPilotiFusePieceId(pieceId)) {
+        throw new RangeError(
+          `Piloti fuse group "${group.id}" has an invalid piece ID.`,
+        )
+      }
+      if (localIds.has(pieceId)) {
+        throw new RangeError(
+          `Piloti fuse group "${group.id}" repeats piece "${pieceId}".`,
+        )
+      }
+      if (usedPieceIds.has(pieceId)) {
+        throw new RangeError(
+          `Piloti fuse piece "${pieceId}" belongs to more than one group.`,
+        )
+      }
+      localIds.add(pieceId)
+      usedPieceIds.add(pieceId)
+      return pieceId
+    })
+    groupIds.add(group.id)
+    return { id: group.id, pieceIds }
+  })
 }
 
 function normalizePartCopyOffset(value: number, name: string): number {
@@ -428,6 +521,7 @@ export function normalizePilotiParameters(
       input.supportPositionOverrides,
     ),
     partCopies: normalizePartCopies(input.partCopies),
+    fuseGroups: normalizeFuseGroups(input.fuseGroups),
   }
 }
 
@@ -732,6 +826,83 @@ function readPartCopies(
   })
 }
 
+function readFuseGroups(
+  input: Record<string, unknown>,
+): readonly PilotiFuseGroup[] {
+  const value = input.fuseGroups
+  if (!Array.isArray(value)) {
+    throw new ProjectValidationError('Parameter "fuseGroups" must be an array.')
+  }
+  if (value.length > PILOTI_FUSE_GROUP_LIMIT) {
+    throw new ProjectValidationError(
+      `Fuse groups must contain at most ${PILOTI_FUSE_GROUP_LIMIT} entries.`,
+    )
+  }
+
+  const groupIds = new Set<string>()
+  const usedPieceIds = new Set<string>()
+  return value.map((candidate) => {
+    if (
+      typeof candidate !== 'object' ||
+      candidate === null ||
+      Array.isArray(candidate)
+    ) {
+      throw new ProjectValidationError('Every fuse group must be an object.')
+    }
+    const group = candidate as Record<string, unknown>
+    if (typeof group.id !== 'string' || !isPilotiFuseGroupId(group.id)) {
+      throw new ProjectValidationError(
+        'Every fuse group must name a supported group ID.',
+      )
+    }
+    const groupId = group.id
+    if (groupIds.has(groupId)) {
+      throw new ProjectValidationError(
+        `Fuse group "${groupId}" is duplicated.`,
+      )
+    }
+    if (!Array.isArray(group.pieceIds)) {
+      throw new ProjectValidationError(
+        `Fuse group "${groupId}" must contain a piece list.`,
+      )
+    }
+    const inputPieceIds: readonly unknown[] = group.pieceIds
+    if (
+      inputPieceIds.length < 2 ||
+      inputPieceIds.length > PILOTI_FUSE_PART_LIMIT
+    ) {
+      throw new ProjectValidationError(
+        `Fuse group "${groupId}" must contain 2–${PILOTI_FUSE_PART_LIMIT} pieces.`,
+      )
+    }
+
+    const localIds = new Set<string>()
+    const pieceIds = inputPieceIds.map((pieceId) => {
+      if (typeof pieceId !== 'string' || !isPilotiFusePieceId(pieceId)) {
+        throw new ProjectValidationError(
+          `Fuse group "${groupId}" contains an invalid piece ID.`,
+        )
+      }
+      const validatedPieceId = pieceId
+      if (localIds.has(validatedPieceId)) {
+        throw new ProjectValidationError(
+          `Fuse group "${groupId}" repeats piece "${validatedPieceId}".`,
+        )
+      }
+      if (usedPieceIds.has(validatedPieceId)) {
+        throw new ProjectValidationError(
+          `Fuse piece "${validatedPieceId}" belongs to more than one group.`,
+        )
+      }
+      localIds.add(validatedPieceId)
+      usedPieceIds.add(validatedPieceId)
+      return validatedPieceId
+    })
+    groupIds.add(groupId)
+    return { id: groupId, pieceIds }
+  })
+}
+
 export class ProjectValidationError extends Error {
   public constructor(message: string) {
     super(message)
@@ -775,5 +946,6 @@ export function parsePilotiParameters(
     supportSizeOverrides: readSupportSizeOverrides(record),
     supportPositionOverrides: readSupportPositionOverrides(record),
     partCopies: readPartCopies(record),
+    fuseGroups: readFuseGroups(record),
   }
 }

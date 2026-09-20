@@ -22,6 +22,7 @@ Block and tapered upper-mass profiles are implemented in 0.1.11.
 Linked and detached upper/support footprints are implemented in 0.1.12.
 Semantic upper-mass and complete-support copies are implemented in 0.1.13.
 The Manifold solid-kernel gate is complete in 0.1.14.
+User-facing multi-selection, Fuse and Unfuse are implemented in 0.1.15.
 
 ## 0.1 — foundation
 
@@ -48,6 +49,7 @@ Version 0.1.11 adds a tapered upper-mass profile.
 Version 0.1.12 links upper X/Y dimensions to the support grid by default.
 Version 0.1.13 adds source-linked semantic part copies and X/Y/Z placement.
 Version 0.1.14 validates the solid-kernel boundary before user-facing Fuse.
+Version 0.1.15 adds saved, measured Fuse groups and reversible Unfuse.
 
 ## 0.1.1 — correct the baseline
 
@@ -312,6 +314,28 @@ Done when the chosen dependency proves that RAAKA's current planar vocabulary
 can enter and leave one deterministic solid boundary without internal contact
 faces, silent topology failure or unmanaged per-operation WASM objects.
 
+## 0.1.15 — selected-part Fuse
+
+- [x] build an explicit blue secondary selection set without replacing the
+  current yellow object selection
+- [x] preflight two or more sources and refuse disconnected islands
+- [x] replace valid sources with one selectable closed indexed mesh
+- [x] derive group bounds, finished-union volume, mass and ground contact from
+  the kernel result
+- [x] keep Fuse sources live so recipe and copy edits recompute the union
+- [x] pause disconnected groups with a visible reason and retain temporarily
+  hidden source groups as dormant project intent
+- [x] restore editable source pieces with Unfuse
+- [x] preserve finished meshes and measurements at 1:1, 1:2 and 1:4 without
+  rerunning the kernel for scale-only changes
+- [x] persist source IDs in Piloti recipe version 12 and include Fuse/Unfuse in
+  recovery and undo/redo
+- [x] lazy-load the WASM kernel only when a solid operation is requested
+
+Done when a copied upper mass or support piece can join another touching part
+as one measured selectable solid, a separated pair is refused, Unfuse restores
+the sources, and project/history/model-scale round trips preserve the intent.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -334,7 +358,7 @@ faces, silent topology failure or unmanaged per-operation WASM objects.
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [x] focused solid-kernel spike before committing to a boolean dependency
-- [ ] union preview pieces and resolve internal contact faces
+- [x] union selected preview pieces and resolve their internal contact faces
 - [ ] editable density, centre-of-mass projection and support-polygon feedback
 - [x] geometric bearing/contact feedback without automatic aesthetic correction
 - [ ] retained lightweight core intent, preview and matching solid subtraction
@@ -437,7 +461,7 @@ drawings.
 | Rectangular loft/frustum | Implemented as a semantic piece | Stem, shoulder, tapered upper mass |
 | Faceted prism and taper | Planned | Silo tank and hopper |
 | Place, align, repeat, mirror, group | Selected semantic parts can be translated and repeated; align, mirror and grouping remain planned | Shared composition tools |
-| Union, subtract, plane-cut, chamfer | Planned; requires solid-kernel evidence | Finished solids and voids |
+| Union, subtract, plane-cut, chamfer | Selected-part Union/Fuse is implemented; subtract, plane-cut and chamfer remain planned | Finished solids and voids |
 | Step, stagger, lean and vary | Shared and selected Piloti foot lean plus seeded variation implemented | Support grids and Ziggurat |
 | Lock and branch | Planned; requires persistence and stable identity | Repeatable variants |
 

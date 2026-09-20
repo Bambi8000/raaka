@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useReducer,
   useRef,
@@ -21,6 +22,7 @@ import {
 } from './core/history'
 import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
 import {
+  PILOTI_FUSE_GROUP_LIMIT,
   PILOTI_PART_COPY_LIMIT,
   PILOTI_PART_COPY_OFFSET_MM,
   pilotiSupportAddress,
@@ -32,9 +34,13 @@ import {
   serializeProject,
   writeRecovery,
 } from './core/project'
+import { fuseScenePieces } from './core/solidKernel'
+import { resolveStudyFuses } from './core/studyFuses'
 import type {
+  MassStudy,
   ModelScale,
   PilotiFootOffsetOverride,
+  PilotiFuseGroup,
   PilotiParameters,
   PilotiPartCopy,
   PilotiSupportPositionOverride,
@@ -72,6 +78,19 @@ interface InitialSession {
   readonly baseline: string
   readonly notice?: Notice
 }
+
+type FuseRenderState =
+  | {
+      readonly sourceStudy: MassStudy
+      readonly status: 'ready'
+      readonly study: MassStudy
+      readonly dormantFuseGroupIds: readonly string[]
+    }
+  | {
+      readonly sourceStudy: MassStudy
+      readonly status: 'error'
+      readonly message: string
+    }
 
 const RANGE_KEYS = new Set([
   'ArrowDown',
@@ -184,6 +203,16 @@ function selectionExists(
   selectedPieceId: string,
   parameters: PilotiParameters,
 ): boolean {
+  if (parameters.fuseGroups.some((group) => group.id === selectedPieceId)) {
+    return true
+  }
+  if (
+    parameters.fuseGroups.some((group) =>
+      group.pieceIds.includes(selectedPieceId),
+    )
+  ) {
+    return false
+  }
   if (selectedPieceId === 'upper-mass') return true
   const copyId = partCopyIdForPiece(selectedPieceId)
   if (copyId) {
@@ -220,6 +249,10 @@ function partCopyPieceId(copy: PilotiPartCopy): string {
 
 function partCopyNumber(copyId: string): number {
   return Number(copyId.slice('copy-'.length))
+}
+
+function fuseNumber(fuseId: string): number {
+  return Number(fuseId.slice('fuse-'.length))
 }
 
 function supportIdForPiece(pieceId: string): string | undefined {
@@ -266,6 +299,13 @@ export default function App() {
   const [notice, setNotice] = useState<Notice | undefined>(
     initialSession.notice,
   )
+  const [fuseSelectionPieceIds, setFuseSelectionPieceIds] = useState<
+    readonly string[]
+  >([])
+  const [fuseActionPending, setFuseActionPending] = useState(false)
+  const [fuseRenderState, setFuseRenderState] = useState<
+    FuseRenderState | undefined
+  >()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const studyState = history.present
   const parameters = studyState.parameters
@@ -276,12 +316,61 @@ export default function App() {
     [modelScale, parameters],
   )
   const projectJson = useMemo(() => serializeProject(project), [project])
-  const masterStudy = useMemo(() => generatePiloti(parameters), [parameters])
+  const unfusedMasterStudy = useMemo(
+    () => generatePiloti(parameters),
+    [parameters],
+  )
+  useEffect(() => {
+    if (parameters.fuseGroups.length === 0) {
+      return undefined
+    }
+    let cancelled = false
+    void resolveStudyFuses(unfusedMasterStudy, parameters.fuseGroups).then(
+      (resolution) => {
+        if (cancelled) return
+        setFuseRenderState({
+          sourceStudy: unfusedMasterStudy,
+          status: 'ready',
+          study: resolution.study,
+          dormantFuseGroupIds: resolution.dormantFuseGroupIds,
+        })
+      },
+      (error: unknown) => {
+        if (cancelled) return
+        setFuseRenderState({
+          sourceStudy: unfusedMasterStudy,
+          status: 'error',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'The solid kernel could not resolve this Fuse.',
+        })
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [parameters.fuseGroups, unfusedMasterStudy])
+  const currentFuseRenderState =
+    fuseRenderState?.sourceStudy === unfusedMasterStudy
+      ? fuseRenderState
+      : undefined
+  const fuseRenderStatus =
+    parameters.fuseGroups.length === 0
+      ? 'idle'
+      : (currentFuseRenderState?.status ?? 'pending')
+  const masterStudy =
+    currentFuseRenderState?.status === 'ready'
+      ? currentFuseRenderState.study
+      : unfusedMasterStudy
   const study = useMemo(
     () => scaleMassStudy(masterStudy, modelScale),
     [masterStudy, modelScale],
   )
   const selectedSupportId = supportIdForPiece(selectedPieceId)
+  const selectedFuseGroup = parameters.fuseGroups.find(
+    (group) => group.id === selectedPieceId,
+  )
   const selectedPartCopyId = partCopyIdForPiece(selectedPieceId)
   const selectedPartCopy = parameters.partCopies.find(
     (copy) => copy.id === selectedPartCopyId,
@@ -338,6 +427,29 @@ export default function App() {
   const selectedPiece = study.pieces.find(
     (piece) => piece.id === selectedPieceId,
   )
+  const usedFusePieceIds = useMemo(
+    () => new Set(parameters.fuseGroups.flatMap((group) => [...group.pieceIds])),
+    [parameters.fuseGroups],
+  )
+  const validFuseSelectionPieceIds = fuseSelectionPieceIds.filter(
+    (pieceId) =>
+      !usedFusePieceIds.has(pieceId) &&
+      unfusedMasterStudy.pieces.some((piece) => piece.id === pieceId),
+  )
+  const selectedPieceCanJoinFuse =
+    selectedPieceId !== selectedFuseGroup?.id &&
+    !usedFusePieceIds.has(selectedPieceId) &&
+    unfusedMasterStudy.pieces.some((piece) => piece.id === selectedPieceId)
+  const selectedPieceIsInFuseSet = validFuseSelectionPieceIds.includes(
+    selectedPieceId,
+  )
+  const canCreateFuse =
+    validFuseSelectionPieceIds.length >= 2 &&
+    parameters.fuseGroups.length < PILOTI_FUSE_GROUP_LIMIT &&
+    !fuseActionPending
+  const separateCopyPieceCount = study.pieces.filter(
+    (piece) => piece.kind !== 'mesh' && partCopyIdForPiece(piece.id) !== undefined,
+  ).length
   const duplicateSourceId =
     selectedPartCopy?.sourceId ??
     (selectedPieceId === 'upper-mass' ? 'upper-mass' : selectedSupportId)
@@ -369,14 +481,24 @@ export default function App() {
 
   const reconcileSelection = (nextParameters: PilotiParameters) => {
     if (!selectionExists(selectedPieceId, nextParameters)) {
-      setSelectedPieceId('upper-mass')
+      const owningFuse = nextParameters.fuseGroups.find((group) =>
+        group.pieceIds.includes(selectedPieceId),
+      )
+      const upperMassFuse = nextParameters.fuseGroups.find((group) =>
+        group.pieceIds.includes('upper-mass'),
+      )
+      setSelectedPieceId(owningFuse?.id ?? upperMassFuse?.id ?? 'upper-mass')
       setSupportEditScope('shared')
     }
   }
 
   const selectPiece = (pieceId: string) => {
-    setSelectedPieceId(pieceId)
-    if (supportIdForPiece(pieceId) === undefined) {
+    const owningFuse = parameters.fuseGroups.find((group) =>
+      group.pieceIds.includes(pieceId),
+    )
+    const semanticPieceId = owningFuse?.id ?? pieceId
+    setSelectedPieceId(semanticPieceId)
+    if (supportIdForPiece(semanticPieceId) === undefined) {
       setSupportEditScope('shared')
     }
   }
@@ -458,6 +580,9 @@ export default function App() {
   const removeSelectedPartCopy = () => {
     if (!selectedPartCopy) return
     setSelectedPieceId(selectedPartCopy.sourceId)
+    setFuseSelectionPieceIds((pieceIds) =>
+      pieceIds.filter((pieceId) => partCopyIdForPiece(pieceId) !== selectedPartCopy.id),
+    )
     setSupportEditScope('shared')
     replaceStudy({
       ...studyState,
@@ -474,9 +599,101 @@ export default function App() {
     })
   }
 
+  const toggleSelectedPieceForFuse = () => {
+    if (!selectedPieceCanJoinFuse) return
+    setFuseSelectionPieceIds((pieceIds) =>
+      pieceIds.includes(selectedPieceId)
+        ? pieceIds.filter((pieceId) => pieceId !== selectedPieceId)
+        : [...pieceIds, selectedPieceId],
+    )
+  }
+
+  const fuseSelectedPieces = async () => {
+    if (!canCreateFuse) return
+    const pieceIds = [...validFuseSelectionPieceIds]
+    const sourcePieces = pieceIds
+      .map((pieceId) =>
+        unfusedMasterStudy.pieces.find((piece) => piece.id === pieceId),
+      )
+      .filter((piece): piece is NonNullable<typeof piece> => piece !== undefined)
+    if (sourcePieces.length !== pieceIds.length) {
+      setNotice({
+        kind: 'error',
+        text: 'Fuse refused: one selected source is no longer available.',
+      })
+      return
+    }
+
+    setFuseActionPending(true)
+    setNotice({ kind: 'info', text: 'Checking the selected solid connection…' })
+    try {
+      const preview = await fuseScenePieces(sourcePieces)
+      if (preview.componentCount !== 1) {
+        setNotice({
+          kind: 'error',
+          text: `Fuse refused: the ${pieceIds.length} selected parts do not touch or overlap.`,
+        })
+        return
+      }
+      const nextNumber =
+        Math.max(
+          0,
+          ...parameters.fuseGroups.map((group) => fuseNumber(group.id)),
+        ) + 1
+      const group: PilotiFuseGroup = {
+        id: `fuse-${nextNumber}`,
+        pieceIds,
+      }
+      replaceStudy({
+        ...studyState,
+        parameters: {
+          ...parameters,
+          fuseGroups: [...parameters.fuseGroups, group],
+        },
+      })
+      setFuseSelectionPieceIds([])
+      setSelectedPieceId(group.id)
+      setSupportEditScope('shared')
+      setNotice({
+        kind: 'info',
+        text: `Fused ${pieceIds.length} parts into one measured solid.`,
+      })
+    } catch (error) {
+      setNotice({
+        kind: 'error',
+        text: `Fuse failed: ${
+          error instanceof Error ? error.message : 'Unknown solid-kernel error.'
+        }`,
+      })
+    } finally {
+      setFuseActionPending(false)
+    }
+  }
+
+  const unfuseSelectedGroup = () => {
+    if (!selectedFuseGroup) return
+    const restoredSelection = selectedFuseGroup.pieceIds[0] ?? 'upper-mass'
+    replaceStudy({
+      ...studyState,
+      parameters: {
+        ...parameters,
+        fuseGroups: parameters.fuseGroups.filter(
+          (group) => group.id !== selectedFuseGroup.id,
+        ),
+      },
+    })
+    setSelectedPieceId(restoredSelection)
+    setSupportEditScope('shared')
+    setNotice({
+      kind: 'info',
+      text: 'Fuse removed. Its source parts are editable again; Undo is available.',
+    })
+  }
+
   const undo = () => {
     const previous = history.past.at(-1)
     if (!previous) return
+    setFuseSelectionPieceIds([])
     reconcileSelection(previous.parameters)
     persistRecovery(previous)
     dispatch({ type: 'undo' })
@@ -485,6 +702,7 @@ export default function App() {
   const redo = () => {
     const next = history.future[0]
     if (!next) return
+    setFuseSelectionPieceIds([])
     reconcileSelection(next.parameters)
     persistRecovery(next)
     dispatch({ type: 'redo' })
@@ -492,6 +710,7 @@ export default function App() {
 
   const reset = () => {
     setSelectedPieceId('upper-mass')
+    setFuseSelectionPieceIds([])
     setSupportEditScope('shared')
     replaceStudy(DEFAULT_STUDY)
     setNotice({ kind: 'info', text: 'Defaults restored. Undo is available.' })
@@ -521,6 +740,7 @@ export default function App() {
       dispatch({ type: 'load', value: openedStudy })
       persistRecovery(openedStudy)
       setSelectedPieceId('upper-mass')
+      setFuseSelectionPieceIds([])
       setSupportEditScope('shared')
       setBaselineJson(openedJson)
       setProjectOrigin('SAVED')
@@ -808,7 +1028,14 @@ export default function App() {
               <button
                 type="button"
                 key={piece.id}
-                className={piece.id === selectedPieceId ? 'is-selected' : ''}
+                className={[
+                  piece.id === selectedPieceId ? 'is-selected' : '',
+                  validFuseSelectionPieceIds.includes(piece.id)
+                    ? 'is-fuse-selected'
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 onClick={() => selectPiece(piece.id)}
                 aria-pressed={piece.id === selectedPieceId}
               >
@@ -826,6 +1053,7 @@ export default function App() {
           study={study}
           modelScale={modelScale}
           selectedPieceId={selectedPieceId}
+          fuseSelectionPieceIds={validFuseSelectionPieceIds}
           onSelect={selectPiece}
         />
       </section>
@@ -833,10 +1061,19 @@ export default function App() {
       <aside className="right-panel panel">
         <section className="inspector-lead" aria-live="polite">
           <span className="eyebrow">SELECTED OBJECT</span>
-          <h1>{selectedPiece?.label ?? 'Mass study'}</h1>
+          <h1>
+            {selectedPiece?.label ??
+              (selectedFuseGroup
+                ? `Fuse ${fuseNumber(selectedFuseGroup.id)}`
+                : 'Mass study')}
+          </h1>
           <p>
             {selectedPiece
               ? `${selectedPiece.role.toUpperCase()} · ${selectedPiece.kind.toUpperCase()}`
+              : selectedFuseGroup && fuseRenderStatus === 'pending'
+                ? 'SOLID KERNEL · RESOLVING'
+                : selectedFuseGroup && fuseRenderStatus === 'error'
+                  ? 'SOLID KERNEL · PAUSED'
               : 'Generated composition'}
           </p>
           <div className="inspector-actions">
@@ -852,6 +1089,15 @@ export default function App() {
             >
               DUPLICATE
             </button>
+            {selectedPieceCanJoinFuse ? (
+              <button
+                type="button"
+                className="is-constructive"
+                onClick={toggleSelectedPieceForFuse}
+              >
+                {selectedPieceIsInFuseSet ? 'REMOVE FROM SET' : 'ADD TO FUSE'}
+              </button>
+            ) : null}
             {selectedPartCopy ? (
               <button
                 type="button"
@@ -861,7 +1107,46 @@ export default function App() {
                 REMOVE COPY
               </button>
             ) : null}
+            {selectedFuseGroup ? (
+              <button
+                type="button"
+                className="is-destructive"
+                onClick={unfuseSelectedGroup}
+              >
+                UNFUSE
+              </button>
+            ) : null}
           </div>
+          {validFuseSelectionPieceIds.length > 0 ? (
+            <div className="fuse-builder" aria-live="polite">
+              <span>FUSE SET</span>
+              <strong>
+                {validFuseSelectionPieceIds.length}{' '}
+                {validFuseSelectionPieceIds.length === 1 ? 'PART' : 'PARTS'}
+              </strong>
+              <small>
+                Select another object and add it. Parts must touch or overlap.
+              </small>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setFuseSelectionPieceIds([])}
+                >
+                  CLEAR
+                </button>
+                <button
+                  type="button"
+                  className="is-primary"
+                  disabled={!canCreateFuse}
+                  onClick={() => void fuseSelectedPieces()}
+                >
+                  {fuseActionPending
+                    ? 'CHECKING…'
+                    : `FUSE ${validFuseSelectionPieceIds.length} PARTS`}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="panel-section controls-section">
@@ -1469,18 +1754,48 @@ export default function App() {
               <dd>{formatNumber(study.groundContactMm2 / 1_000_000, 3)} m²</dd>
             </div>
           </dl>
-          {parameters.partCopies.length > 0 ? (
+          {parameters.fuseGroups.length > 0 ? (
             <div className="layout-advisories" aria-live="polite">
-              <div>
-                <strong>SEPARATE PART COPIES</strong>
+              <div className={fuseRenderStatus === 'error' ? 'is-error' : ''}>
+                <strong>
+                  {fuseRenderStatus === 'pending'
+                    ? 'SOLID KERNEL WORKING'
+                    : fuseRenderStatus === 'error'
+                      ? 'FUSE PAUSED'
+                      : 'MEASURED FUSED SOLID'}
+                </strong>
                 <span>
-                  {parameters.partCopies.length}{' '}
-                  {parameters.partCopies.length === 1 ? 'COPY' : 'COPIES'} · LIVE
-                  SOURCE SHAPES
+                  {parameters.fuseGroups.length}{' '}
+                  {parameters.fuseGroups.length === 1 ? 'FUSE' : 'FUSES'} ·{' '}
+                  {fuseRenderStatus.toUpperCase()}
                 </span>
                 <small>
-                  Copies are separate preview solids. Any overlap is counted
-                  more than once until solid-kernel Fuse is available.
+                  {fuseRenderStatus === 'error'
+                    ? currentFuseRenderState?.status === 'error'
+                      ? currentFuseRenderState.message
+                      : 'The Fuse could not be resolved.'
+                    : fuseRenderStatus === 'pending'
+                      ? 'The preview is temporarily showing separate source pieces.'
+                      : currentFuseRenderState?.status === 'ready' &&
+                          currentFuseRenderState.dormantFuseGroupIds.length > 0
+                        ? `${currentFuseRenderState.dormantFuseGroupIds.length} Fuse is dormant because a source is outside the visible grid.`
+                        : 'Internal contact faces are removed and volume comes from the finished union.'}
+                </small>
+              </div>
+            </div>
+          ) : null}
+          {separateCopyPieceCount > 0 ? (
+            <div className="layout-advisories" aria-live="polite">
+              <div>
+                <strong>UNFUSED COPY PIECES</strong>
+                <span>
+                  {separateCopyPieceCount}{' '}
+                  {separateCopyPieceCount === 1 ? 'PIECE' : 'PIECES'} · LIVE
+                  SOURCES
+                </span>
+                <small>
+                  These pieces remain separate. Their overlap is counted more
+                  than once until they are included in a Fuse.
                 </small>
               </div>
             </div>
@@ -1626,8 +1941,11 @@ export default function App() {
             </div>
           ) : null}
           <p className="notice">
-            Manufactured nominal solid estimate at 2,400 kg/m³. Structural
-            approval, reinforcement and anchoring are outside this study.
+            {parameters.fuseGroups.length > 0 && fuseRenderStatus === 'ready'
+              ? 'Fused groups use finished-union volume; remaining pieces are summed.'
+              : 'Manufactured nominal solid estimate at 2,400 kg/m³.'}{' '}
+            Structural approval, reinforcement and anchoring are outside this
+            study.
           </p>
         </section>
       </aside>
@@ -1642,7 +1960,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.13 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.15 / LOCAL</span>
       </footer>
     </main>
   )

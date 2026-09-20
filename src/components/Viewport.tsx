@@ -14,6 +14,7 @@ interface ViewportProps {
   readonly study: MassStudy
   readonly modelScale: ModelScale
   readonly selectedPieceId: string
+  readonly fuseSelectionPieceIds: readonly string[]
   readonly onSelect: (pieceId: string) => void
 }
 
@@ -26,10 +27,21 @@ const BASE_COLOURS: Readonly<Record<PieceRole, number>> = {
 }
 
 const SELECTED_COLOUR = 0xffd400
+const FUSE_SELECTION_COLOUR = 0x287bc1
 
 function geometryForPiece(piece: ScenePiece): THREE.BufferGeometry {
   if (piece.kind === 'box') {
     return new THREE.BoxGeometry(...piece.size)
+  }
+  if (piece.kind === 'mesh') {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(piece.positions, 3),
+    )
+    geometry.setIndex(new THREE.BufferAttribute(piece.triangles, 1))
+    geometry.computeVertexNormals()
+    return geometry
   }
   return createFrustumGeometry(piece)
 }
@@ -54,6 +66,7 @@ export function Viewport({
   study,
   modelScale,
   selectedPieceId,
+  fuseSelectionPieceIds,
   onSelect,
 }: ViewportProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -65,6 +78,7 @@ export function Viewport({
   const pieceIdsRef = useRef(new Map<THREE.Object3D, string>())
   const onSelectRef = useRef(onSelect)
   const selectedPieceIdRef = useRef(selectedPieceId)
+  const fuseSelectionPieceIdsRef = useRef(new Set(fuseSelectionPieceIds))
   const studyRef = useRef(study)
   const modelScaleRef = useRef(modelScale)
 
@@ -75,6 +89,10 @@ export function Viewport({
   useEffect(() => {
     selectedPieceIdRef.current = selectedPieceId
   }, [selectedPieceId])
+
+  useEffect(() => {
+    fuseSelectionPieceIdsRef.current = new Set(fuseSelectionPieceIds)
+  }, [fuseSelectionPieceIds])
 
   useEffect(() => {
     studyRef.current = study
@@ -227,7 +245,9 @@ export function Viewport({
         color:
           piece.id === selectedPieceIdRef.current
             ? SELECTED_COLOUR
-            : BASE_COLOURS[piece.role],
+            : fuseSelectionPieceIdsRef.current.has(piece.id)
+              ? FUSE_SELECTION_COLOUR
+              : BASE_COLOURS[piece.role],
         metalness: 0,
         roughness: 0.92,
         flatShading: true,
@@ -264,10 +284,12 @@ export function Viewport({
       material.color.set(
         piece.id === selectedPieceId
           ? SELECTED_COLOUR
-          : BASE_COLOURS[piece.role],
+          : fuseSelectionPieceIdsRef.current.has(piece.id)
+            ? FUSE_SELECTION_COLOUR
+            : BASE_COLOURS[piece.role],
       )
     }
-  }, [selectedPieceId])
+  }, [fuseSelectionPieceIds, selectedPieceId])
 
   useEffect(() => {
     if (modelScaleRef.current === modelScale) return

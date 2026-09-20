@@ -57,6 +57,12 @@ continuous folded row while leaving their necks and seeded variation intact.
 Selected size or placement may deliberately break that continuity, in which
 case RAAKA reports the resulting gap or overlap instead of moving the support.
 
+Version 0.1.10 adds authored X/Y placement for the upper mass. These design-mm
+offsets create a controlled cantilever without moving divided supports or
+rerolling the seeded variation. Shared shoulder tops follow the upper mass in X
+while their necks remain fixed, producing a connected sloping transition.
+Bearing feedback follows the actual offset mass and model scale.
+
 ## Run locally
 
 Requirements:
@@ -97,10 +103,11 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.9 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.10 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass
 and ground-contact readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
-including seeded variation, support rows and explicit foot offsets.
+including seeded variation, support rows, explicit foot offsets and authored
+upper-mass placement.

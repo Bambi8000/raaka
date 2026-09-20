@@ -791,6 +791,32 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('upperDepthRatio', value)}
           />
+          <div className="control-subsection">
+            <span>UPPER MASS PLACEMENT</span>
+            <small>Authored cantilever in design millimetres.</small>
+          </div>
+          <RangeField
+            label="Upper offset X"
+            value={parameters.upperOffsetXMm}
+            minimum={-400}
+            maximum={400}
+            step={10}
+            suffix=" mm"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('upperOffsetXMm', value)}
+          />
+          <RangeField
+            label="Upper offset Y"
+            value={parameters.upperOffsetYMm}
+            minimum={-400}
+            maximum={400}
+            step={10}
+            suffix=" mm"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('upperOffsetYMm', value)}
+          />
           <RangeField
             label="Columns (X)"
             value={parameters.supportCount}
@@ -1245,8 +1271,8 @@ export default function App() {
                   </span>
                   <small>
                     The outer shoulder zones extend beyond the upper mass.
-                    Adjust depth, spacing or selected position; RAAKA will not
-                    resize them.
+                    Adjust upper Y offset, depth, spacing or selected position;
+                    RAAKA will not resize them.
                   </small>
                 </div>
               ) : null}
@@ -1267,8 +1293,8 @@ export default function App() {
                   </span>
                   <small>
                     A shoulder extends beyond the upper mass in X. Adjust its
-                    width, selected position or the shared upper width; RAAKA
-                    will not resize it.
+                    width, selected position, the upper X offset or the shared
+                    upper width; RAAKA will not resize it.
                   </small>
                 </div>
               ) : null}
@@ -1291,7 +1317,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.9 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.10 / LOCAL</span>
       </footer>
     </main>
   )

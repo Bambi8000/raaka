@@ -6,13 +6,14 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.9, the
+This document describes the product direction. In version 0.1.10, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
 multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement and divided/shared shoulder rows. Outputs, cores and the
-remaining recipe families are planned. See
+remaining recipe families are planned. Authored X/Y upper-mass offsets add a
+controlled cantilever without replacing seeded asymmetry. See
 [Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
@@ -139,7 +140,21 @@ stays separate from authored overrides. Version 0.1.8 adds ±300 mm selected
 X/Y placement. Bearing warnings require actual two-axis intersection and also
 report collisions between supports that are not grid neighbours. Version 0.1.9
 adds divided and shared shoulder topology. Existing projects migrate to divided
-shoulders, preserving their previous form.
+shoulders, preserving their previous form. Version 0.1.10 adds authored X/Y
+upper-mass offsets in design millimetres. Divided supports remain fixed; shared
+shoulder tops follow the mass in X while retaining their fixed necks. The
+existing bearing feedback follows the actual mass position.
+
+### Planned high-rise articulation module
+
+The high-rise module is a reusable articulation system rather than a separate
+free-form modeller. It applies an architectural floor and bay grid to compatible
+masses and generates balconies, windows and exterior doors as semantic geometry.
+Windows and doors are recess or opening intent; balconies are projecting slabs
+or recessed loggias. None of them are viewport decals. Repetition stays seeded,
+individual modules can later be overridden, and details must remain legible at
+the chosen model and implied architectural scales. The first delivery is scoped
+in the [Roadmap](ROADMAP.md).
 
 ## Operations
 

@@ -135,6 +135,23 @@ intersections. The gap distance scales with model scale. Shared shoulder pieces
 remain separate closed preview frustums whose top boundaries coincide; the mode
 does not claim a boolean union or export-ready solid.
 
+### Upper-mass placement
+
+Version 0.1.10 stores authored `upperOffsetXMm` and `upperOffsetYMm` values in
+design millimetres. They translate the upper box after its existing seeded X
+shift is resolved. The seeded shift and authored placement remain independent:
+changing either offset must not consume randomness or alter support identities,
+dimensions or ground footprints.
+
+Divided shoulders remain unchanged when the mass moves, exposing the resulting
+bearing overhang. In shared mode each shoulder top continues to target its
+corresponding upper-mass bay centre in X, so an authored X offset changes only
+the shoulder's top offset while the neck and stem remain fixed. This produces a
+continuous sloping row without pretending that the preview pieces are unioned.
+An authored Y offset moves only the mass; actual shoulder rectangles and the
+translated mass bounds drive the existing Y-bearing feedback. The later model
+scale stage scales the complete resulting geometry and all distance feedback.
+
 ## Data flow
 
 ```text
@@ -157,15 +174,16 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 7 stores every
-generator parameter, shoulder topology, shared X/Y foot offsets, the three
-selected-leg override arrays and one of the supported `modelScale` presets.
-Recipe versions 1–6 receive divided shoulders; version 5 additionally receives
-an empty support-position override list; version 4 additionally receives an
-empty support-size override list; version 3 additionally migrates to one row
-with the original support depth; version 2 additionally receives an empty
-foot-offset override list; version 1 additionally receives zero shared offsets.
-A missing model
+version and a separate recipe version. Piloti recipe version 8 stores every
+generator parameter, authored upper-mass placement, shoulder topology, shared
+X/Y foot offsets, the three selected-leg override arrays and one of the
+supported `modelScale` presets. Recipe versions 1–7 receive zero upper-mass
+offsets; versions 1–6 additionally receive divided shoulders; version 5
+additionally receives an empty support-position override list; version 4
+additionally receives an empty support-size override list; version 3
+additionally migrates to one row with the original support depth; version 2
+additionally receives an empty foot-offset override list; version 1
+additionally receives zero shared offsets. A missing model
 scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.

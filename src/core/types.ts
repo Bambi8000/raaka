@@ -73,6 +73,8 @@ export interface PilotiParameters {
   readonly neckWidthRatio: number
   readonly upperWidthRatio: number
   readonly upperDepthRatio: number
+  readonly upperOffsetXMm: number
+  readonly upperOffsetYMm: number
   readonly asymmetry: number
   readonly footOffsetXMm: number
   readonly footOffsetYMm: number

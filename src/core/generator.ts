@@ -65,6 +65,8 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   neckWidthRatio: 0.34,
   upperWidthRatio: 0.72,
   upperDepthRatio: 0.34,
+  upperOffsetXMm: 0,
+  upperOffsetYMm: 0,
   asymmetry: 0.12,
   footOffsetXMm: 0,
   footOffsetYMm: 0,
@@ -135,6 +137,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.45
   const massShift =
     randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.65
+  const upperCentreX = massShift + parameters.upperOffsetXMm
+  const upperCentreY = parameters.upperOffsetYMm
 
   for (let rowIndex = 0; rowIndex < parameters.supportRowCount; rowIndex += 1) {
     const rowNumber = rowIndex + 1
@@ -159,7 +163,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       const bayCentre =
         -upperWidth / 2 + bayWidth * (columnIndex + 0.5) + supportShift
       const massBayCentre =
-        -upperWidth / 2 + bayWidth * (columnIndex + 0.5) + massShift
+        -upperWidth / 2 + bayWidth * (columnIndex + 0.5) + upperCentreX
       const supportCentreX = bayCentre + positionX
       const supportCentreY = rowCentre + positionY
       const individualShift =
@@ -233,7 +237,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     id: 'upper-mass',
     label: 'Upper mass',
     role: 'mass',
-    position: [massShift, 0, supportHeight + upperHeight / 2],
+    position: [upperCentreX, upperCentreY, supportHeight + upperHeight / 2],
     size: [upperWidth, upperDepth, upperHeight],
   })
 
@@ -343,10 +347,10 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       }
     }
   }
-  const massMinX = massShift - upperWidth / 2
-  const massMaxX = massShift + upperWidth / 2
-  const massMinY = -upperDepth / 2
-  const massMaxY = upperDepth / 2
+  const massMinX = upperCentreX - upperWidth / 2
+  const massMaxX = upperCentreX + upperWidth / 2
+  const massMinY = upperCentreY - upperDepth / 2
+  const massMaxY = upperCentreY + upperDepth / 2
   const bearingOverhangMm = shoulderBearings.reduce(
     (maximum, bearing) =>
       Math.max(

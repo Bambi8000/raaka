@@ -501,6 +501,98 @@ describe('generatePiloti', () => {
     expect(shared.groundContactMm2).toBe(divided.groundContactMm2)
   })
 
+  it('moves the upper mass independently from divided supports', () => {
+    const centred = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 319,
+      shoulderMode: 'divided',
+    })
+    const shifted = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 319,
+      shoulderMode: 'divided',
+      upperOffsetXMm: 180,
+      upperOffsetYMm: -120,
+    })
+    const centredMass = centred.pieces.find(
+      (piece) => piece.id === 'upper-mass',
+    )
+    const shiftedMass = shifted.pieces.find(
+      (piece) => piece.id === 'upper-mass',
+    )
+
+    expect(centredMass).toBeDefined()
+    expect(shiftedMass).toBeDefined()
+    if (!centredMass || !shiftedMass) return
+    expect(shiftedMass.position).toEqual([
+      centredMass.position[0] + 180,
+      centredMass.position[1] - 120,
+      centredMass.position[2],
+    ])
+    for (const piece of centred.pieces.filter(
+      (candidate) => candidate.role === 'support',
+    )) {
+      expect(shifted.pieces.find((candidate) => candidate.id === piece.id)).toEqual(
+        piece,
+      )
+    }
+    expect(shifted.concreteVolumeMm3).toBeCloseTo(
+      centred.concreteVolumeMm3,
+      10,
+    )
+    expect(shifted.groundContactMm2).toBe(centred.groundContactMm2)
+    expect(shifted.supportLayout?.bearingOverhangMm).toBeCloseTo(99.6, 10)
+  })
+
+  it('keeps shared shoulder tops aligned to an offset upper mass', () => {
+    const centred = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 319,
+      asymmetry: 0.5,
+      shoulderMode: 'shared',
+    })
+    const shifted = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      seed: 319,
+      asymmetry: 0.5,
+      shoulderMode: 'shared',
+      upperOffsetXMm: -210,
+    })
+
+    for (let column = 1; column <= 3; column += 1) {
+      const centredShoulder = centred.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `shoulder-${column}`,
+      )
+      const shiftedShoulder = shifted.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `shoulder-${column}`,
+      )
+      const centredStem = centred.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `support-${column}`,
+      )
+      const shiftedStem = shifted.pieces.find(
+        (piece): piece is FrustumPiece => piece.id === `support-${column}`,
+      )
+      expect(centredShoulder).toBeDefined()
+      expect(shiftedShoulder).toBeDefined()
+      expect(shiftedStem).toEqual(centredStem)
+      if (!centredShoulder || !shiftedShoulder) continue
+
+      expect(
+        shiftedShoulder.position[0] + shiftedShoulder.topOffset[0],
+      ).toBeCloseTo(
+        centredShoulder.position[0] + centredShoulder.topOffset[0] - 210,
+        10,
+      )
+      expect(shiftedShoulder.position).toEqual(centredShoulder.position)
+      expect(shiftedShoulder.bottomOffset).toEqual(
+        centredShoulder.bottomOffset,
+      )
+    }
+    expect(shifted.supportLayout?.adjacentColumnGapMm).toBeCloseTo(0, 10)
+    expect(shifted.supportLayout?.adjacentColumnOverlapMm).toBeCloseTo(0, 10)
+    expect(shifted.supportLayout?.sideBearingOverhangMm).toBeCloseTo(0, 10)
+  })
+
   it('reports gaps and overlaps when a shared shoulder is moved', () => {
     const study = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
@@ -655,6 +747,8 @@ describe('generatePiloti', () => {
       neckWidthRatio: 0.18,
       upperWidthRatio: 0.4,
       upperDepthRatio: 0.2,
+      upperOffsetXMm: -400,
+      upperOffsetYMm: -400,
       asymmetry: 0,
       footOffsetXMm: -300,
       footOffsetYMm: -300,
@@ -675,6 +769,8 @@ describe('generatePiloti', () => {
       neckWidthRatio: 0.7,
       upperWidthRatio: 1.1,
       upperDepthRatio: 0.65,
+      upperOffsetXMm: 400,
+      upperOffsetYMm: 400,
       asymmetry: 0.5,
       footOffsetXMm: 300,
       footOffsetYMm: 300,

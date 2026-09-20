@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.13, the
+This document describes the product direction. In version 0.1.14, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -169,6 +169,11 @@ Version 0.1.13 adds source-linked upper-mass and complete-support copies with
 independent X/Y/Z placement. Copies participate in scale, project files,
 recovery and history. They remain separate closed preview solids, so overlap is
 nominally double-counted until a validated solid-kernel Fuse operation exists.
+Version 0.1.14 validates and adopts Manifold as that solid kernel. Its adapter
+already produces closed union meshes, finished-solid volume and simplified
+horizontal sections from the existing box and rectangular-loft vocabulary.
+The kernel is not yet connected to a user-facing Fuse operation, so ordinary
+preview copies retain the explicit nominal-volume warning.
 
 ### Planned high-rise articulation module
 

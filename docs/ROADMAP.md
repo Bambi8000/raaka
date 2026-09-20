@@ -21,6 +21,7 @@ the initial recipe and drawing foundations.
 Block and tapered upper-mass profiles are implemented in 0.1.11.
 Linked and detached upper/support footprints are implemented in 0.1.12.
 Semantic upper-mass and complete-support copies are implemented in 0.1.13.
+The Manifold solid-kernel gate is complete in 0.1.14.
 
 ## 0.1 — foundation
 
@@ -46,6 +47,7 @@ Version 0.1.10 adds authored upper-mass cantilever in X/Y.
 Version 0.1.11 adds a tapered upper-mass profile.
 Version 0.1.12 links upper X/Y dimensions to the support grid by default.
 Version 0.1.13 adds source-linked semantic part copies and X/Y/Z placement.
+Version 0.1.14 validates the solid-kernel boundary before user-facing Fuse.
 
 ## 0.1.1 — correct the baseline
 
@@ -293,6 +295,23 @@ a copied leg retains its joined interface, hidden sources recover predictably,
 save/history/model scale preserve the result, and the interface never presents
 preview overlap as a completed union.
 
+## 0.1.14 — solid-kernel gate
+
+- [x] pin Manifold 3.5.3 and initialize its WASM module once
+- [x] convert semantic boxes and rectangular lofts without using Three.js
+- [x] verify overlapping, coincident and coplanar-touching union fixtures
+- [x] verify thin positive intersections and disconnected component reporting
+- [x] return closed indexed meshes, exact kernel bounds and finished-solid
+  volume
+- [x] emit simplified horizontal section polygons and measured section area
+- [x] compare exported mesh topology and signed volume against kernel truth
+- [x] repeat a thin-overlap union 50 times and explicitly release every WASM
+  solid and section
+
+Done when the chosen dependency proves that RAAKA's current planar vocabulary
+can enter and leave one deterministic solid boundary without internal contact
+faces, silent topology failure or unmanaged per-operation WASM objects.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -314,7 +333,7 @@ preview overlap as a completed union.
 - [ ] stepped or multi-part asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
-- [ ] focused solid-kernel spike before committing to a boolean dependency
+- [x] focused solid-kernel spike before committing to a boolean dependency
 - [ ] union preview pieces and resolve internal contact faces
 - [ ] editable density, centre-of-mass projection and support-polygon feedback
 - [x] geometric bearing/contact feedback without automatic aesthetic correction

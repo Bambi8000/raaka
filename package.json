@@ -1,7 +1,7 @@
 {
   "name": "raaka",
   "private": true,
-  "version": "0.1.13",
+  "version": "0.1.14",
   "type": "module",
   "packageManager": "pnpm@11.19.0",
   "engines": {
@@ -17,6 +17,7 @@
     "verify": "pnpm lint && pnpm test && pnpm build"
   },
   "dependencies": {
+    "manifold-3d": "3.5.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "three": "^0.186.0"

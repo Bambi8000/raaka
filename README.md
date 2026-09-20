@@ -83,6 +83,14 @@ without changing its source. Copies remain separate preview solids until the
 planned solid-kernel Fuse operation; intersecting volume is therefore still
 counted more than once and is labelled explicitly in the interface.
 
+Version 0.1.14 accepts Manifold 3.5.3 as the solid kernel after a focused gate.
+The tested adapter converts RAAKA boxes and rectangular lofts without Three.js,
+produces closed indexed union meshes, measures finished-solid volume and emits
+simplified horizontal sections. Regression fixtures cover overlaps, coincident
+solids, coplanar contact, thin intersections, disconnected results and repeated
+WASM cleanup. This release establishes the kernel boundary; the user-facing
+multi-selection and Fuse operation remain the next milestone.
+
 ## Run locally
 
 Requirements:
@@ -123,7 +131,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.13 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.14 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

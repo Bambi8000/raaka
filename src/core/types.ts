@@ -53,6 +53,12 @@ export interface PilotiSupportSizeOverride {
   readonly depthScale: number
 }
 
+export interface PilotiSupportPositionOverride {
+  readonly supportId: string
+  readonly positionXMm: number
+  readonly positionYMm: number
+}
+
 export interface PilotiParameters {
   readonly seed: number
   readonly heightMm: number
@@ -70,6 +76,7 @@ export interface PilotiParameters {
   readonly footOffsetYMm: number
   readonly footOffsetOverrides: readonly PilotiFootOffsetOverride[]
   readonly supportSizeOverrides: readonly PilotiSupportSizeOverride[]
+  readonly supportPositionOverrides: readonly PilotiSupportPositionOverride[]
 }
 
 export interface SupportLayoutAnalysis {
@@ -80,6 +87,7 @@ export interface SupportLayoutAnalysis {
   readonly shoulderDepthMm: number
   readonly adjacentRowOverlapMm: number
   readonly adjacentColumnOverlapMm: number
+  readonly nonAdjacentBearingOverlapMm: number
   readonly bearingOverhangMm: number
   readonly sideBearingOverhangMm: number
 }

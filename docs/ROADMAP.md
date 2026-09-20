@@ -13,6 +13,7 @@ leaning legs. These are specified in [Product definition](PRODUCT.md) and
 selected-leg overrides are implemented in 0.1.4; model-scale presets are
 implemented in 0.1.5; support grids and layout feedback are implemented in
 0.1.6; selected-support proportions are implemented in 0.1.7.
+Selected-support placement is implemented in 0.1.8.
 
 ## 0.1 — foundation
 
@@ -32,6 +33,7 @@ work with project files, recovery and history; version 0.1.3 adds authored
 shared leg lean; version 0.1.4 adds per-leg overrides; version 0.1.5 adds
 physical model scales; version 0.1.6 adds support grids.
 Version 0.1.7 adds selected-support proportions.
+Version 0.1.8 adds selected-support placement.
 
 ## 0.1.1 — correct the baseline
 
@@ -167,6 +169,23 @@ depth override, another support remains byte-for-byte unchanged, unsafe layout
 growth is reported rather than corrected, and save/recovery/history retain the
 edit.
 
+## 0.1.8 — selected Piloti support placement
+
+- [x] add selected X/Y placement relative to the generated support grid
+- [x] translate the complete stem-and-shoulder pair without changing lean
+- [x] preserve joined interfaces, height, size and seeded variation
+- [x] keep neighbours unchanged and recompute the complete study envelope
+- [x] preserve volume, mass and ground-contact area under translation
+- [x] require actual two-axis intersection for row and column overlap warnings
+- [x] report cross-grid collisions between supports that are not neighbours
+- [x] include placement in the combined selected-leg create/remove workflow
+- [x] persist placement in Piloti recipe version 6 and migrate versions 1–5
+- [x] scale position and collision distances at 1:1, 1:2 and 1:4
+
+Done when a selected support can move independently without deforming or
+disconnecting its pair, warnings follow the translated bearing rectangles, and
+save/recovery/history preserve the authored position.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -180,7 +199,8 @@ edit.
   and matching stem/shoulder interfaces
 - [x] explicit selected-leg offsets with visible shared/selected scope
 - [x] explicit selected-leg width and depth with the same visible scope
-- [ ] support placement offsets and asymmetric upper masses
+- [x] selected support placement offsets
+- [ ] asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [ ] focused solid-kernel spike before committing to a boolean dependency

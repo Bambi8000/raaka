@@ -97,13 +97,28 @@ position, seeded variation and endpoint offsets remain unchanged, and both
 members of the support pair receive matching interface dimensions. Bounds,
 volume and ground contact are recomputed from the resulting pieces.
 
-The project stores foot offsets and size scales in separate override arrays so
-recipe versions 1–4 migrate without changing their established lean data. The
-UI presents them as one selected-leg override: Create writes both, Use shared
-removes both, and one history snapshot covers the combined edit. Bearing
-analysis uses each shoulder's actual top rectangle. It reports maximum overlap
-between adjacent rows and columns plus maximum X and Y overhang beyond the
-upper mass; it never alters authored geometry to remove a warning.
+The project stores foot offsets, size scales and placement in separate override
+arrays so older recipes migrate without changing established lean or size data.
+The UI presents them as one selected-leg override: Create writes all three, Use
+shared removes all three, and one history snapshot covers the combined edit.
+Bearing analysis uses each shoulder's actual top rectangle. It reports maximum
+overlap between adjacent rows and columns plus maximum X and Y overhang beyond
+the upper mass; it never alters authored geometry to remove a warning.
+
+Version 0.1.8 adds a third stable-ID override array for selected-support X/Y
+placement in design millimetres. Placement translates both the stem and
+shoulder from their generated grid centre after seeded shape variation is
+resolved. It does not change the stem's endpoint relationship, dimensions,
+height, volume or ground-contact area. Foot offset therefore remains lean,
+while position is whole-support translation. Both operations scale uniformly
+at the later model-scale stage.
+
+Shoulder overlap analysis now requires positive intersection on both planar
+axes before reporting a collision. Logical row and column neighbours retain
+their directional overlap readings. Any intersecting pair that is not a
+logical neighbour produces a separate cross-grid overlap reading using the
+minimum translation distance along X or Y. Bearing overhang continues to use
+each translated shoulder's actual top rectangle.
 
 ## Data flow
 
@@ -127,13 +142,14 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 5 stores every
-generator parameter, shared X/Y foot offsets, selected-leg overrides and one
-of the supported `modelScale` presets. Recipe version 4 receives an empty
-support-size override list; recipe version 3 additionally migrates to one row
-with the original support depth; recipe version 2 additionally receives an
-empty foot-offset override list; recipe version 1 additionally receives zero
-shared offsets. A missing model
+version and a separate recipe version. Piloti recipe version 6 stores every
+generator parameter, shared X/Y foot offsets, the three selected-leg override
+arrays and one of the supported `modelScale` presets. Recipe version 5 receives
+an empty support-position override list; version 4 additionally receives an
+empty support-size override list; version 3 additionally migrates to one row
+with the original support depth; version 2 additionally receives an empty
+foot-offset override list; version 1 additionally receives zero shared
+offsets. A missing model
 scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.
@@ -159,10 +175,10 @@ flat-shaded Three.js buffer geometry.
 
 The volume equation integrates the product of linearly changing width and
 depth. The one-row default and non-overlapping grids can sum preview-piece
-volumes directly. An authored grid or selected size may deliberately overlap
-shoulders across rows or columns; until boolean union exists, RAAKA labels the
-result nominal and warns that the sum double-counts intersecting preview
-pieces. Future booleans must derive volume from the finished solid instead.
+volumes directly. An authored grid, selected size or selected placement may
+deliberately overlap shoulders; until boolean union exists, RAAKA labels the
+result nominal and warns that the sum double-counts intersecting preview pieces.
+Future booleans must derive volume from the finished solid instead.
 
 Current pieces are separate closed preview meshes; shared contact faces have
 not been removed by a boolean union. They are not yet an export-ready single

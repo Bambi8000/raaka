@@ -1,6 +1,7 @@
 import type {
   PilotiFootOffsetOverride,
   PilotiParameters,
+  PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
 } from './types'
 
@@ -14,12 +15,19 @@ interface ParameterRule {
 
 type NumericPilotiParameter = Exclude<
   keyof PilotiParameters,
-  'footOffsetOverrides' | 'supportSizeOverrides'
+  | 'footOffsetOverrides'
+  | 'supportSizeOverrides'
+  | 'supportPositionOverrides'
 >
 
 export const PILOTI_SUPPORT_SIZE_SCALE = {
   minimum: 0.55,
   maximum: 1.45,
+} as const
+
+export const PILOTI_SUPPORT_POSITION_MM = {
+  minimum: -300,
+  maximum: 300,
 } as const
 
 export const PILOTI_PARAMETER_RULES = {
@@ -178,6 +186,57 @@ function normalizeSupportSizeOverrides(
   })
 }
 
+function normalizeSupportPositionValue(value: number, name: string): number {
+  if (!Number.isFinite(value)) {
+    throw new RangeError(
+      `Piloti support position override "${name}" must be finite.`,
+    )
+  }
+  return Math.min(
+    PILOTI_SUPPORT_POSITION_MM.maximum,
+    Math.max(PILOTI_SUPPORT_POSITION_MM.minimum, value),
+  )
+}
+
+function normalizeSupportPositionOverrides(
+  input: readonly PilotiSupportPositionOverride[],
+): readonly PilotiSupportPositionOverride[] {
+  if (!Array.isArray(input)) {
+    throw new RangeError('Piloti support position overrides must be an array.')
+  }
+
+  const overrides: readonly PilotiSupportPositionOverride[] = input
+  const supportIds = new Set<string>()
+  return overrides.map((override) => {
+    if (
+      typeof override !== 'object' ||
+      override === null ||
+      !isPilotiSupportId(override.supportId)
+    ) {
+      throw new RangeError(
+        'Piloti support position override has an invalid support ID.',
+      )
+    }
+    if (supportIds.has(override.supportId)) {
+      throw new RangeError(
+        `Piloti support position override for "${override.supportId}" is duplicated.`,
+      )
+    }
+    supportIds.add(override.supportId)
+    return {
+      supportId: override.supportId,
+      positionXMm: normalizeSupportPositionValue(
+        override.positionXMm,
+        'positionXMm',
+      ),
+      positionYMm: normalizeSupportPositionValue(
+        override.positionYMm,
+        'positionYMm',
+      ),
+    }
+  })
+}
+
 export function normalizePilotiParameters(
   input: PilotiParameters,
 ): PilotiParameters {
@@ -210,6 +269,9 @@ export function normalizePilotiParameters(
     ),
     supportSizeOverrides: normalizeSupportSizeOverrides(
       input.supportSizeOverrides,
+    ),
+    supportPositionOverrides: normalizeSupportPositionOverrides(
+      input.supportPositionOverrides,
     ),
   }
 }
@@ -343,6 +405,71 @@ function readSupportSizeOverrides(
   })
 }
 
+function readSupportPositionValue(
+  input: Record<string, unknown>,
+  name: 'positionXMm' | 'positionYMm',
+): number {
+  const value = input[name]
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new ProjectValidationError(
+      `Support position override "${name}" must be a finite number.`,
+    )
+  }
+  if (
+    value < PILOTI_SUPPORT_POSITION_MM.minimum ||
+    value > PILOTI_SUPPORT_POSITION_MM.maximum
+  ) {
+    throw new ProjectValidationError(
+      `Support position override "${name}" must be between ${PILOTI_SUPPORT_POSITION_MM.minimum} and ${PILOTI_SUPPORT_POSITION_MM.maximum}.`,
+    )
+  }
+  return value
+}
+
+function readSupportPositionOverrides(
+  input: Record<string, unknown>,
+): readonly PilotiSupportPositionOverride[] {
+  const value = input.supportPositionOverrides
+  if (!Array.isArray(value)) {
+    throw new ProjectValidationError(
+      'Parameter "supportPositionOverrides" must be an array.',
+    )
+  }
+
+  const supportIds = new Set<string>()
+  return value.map((candidate) => {
+    if (
+      typeof candidate !== 'object' ||
+      candidate === null ||
+      Array.isArray(candidate)
+    ) {
+      throw new ProjectValidationError(
+        'Every support position override must be an object.',
+      )
+    }
+    const override = candidate as Record<string, unknown>
+    if (
+      typeof override.supportId !== 'string' ||
+      !isPilotiSupportId(override.supportId)
+    ) {
+      throw new ProjectValidationError(
+        'Every support position override must name a supported support ID.',
+      )
+    }
+    if (supportIds.has(override.supportId)) {
+      throw new ProjectValidationError(
+        `Support position override for "${override.supportId}" is duplicated.`,
+      )
+    }
+    supportIds.add(override.supportId)
+    return {
+      supportId: override.supportId,
+      positionXMm: readSupportPositionValue(override, 'positionXMm'),
+      positionYMm: readSupportPositionValue(override, 'positionYMm'),
+    }
+  })
+}
+
 export class ProjectValidationError extends Error {
   public constructor(message: string) {
     super(message)
@@ -375,5 +502,6 @@ export function parsePilotiParameters(
     footOffsetYMm: readParameter(record, 'footOffsetYMm'),
     footOffsetOverrides: readFootOffsetOverrides(record),
     supportSizeOverrides: readSupportSizeOverrides(record),
+    supportPositionOverrides: readSupportPositionOverrides(record),
   }
 }

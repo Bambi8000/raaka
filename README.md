@@ -45,6 +45,12 @@ their X/Y proportions can diverge from the shared template without changing
 neighbours. Oversized supports produce measured column-overlap and side-bearing
 warnings. Size edits share the same save, recovery and undo workflow as lean.
 
+Version 0.1.8 adds independent X/Y placement for a selected support. Placement
+translates the complete stem-and-shoulder pair away from its generated grid
+position, while foot offset remains a separate lean control. Actual bearing
+rectangles drive row, column, cross-grid and upper-mass overhang warnings, so a
+visual separation is not reported as a collision on only one axis.
+
 ## Run locally
 
 Requirements:
@@ -85,7 +91,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.7 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.8 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

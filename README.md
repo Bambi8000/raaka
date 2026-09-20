@@ -79,17 +79,26 @@ Version 0.1.13 adds saved semantic part copies. The upper mass duplicates as
 one live-source mass; a support duplicates as its complete connected stem and
 shoulder pair. Each copy has independent X/Y/Z translation in design
 millimetres, participates in scale, recovery and undo/redo, and can be removed
-without changing its source. Copies remain separate preview solids until the
-planned solid-kernel Fuse operation; intersecting volume is therefore still
-counted more than once and is labelled explicitly in the interface.
+without changing its source. Copies remain separate preview solids unless the
+owner joins touching parts with Fuse; unfused intersections are therefore still
+counted more than once and are labelled explicitly in the interface.
 
 Version 0.1.14 accepts Manifold 3.5.3 as the solid kernel after a focused gate.
 The tested adapter converts RAAKA boxes and rectangular lofts without Three.js,
 produces closed indexed union meshes, measures finished-solid volume and emits
 simplified horizontal sections. Regression fixtures cover overlaps, coincident
 solids, coplanar contact, thin intersections, disconnected results and repeated
-WASM cleanup. This release establishes the kernel boundary; the user-facing
-multi-selection and Fuse operation remain the next milestone.
+WASM cleanup. This release established the kernel boundary used by the
+user-facing multi-selection and Fuse operation in 0.1.15.
+
+Version 0.1.15 adds that user-facing Fuse workflow. **Add to Fuse** builds a
+blue secondary selection set from two or more objects; **Fuse parts** replaces
+touching or overlapping sources with one closed, selectable mesh and removes
+their internal contact faces. Its volume, mass, bounds and ground contact come
+from the finished union. Disconnected selections are refused, **Unfuse**
+restores the editable source pieces, and saved Fuse groups recompute when their
+live source geometry changes. Fuse creation and removal participate in project
+files, recovery, undo/redo and all three model scales.
 
 ## Run locally
 
@@ -131,7 +140,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.14 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.15 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

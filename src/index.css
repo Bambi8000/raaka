@@ -386,6 +386,11 @@ input:focus-visible {
   background: var(--yellow);
 }
 
+.object-list button.is-fuse-selected:not(.is-selected) {
+  background: #dcecf8;
+  box-shadow: inset 5px 0 0 var(--blue);
+}
+
 .object-list button > span:nth-child(2) {
   overflow: hidden;
   font-size: 10px;
@@ -506,6 +511,7 @@ input:focus-visible {
 
 .inspector-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 13px;
 }
@@ -526,7 +532,68 @@ input:focus-visible {
   color: white;
 }
 
+.inspector-actions button.is-constructive {
+  background: var(--blue);
+  color: white;
+}
+
 .inspector-actions button:disabled {
+  background: var(--panel);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.fuse-builder {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 10px;
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid var(--ink);
+  background: #dcecf8;
+  box-shadow: inset 5px 0 0 var(--blue);
+}
+
+.fuse-builder > span,
+.fuse-builder > strong {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.fuse-builder > small,
+.fuse-builder > div {
+  grid-column: 1 / -1;
+}
+
+.fuse-builder > small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.fuse-builder > div {
+  display: flex;
+  gap: 6px;
+}
+
+.fuse-builder button {
+  min-height: 27px;
+  padding: 0 9px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+}
+
+.fuse-builder button.is-primary {
+  background: var(--blue);
+  color: white;
+}
+
+.fuse-builder button:disabled {
   background: var(--panel);
   color: var(--muted);
   cursor: not-allowed;
@@ -857,6 +924,11 @@ input[type="range"] {
   padding: 9px;
   background: #fff2b4;
   box-shadow: inset 5px 0 0 var(--yellow);
+}
+
+.layout-advisories div.is-error {
+  background: #f7d7e7;
+  box-shadow: inset 5px 0 0 var(--pink);
 }
 
 .layout-advisories strong,

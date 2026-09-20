@@ -16,6 +16,22 @@ export function scenePieceBounds(piece: ScenePiece): Bounds3 {
     }
   }
 
+  if (piece.kind === 'mesh') {
+    if (piece.positions.length < 3 || piece.positions.length % 3 !== 0) {
+      throw new RangeError('A mesh piece must contain complete vertex positions.')
+    }
+    const minimum: [number, number, number] = [Infinity, Infinity, Infinity]
+    const maximum: [number, number, number] = [-Infinity, -Infinity, -Infinity]
+    for (let index = 0; index < piece.positions.length; index += 3) {
+      for (let axis = 0; axis < 3; axis += 1) {
+        const value = piece.positions[index + axis] + piece.position[axis]
+        minimum[axis] = Math.min(minimum[axis], value)
+        maximum[axis] = Math.max(maximum[axis], value)
+      }
+    }
+    return { min: minimum, max: maximum }
+  }
+
   const bottomCentreX = piece.position[0] + piece.bottomOffset[0]
   const bottomCentreY = piece.position[1] + piece.bottomOffset[1]
   const topCentreX = piece.position[0] + piece.topOffset[0]

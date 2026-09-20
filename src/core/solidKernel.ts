@@ -1,6 +1,6 @@
-import Module, {
-  type Manifold as ManifoldSolid,
-  type ManifoldToplevel,
+import type {
+  Manifold as ManifoldSolid,
+  ManifoldToplevel,
 } from 'manifold-3d'
 import type { Bounds3, FrustumPiece, ScenePiece } from './types'
 
@@ -25,6 +25,7 @@ export interface SolidKernelMesh {
   readonly bounds: Bounds3
   readonly volumeMm3: number
   readonly componentCount: number
+  readonly groundContactMm2: number
 }
 
 export interface SolidKernelSection {
@@ -35,10 +36,12 @@ export interface SolidKernelSection {
 let kernelPromise: Promise<ManifoldToplevel> | undefined
 
 export function loadSolidKernel(): Promise<ManifoldToplevel> {
-  kernelPromise ??= Module().then((kernel) => {
-    kernel.setup()
-    return kernel
-  })
+  kernelPromise ??= import('manifold-3d')
+    .then(({ default: createModule }) => createModule())
+    .then((kernel) => {
+      kernel.setup()
+      return kernel
+    })
   return kernelPromise
 }
 
@@ -91,6 +94,22 @@ function manifoldForPiece(
     } finally {
       cube.delete()
     }
+  }
+
+  if (piece.kind === 'mesh') {
+    const positions = new Float32Array(piece.positions)
+    for (let index = 0; index < positions.length; index += 3) {
+      positions[index] += piece.position[0]
+      positions[index + 1] += piece.position[1]
+      positions[index + 2] += piece.position[2]
+    }
+    return new kernel.Manifold(
+      new kernel.Mesh({
+        numProp: 3,
+        vertProperties: positions,
+        triVerts: new Uint32Array(piece.triangles),
+      }),
+    )
   }
 
   return new kernel.Manifold(
@@ -149,6 +168,14 @@ export async function fuseScenePieces(
     const components = result.decompose()
     try {
       const kernelBounds = result.boundingBox()
+      const groundSection =
+        Math.abs(kernelBounds.min[2]) < 1e-6 ? result.slice(0) : undefined
+      let groundContactMm2 = 0
+      try {
+        groundContactMm2 = groundSection?.area() ?? 0
+      } finally {
+        groundSection?.delete()
+      }
       return {
         positions: copyPositions(mesh.vertProperties, mesh.numProp),
         triangles: new Uint32Array(mesh.triVerts),
@@ -158,6 +185,7 @@ export async function fuseScenePieces(
         },
         volumeMm3: result.volume(),
         componentCount: components.length,
+        groundContactMm2,
       }
     } finally {
       for (const component of components) component.delete()

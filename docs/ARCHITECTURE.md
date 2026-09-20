@@ -31,8 +31,9 @@ owned JavaScript arrays and explicitly deletes every Manifold and CrossSection
 object. Its current union boundary returns bounds, finished-solid volume,
 component count and a closed indexed mesh. Horizontal sections are simplified
 before their polygons leave the kernel. A disconnected union is valid kernel
-output with more than one component; the future Fuse UI must refuse it clearly
-instead of presenting separate islands as one joined part.
+output with more than one component; the Fuse UI refuses it clearly instead of
+presenting separate islands as one joined part. The WASM dependency is loaded
+only when the first solid operation is requested.
 
 ## Coordinate convention
 
@@ -212,11 +213,32 @@ scale transforms copied dimensions and translations with the rest of the
 study. Only copied stems whose actual lower bound remains on Z = 0 contribute
 ground contact.
 
-Copies are deliberately separate closed preview solids. Their bounds and
-nominal volume contribute to the study, but intersecting volume is counted once
-per piece. This milestone does not imply boolean union, manufacture-ready mesh
-output or independent proportion edits. Those require the validated solid
-kernel and an explicit Fuse operation.
+Copies begin as separate closed preview solids. Their bounds and nominal volume
+contribute to the study, but intersecting volume is counted once per piece until
+the owner explicitly includes them in a Fuse. Copy proportion edits remain
+source-linked, and no current Fuse is itself manufacture-ready export.
+
+### Semantic Fuse groups
+
+Version 0.1.15 stores up to 12 Fuse groups, each with a stable `fuse-N` ID and
+2–24 unique source piece IDs. A source may belong to only one group. The source
+recipe and copies remain project truth; the closed indexed union mesh is derived
+and is never serialized as a stale geometry cache. Unfuse deletes only the
+group and immediately exposes the editable sources again.
+
+The kernel resolves Fuse groups in full-size master millimetres before the
+existing uniform model-scale stage. Uniform scale commutes with union, while
+this order avoids rerunning WASM when only 1:1, 1:2 or 1:4 changes. Mesh
+positions, bounds, volume and ground contact then scale by `s`, `s³` and `s²`
+through the same stage as analytic pieces. Three.js renders the returned indexed
+mesh but does not create or validate it.
+
+The UI preflights a new group and refuses a union with more than one connected
+component. Later source edits recompute the group. If they disconnect it, the
+Fuse pauses and the interface shows the separate sources plus the reason; if a
+source grid part is temporarily hidden, the group stays dormant and reactivates
+when that source returns. Other unfused pieces remain separately summed, so the
+physical reading states whether it mixes finished unions and nominal pieces.
 
 ## Data flow
 
@@ -227,11 +249,14 @@ Recipe parameters + stable seed
        Pure master generator
               |
               v
+       Semantic Fuse groups
+              |
+              v
       Explicit model scale
               |
-              +--> physical scene pieces --> Three.js preview
+              +--> physical analytic and mesh pieces --> Three.js preview
               +--> physical analysis
-              +--> validated solid kernel --> mesh / sections / drawings
+              +--> future mesh / sections / drawings
 ```
 
 React owns interaction state. The generator owns form truth. Three.js receives
@@ -240,11 +265,12 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 11 stores every
+version and a separate recipe version. Piloti recipe version 12 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
-override arrays, semantic part copies and one of the supported `modelScale`
-presets. Recipe versions 1–10 receive an empty part-copy list; versions 1–8
+override arrays, semantic part copies, Fuse groups and one of the supported
+`modelScale` presets. Recipe versions 1–11 receive an empty Fuse-group list;
+recipe versions 1–10 receive an empty part-copy list; versions 1–8
 receive the block upper-mass profile and latent tapered defaults; recipe
 versions 1–9 receive the detached footprint relationship to preserve their
 exact geometry; versions 1–7 additionally
@@ -273,25 +299,25 @@ outside project history; scale and override edits are undoable project data.
 
 ## Current vertical slice
 
-`src/core/generator.ts` creates the Piloti study as boxes and rectangular
-frustums. The same pure result drives the object list, viewport and physical
-readings. `src/geometry/frustum.ts` converts a semantic rectangular loft into a
-flat-shaded Three.js buffer geometry.
+`src/core/generator.ts` creates the editable Piloti sources as boxes and
+rectangular frustums. `src/core/studyFuses.ts` replaces active source groups
+with derived closed meshes. The same result drives the object list, viewport
+and physical readings. Three.js adapters convert analytic lofts and display
+kernel meshes without owning either form.
 
 The volume equation integrates the product of linearly changing width and
 depth. The one-row default and non-overlapping grids can sum preview-piece
-volumes directly. An authored grid, selected size, selected placement or part
-copy may deliberately overlap another piece; until boolean union exists, RAAKA
-labels the result nominal and warns that the sum double-counts intersecting
-preview pieces. Future booleans must derive volume from the finished solid
-instead.
+volumes directly. An authored grid, selected size, selected placement or
+unfused copy may deliberately overlap another piece; RAAKA labels those
+remaining sums nominal and warns about double-counting. Active Fuse groups use
+the kernel's finished-union volume and remove internal contact faces.
 
-Current pieces are separate closed preview meshes; shared contact faces have
-not been removed by a boolean union. They are not yet an export-ready single
-solid. The study envelope is computed from every box and loft endpoint,
-including offsets. It is the common source for physical dimensions, explicit
-camera framing and directional-shadow fitting. The baseline defects and their
-0.1.1 resolution are recorded in the
+Pieces outside a Fuse remain separate closed preview meshes, so the complete
+composition is not automatically one export-ready solid. The study envelope is
+computed from every analytic endpoint and finished mesh vertex. It is the
+common source for physical dimensions, explicit camera framing and
+directional-shadow fitting. The baseline defects and their 0.1.1 resolution are
+recorded in the
 [baseline review](AUDIT-2026-09-20.md).
 
 The camera is independent interaction state: changing a seed or design
@@ -305,6 +331,7 @@ supported scale and height.
 ## Selection colours
 
 - selected: yellow `#FFD400`
+- queued Fuse sources: blue `#287BC1`
 - void/destructive: magenta `#E33B97`
 - core/guide: blue `#287BC1`
 - primary mass and supports: neutral concrete greys

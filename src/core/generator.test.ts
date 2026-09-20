@@ -39,13 +39,20 @@ function expectFiniteStudy(parameters: PilotiParameters): void {
       ...piece.position,
       ...(piece.kind === 'box'
         ? piece.size
-        : [
-            piece.height,
-            ...piece.bottomSize,
-            ...piece.topSize,
-            ...piece.bottomOffset,
-            ...piece.topOffset,
-          ]),
+        : piece.kind === 'frustum'
+          ? [
+              piece.height,
+              ...piece.bottomSize,
+              ...piece.topSize,
+              ...piece.bottomOffset,
+              ...piece.topOffset,
+            ]
+          : [
+              ...piece.positions,
+              ...piece.triangles,
+              piece.volumeMm3,
+              piece.groundContactMm2,
+            ]),
     ]),
   ]
 
@@ -1048,6 +1055,7 @@ describe('generatePiloti', () => {
       supportSizeOverrides: [],
       supportPositionOverrides: [],
       partCopies: [],
+      fuseGroups: [],
     })
     expectFiniteStudy({
       seed: MAX_SEED,
@@ -1103,6 +1111,7 @@ describe('generatePiloti', () => {
           offsetZMm: 2_000,
         },
       ],
+      fuseGroups: [],
     })
   })
 
@@ -1294,6 +1303,57 @@ describe('generatePiloti', () => {
         ],
       }),
     ).toThrow('Piloti part copy "copy-1" is duplicated.')
+  })
+
+  it('rejects malformed or overlapping fuse groups', () => {
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        fuseGroups: [{ id: 'fuse-1', pieceIds: ['upper-mass'] }],
+      }),
+    ).toThrow('Piloti fuse group "fuse-1" must contain 2–24 pieces.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        fuseGroups: [
+          {
+            id: 'fuse-01',
+            pieceIds: ['upper-mass', 'support-1'],
+          },
+        ],
+      }),
+    ).toThrow('Piloti fuse group has an invalid group ID.')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        fuseGroups: [
+          {
+            id: 'fuse-1',
+            pieceIds: ['upper-mass', 'upper-mass'],
+          },
+        ],
+      }),
+    ).toThrow('Piloti fuse group "fuse-1" repeats piece "upper-mass".')
+
+    expect(() =>
+      generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        fuseGroups: [
+          {
+            id: 'fuse-1',
+            pieceIds: ['upper-mass', 'support-1'],
+          },
+          {
+            id: 'fuse-2',
+            pieceIds: ['upper-mass', 'support-2'],
+          },
+        ],
+      }),
+    ).toThrow(
+      'Piloti fuse piece "upper-mass" belongs to more than one group.',
+    )
   })
 
   it('rejects an unsupported shoulder topology', () => {

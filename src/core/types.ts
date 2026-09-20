@@ -42,7 +42,20 @@ export interface FrustumPiece {
   readonly topOffset: readonly [x: number, y: number]
 }
 
-export type ScenePiece = BoxPiece | FrustumPiece
+export interface MeshPiece {
+  readonly kind: 'mesh'
+  readonly id: string
+  readonly label: string
+  readonly role: PieceRole
+  readonly position: Vec3
+  readonly positions: Float32Array
+  readonly triangles: Uint32Array
+  readonly volumeMm3: number
+  readonly groundContactMm2: number
+  readonly sourcePieceIds: readonly string[]
+}
+
+export type ScenePiece = BoxPiece | FrustumPiece | MeshPiece
 
 export interface PilotiFootOffsetOverride {
   readonly supportId: string
@@ -68,6 +81,11 @@ export interface PilotiPartCopy {
   readonly offsetXMm: number
   readonly offsetYMm: number
   readonly offsetZMm: number
+}
+
+export interface PilotiFuseGroup {
+  readonly id: string
+  readonly pieceIds: readonly string[]
 }
 
 export interface PilotiParameters {
@@ -98,6 +116,7 @@ export interface PilotiParameters {
   readonly supportSizeOverrides: readonly PilotiSupportSizeOverride[]
   readonly supportPositionOverrides: readonly PilotiSupportPositionOverride[]
   readonly partCopies: readonly PilotiPartCopy[]
+  readonly fuseGroups: readonly PilotiFuseGroup[]
 }
 
 export interface SupportLayoutAnalysis {

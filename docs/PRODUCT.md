@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.14, the
+This document describes the product direction. In version 0.1.15, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -131,8 +131,8 @@ a pair, as a row or as a grid.
 - A selected upper mass can be duplicated as one semantic mass, while a
   selected stem or shoulder duplicates its complete support pair. Copies retain
   their base source shape and own an independent X/Y/Z translation. They are
-  saved objects, not viewport instances; true merging waits for the solid
-  kernel and Fuse operation.
+  saved objects, not viewport instances; touching objects may be joined through
+  the solid-kernel Fuse operation.
 - Row/column identity and keyed variation must remain stable when another row
   is added or a different leg is edited. Update bounds, contact footprints and
   later centre-of-mass/bearing feedback from the actual tilted geometry.
@@ -172,8 +172,11 @@ nominally double-counted until a validated solid-kernel Fuse operation exists.
 Version 0.1.14 validates and adopts Manifold as that solid kernel. Its adapter
 already produces closed union meshes, finished-solid volume and simplified
 horizontal sections from the existing box and rectangular-loft vocabulary.
-The kernel is not yet connected to a user-facing Fuse operation, so ordinary
-preview copies retain the explicit nominal-volume warning.
+Version 0.1.15 connects the kernel to a user-facing Fuse operation. A blue
+secondary selection set gathers source objects; a valid connected selection
+becomes one closed semantic mesh with measured volume, bounds and ground
+contact. Unfuse restores the source pieces. Disconnected inputs are refused,
+while ordinary unfused copies retain the explicit nominal-volume warning.
 
 ### Planned high-rise articulation module
 
@@ -196,6 +199,14 @@ The first operation vocabulary is:
 - repeat, vary, stagger, mirror and group;
 - lock a part, silhouette or void before generating another variant;
 - branch a study without destroying its source.
+
+The first implemented shared operation is **Fuse**. It accepts two or more
+touching or overlapping semantic pieces and stores their stable source IDs as a
+live boolean group. Source parameter changes recompute the union. A group whose
+source is temporarily outside the visible support grid stays dormant; a group
+whose sources become disconnected pauses with an explicit reason. Fuse does
+not yet accept another Fuse as an operand, so adding more pieces currently
+means Unfuse and rebuilding the selection set.
 
 Every generated choice has a stable seed stream. A local change must not reroll
 unrelated decisions.

@@ -1,4 +1,5 @@
 import { mulberry32, randomBetween } from './random'
+import { boundsSize, sceneBounds } from './bounds'
 import type {
   BoxPiece,
   FrustumPiece,
@@ -9,6 +10,7 @@ import type {
 } from './types'
 
 const CONCRETE_DENSITY_KG_M3 = 2_400
+export const MAX_SEED = 0xffff_ffff
 
 export const RECIPES: readonly RecipeSummary[] = [
   {
@@ -61,7 +63,15 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   asymmetry: 0.12,
 }
 
-function clamp(value: number, minimum: number, maximum: number): number {
+function clamp(
+  value: number,
+  name: keyof PilotiParameters,
+  minimum: number,
+  maximum: number,
+): number {
+  if (!Number.isFinite(value)) {
+    throw new RangeError(`Piloti parameter "${name}" must be finite.`)
+  }
   return Math.min(maximum, Math.max(minimum, value))
 }
 
@@ -87,15 +97,37 @@ function frustumVolume(piece: FrustumPiece): number {
 export function generatePiloti(input: PilotiParameters): MassStudy {
   const parameters: PilotiParameters = {
     ...input,
-    seed: Math.round(input.seed),
-    heightMm: clamp(input.heightMm, 1_000, 2_000),
-    supportCount: Math.round(clamp(input.supportCount, 1, 6)),
-    supportHeightRatio: clamp(input.supportHeightRatio, 0.25, 0.58),
-    shoulderRatio: clamp(input.shoulderRatio, 0.2, 0.8),
-    neckWidthRatio: clamp(input.neckWidthRatio, 0.18, 0.7),
-    upperWidthRatio: clamp(input.upperWidthRatio, 0.4, 1.1),
-    upperDepthRatio: clamp(input.upperDepthRatio, 0.2, 0.65),
-    asymmetry: clamp(input.asymmetry, 0, 0.5),
+    seed: Math.round(clamp(input.seed, 'seed', 0, MAX_SEED)),
+    heightMm: clamp(input.heightMm, 'heightMm', 1_000, 2_000),
+    supportCount: Math.round(
+      clamp(input.supportCount, 'supportCount', 1, 6),
+    ),
+    supportHeightRatio: clamp(
+      input.supportHeightRatio,
+      'supportHeightRatio',
+      0.25,
+      0.58,
+    ),
+    shoulderRatio: clamp(input.shoulderRatio, 'shoulderRatio', 0.2, 0.8),
+    neckWidthRatio: clamp(
+      input.neckWidthRatio,
+      'neckWidthRatio',
+      0.18,
+      0.7,
+    ),
+    upperWidthRatio: clamp(
+      input.upperWidthRatio,
+      'upperWidthRatio',
+      0.4,
+      1.1,
+    ),
+    upperDepthRatio: clamp(
+      input.upperDepthRatio,
+      'upperDepthRatio',
+      0.2,
+      0.65,
+    ),
+    asymmetry: clamp(input.asymmetry, 'asymmetry', 0, 0.5),
   }
   const random = mulberry32(parameters.seed)
   const height = parameters.heightMm
@@ -174,14 +206,17 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       (sum, piece) => sum + piece.bottomSize[0] * piece.bottomSize[1],
       0,
     )
+  const bounds = sceneBounds(pieces)
+  const [widthMm, depthMm, heightMm] = boundsSize(bounds)
 
   return {
     recipe: 'piloti',
     seed: parameters.seed,
     pieces,
-    widthMm: upperWidth,
-    depthMm: upperDepth,
-    heightMm: height,
+    bounds,
+    widthMm,
+    depthMm,
+    heightMm,
     concreteVolumeMm3,
     estimatedMassKg:
       (concreteVolumeMm3 / 1_000_000_000) * CONCRETE_DENSITY_KG_M3,

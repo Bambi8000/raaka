@@ -50,9 +50,9 @@ proposed next work.
 
 ## Status
 
-RAAKA is an early design and geometry prototype. Only Piloti is implemented.
+RAAKA 0.1.1 is an early design and geometry prototype. Only Piloti is implemented.
 Projects are not saved: reloading the page restores the defaults. Export is
 not implemented yet. Other recipes, drawings, cores and stability feedback
 are planned. The current mass and ground-contact readings are estimates, not
-structural engineering approval. Overall width can be understated for
-asymmetric studies; see finding A01 in the review before relying on it.
+structural engineering approval. The displayed envelope is derived from every
+generated piece, including asymmetric loft offsets.

@@ -314,6 +314,37 @@ input:focus-visible {
   touch-action: none;
 }
 
+.viewport-controls {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  border: 1px solid rgb(23 23 21 / 50%);
+  background: rgb(244 244 239 / 82%);
+  backdrop-filter: blur(8px);
+}
+
+.viewport-controls button {
+  min-width: 56px;
+  height: 31px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.viewport-controls button:first-child {
+  border-left: 0;
+}
+
+.viewport-controls button:hover {
+  background: var(--yellow);
+}
+
 .viewport-meta {
   position: absolute;
   bottom: 13px;

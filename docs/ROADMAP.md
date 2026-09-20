@@ -23,20 +23,21 @@ leaning legs. These are specified in [Product definition](PRODUCT.md) and
 - [x] baseline code, geometry, browser and CI review recorded
 
 The baseline is a working study prototype. Export, saved projects, cores and
-five of the six recipe families are not yet implemented. Existing tests pass,
-but the review found incorrect envelope reporting and a PR-only CI failure.
+five of the six recipe families are not yet implemented. Version 0.1.1 closes
+the measured geometry and viewport defects; remote CI event verification is
+recorded separately below.
 
 ## 0.1.1 — correct the baseline
 
-- [ ] A01: compute the complete geometry bounds, not just upper-mass size
-- [ ] A02: fit the shadow camera to model and receiver; verify Z-up lighting
+- [x] A01: compute the complete geometry bounds, not just upper-mass size
+- [x] A02: fit the shadow camera to model and receiver; verify Z-up lighting
 - [ ] A03: supply the required automatic token to PR secret scanning and
   verify push, ordinary PR and Dependabot PR events
-- [ ] A05: distinguish clicks from orbit drags and reconcile deleted selections
-- [ ] preserve the camera across seed changes; make Fit and Home explicit
-- [ ] add geometry regressions for envelope, winding, closed edges, signed
+- [x] A05: distinguish clicks from orbit drags and reconcile deleted selections
+- [x] preserve the camera across seed changes; make Fit and Home explicit
+- [x] add geometry regressions for envelope, winding, closed edges, signed
   volume, ground plane and matching stem/shoulder interfaces
-- [ ] cover extreme height/proportion inputs and reject non-finite parameters
+- [x] cover extreme height/proportion inputs and reject non-finite parameters
 
 Done when the seed-319 envelope fixture agrees with all generated corners,
 contact shadows work at both ends of the height range, selection is predictable

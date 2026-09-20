@@ -39,6 +39,12 @@ stable, so saved selected-leg overrides still address the same legs. RAAKA
 reports shoulder-row overlap and bearing overhang instead of silently changing
 the composition.
 
+Version 0.1.7 extends the selected-leg override with independent width and
+depth scales. A selected stem and shoulder remain one connected support, while
+their X/Y proportions can diverge from the shared template without changing
+neighbours. Oversized supports produce measured column-overlap and side-bearing
+warnings. Size edits share the same save, recovery and undo workflow as lean.
+
 ## Run locally
 
 Requirements:
@@ -79,7 +85,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.6 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.7 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

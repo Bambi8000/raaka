@@ -738,6 +738,36 @@ input[type="range"] {
   background: var(--paper);
 }
 
+.shape-readout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 12px;
+  padding: 9px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.shape-readout span {
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+}
+
+.shape-readout strong {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--blue);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 17px;
+}
+
+.shape-readout small {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
 .lean-readout strong {
   grid-row: span 4;
   align-self: center;

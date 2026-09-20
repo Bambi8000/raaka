@@ -75,8 +75,12 @@ export function scaleMassStudy(
             masterStudy.supportLayout.shoulderDepthMm * modelScale,
           adjacentRowOverlapMm:
             masterStudy.supportLayout.adjacentRowOverlapMm * modelScale,
+          adjacentColumnOverlapMm:
+            masterStudy.supportLayout.adjacentColumnOverlapMm * modelScale,
           bearingOverhangMm:
             masterStudy.supportLayout.bearingOverhangMm * modelScale,
+          sideBearingOverhangMm:
+            masterStudy.supportLayout.sideBearingOverhangMm * modelScale,
         }
       : undefined,
   }

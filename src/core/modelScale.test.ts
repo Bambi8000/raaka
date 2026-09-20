@@ -47,6 +47,13 @@ describe('scaleMassStudy', () => {
         footOffsetYMm: 60,
       },
     ],
+    supportSizeOverrides: [
+      {
+        supportId: 'support-r2-c2',
+        widthScale: 1.3,
+        depthScale: 0.7,
+      },
+    ],
   })
 
   it.each([0.5, 0.25] as const)(
@@ -87,8 +94,12 @@ describe('scaleMassStudy', () => {
           (master.supportLayout?.shoulderDepthMm ?? 0) * scale,
         adjacentRowOverlapMm:
           (master.supportLayout?.adjacentRowOverlapMm ?? 0) * scale,
+        adjacentColumnOverlapMm:
+          (master.supportLayout?.adjacentColumnOverlapMm ?? 0) * scale,
         bearingOverhangMm:
           (master.supportLayout?.bearingOverhangMm ?? 0) * scale,
+        sideBearingOverhangMm:
+          (master.supportLayout?.sideBearingOverhangMm ?? 0) * scale,
       })
     },
   )

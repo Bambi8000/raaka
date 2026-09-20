@@ -1,5 +1,6 @@
 import type {
   PilotiFootOffsetOverride,
+  PilotiUpperFootprintMode,
   PilotiParameters,
   PilotiShoulderMode,
   PilotiSupportPositionOverride,
@@ -18,6 +19,7 @@ interface ParameterRule {
 type NumericPilotiParameter = Exclude<
   keyof PilotiParameters,
   | 'shoulderMode'
+  | 'upperFootprintMode'
   | 'upperMassProfile'
   | 'footOffsetOverrides'
   | 'supportSizeOverrides'
@@ -44,6 +46,23 @@ function normalizeShoulderMode(value: unknown): PilotiShoulderMode {
   if (!isPilotiShoulderMode(value)) {
     throw new RangeError(
       'Piloti parameter "shoulderMode" must be "divided" or "shared".',
+    )
+  }
+  return value
+}
+
+export function isPilotiUpperFootprintMode(
+  value: unknown,
+): value is PilotiUpperFootprintMode {
+  return value === 'linked' || value === 'detached'
+}
+
+function normalizeUpperFootprintMode(
+  value: unknown,
+): PilotiUpperFootprintMode {
+  if (!isPilotiUpperFootprintMode(value)) {
+    throw new RangeError(
+      'Piloti parameter "upperFootprintMode" must be "linked" or "detached".',
     )
   }
   return value
@@ -302,6 +321,7 @@ export function normalizePilotiParameters(
     neckWidthRatio: normalizeValue(input.neckWidthRatio, 'neckWidthRatio'),
     upperWidthRatio: normalizeValue(input.upperWidthRatio, 'upperWidthRatio'),
     upperDepthRatio: normalizeValue(input.upperDepthRatio, 'upperDepthRatio'),
+    upperFootprintMode: normalizeUpperFootprintMode(input.upperFootprintMode),
     upperOffsetXMm: normalizeValue(input.upperOffsetXMm, 'upperOffsetXMm'),
     upperOffsetYMm: normalizeValue(input.upperOffsetYMm, 'upperOffsetYMm'),
     upperMassProfile: normalizeUpperMassProfile(input.upperMassProfile),
@@ -361,6 +381,18 @@ function readShoulderMode(input: Record<string, unknown>): PilotiShoulderMode {
   if (!isPilotiShoulderMode(value)) {
     throw new ProjectValidationError(
       'Parameter "shoulderMode" must be "divided" or "shared".',
+    )
+  }
+  return value
+}
+
+function readUpperFootprintMode(
+  input: Record<string, unknown>,
+): PilotiUpperFootprintMode {
+  const value = input.upperFootprintMode
+  if (!isPilotiUpperFootprintMode(value)) {
+    throw new ProjectValidationError(
+      'Parameter "upperFootprintMode" must be "linked" or "detached".',
     )
   }
   return value
@@ -580,6 +612,7 @@ export function parsePilotiParameters(
     neckWidthRatio: readParameter(record, 'neckWidthRatio'),
     upperWidthRatio: readParameter(record, 'upperWidthRatio'),
     upperDepthRatio: readParameter(record, 'upperDepthRatio'),
+    upperFootprintMode: readUpperFootprintMode(record),
     upperOffsetXMm: readParameter(record, 'upperOffsetXMm'),
     upperOffsetYMm: readParameter(record, 'upperOffsetYMm'),
     upperMassProfile: readUpperMassProfile(record),

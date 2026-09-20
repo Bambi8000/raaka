@@ -19,6 +19,7 @@ Authored upper-mass placement is implemented in 0.1.10. A reusable high-rise
 articulation module with balconies, windows and exterior doors is planned after
 the initial recipe and drawing foundations.
 Block and tapered upper-mass profiles are implemented in 0.1.11.
+Linked and detached upper/support footprints are implemented in 0.1.12.
 
 ## 0.1 — foundation
 
@@ -42,6 +43,7 @@ Version 0.1.8 adds selected-support placement.
 Version 0.1.9 adds divided and shared shoulder topology.
 Version 0.1.10 adds authored upper-mass cantilever in X/Y.
 Version 0.1.11 adds a tapered upper-mass profile.
+Version 0.1.12 links upper X/Y dimensions to the support grid by default.
 
 ## 0.1.1 — correct the baseline
 
@@ -246,6 +248,26 @@ Done when switching to Tapered changes only the upper mass above its fixed
 bearing face, its physical readings follow the analytic loft, Block reproduces
 the previous model exactly and both profiles survive persistence and scaling.
 
+## 0.1.12 — linked Piloti footprint
+
+- [x] link the upper X/Y footprint to support columns, rows and row spacing by
+  default while keeping all Z proportions independent
+- [x] preserve one support-bay width when columns are added or removed instead
+  of squeezing the same upper width into a different count
+- [x] extend upper depth by row spacing while preserving the single-row support
+  depth module
+- [x] add an explicit detached mode for independent upper X/Y sizing
+- [x] keep selected-leg size and placement overrides local and continue to
+  report any resulting overhang
+- [x] include the relationship in recovery, undo/redo and recipe version 10
+- [x] migrate recipe versions 1–9 to detached mode so saved geometry is exact
+- [x] preserve linked and detached behavior at 1:1, 1:2 and 1:4 model scales
+
+Done when adding supports extends a linked composition in the corresponding
+plan axis without changing its Z structure or shrinking existing leg modules,
+Detached reproduces the prior independent footprint, and both modes survive
+persistence, history and scaling.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -262,6 +284,7 @@ the previous model exactly and both profiles survive persistence and scaling.
 - [x] selected support placement offsets
 - [x] authored X/Y upper-mass cantilever
 - [x] tapered upper mass with authored top proportions and drift
+- [x] linked/detached upper footprint with support-grid X/Y coupling only
 - [ ] stepped or multi-part asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata

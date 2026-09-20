@@ -69,6 +69,12 @@ a planar rectangular loft. Supports and bearing feedback therefore retain the
 same interface while the envelope, volume and mass follow the complete tapered
 geometry.
 
+Version 0.1.12 links the upper footprint to the support grid by default. Adding
+columns extends the upper mass in X without shrinking the leg module; adding
+rows or changing row spacing extends it in Y. **Detached** restores independent
+upper X/Y sizing. Both modes leave every Z proportion unchanged, and selected
+leg overrides remain local rather than resizing the whole composition.
+
 ## Run locally
 
 Requirements:
@@ -109,7 +115,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.11 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.12 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

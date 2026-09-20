@@ -771,8 +771,43 @@ export default function App() {
               <small>{formatNumber(masterStudy.heightMm)} MM DESIGN</small>
             </div>
           </div>
+          <div className="control-subsection">
+            <span>UPPER / SUPPORT FOOTPRINT</span>
+            <small>Linked couples X/Y to the support grid. Z stays independent.</small>
+          </div>
+          <div
+            className="offset-scope-switch"
+            aria-label="Upper and support footprint relationship"
+          >
+            <button
+              type="button"
+              className={
+                parameters.upperFootprintMode === 'linked' ? 'is-active' : ''
+              }
+              aria-pressed={parameters.upperFootprintMode === 'linked'}
+              onClick={() => update('upperFootprintMode', 'linked')}
+            >
+              <span>LINKED</span>
+              <small>GRID DRIVES X/Y</small>
+            </button>
+            <button
+              type="button"
+              className={
+                parameters.upperFootprintMode === 'detached' ? 'is-active' : ''
+              }
+              aria-pressed={parameters.upperFootprintMode === 'detached'}
+              onClick={() => update('upperFootprintMode', 'detached')}
+            >
+              <span>DETACHED</span>
+              <small>INDEPENDENT X/Y</small>
+            </button>
+          </div>
           <RangeField
-            label="Upper width share"
+            label={
+              parameters.upperFootprintMode === 'linked'
+                ? 'Base width share (3 columns)'
+                : 'Upper width share'
+            }
             value={parameters.upperWidthRatio}
             minimum={0.4}
             maximum={1.1}
@@ -782,7 +817,11 @@ export default function App() {
             onChange={(value) => update('upperWidthRatio', value)}
           />
           <RangeField
-            label="Upper depth share"
+            label={
+              parameters.upperFootprintMode === 'linked'
+                ? 'Base depth share (1 row)'
+                : 'Upper depth share'
+            }
             value={parameters.upperDepthRatio}
             minimum={0.2}
             maximum={0.65}
@@ -1389,7 +1428,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.11 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.12 / LOCAL</span>
       </footer>
     </main>
   )

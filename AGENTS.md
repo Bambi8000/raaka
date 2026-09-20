@@ -35,6 +35,9 @@ come from explicit invariants, not screenshots.
 - Randomness is seeded. Editing one feature must not silently reroll unrelated
   choices.
 - The normal physical sculpture height is 1,000–2,000 mm.
+- That range describes the full-size design, not a minimum manufactured size.
+  Uniform model scales such as 1:2 and 1:4 must allow smaller physical test
+  models. Keep model scale separate from camera zoom and drawing paper scale.
 - Open voids, removable cores and retained lightweight cores are distinct
   manufacturing intents even when they look similar in the viewport.
 - RAAKA produces form and drawing geometry. Kerros owns mould construction and

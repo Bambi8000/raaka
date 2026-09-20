@@ -19,12 +19,41 @@ result legible to later mould and drawing systems.
 
 ## Physical scale
 
-The normal finished sculpture is 1,000–2,000 mm tall, with 1,500 mm as the
-default study height. RAAKA distinguishes two scales:
+The normal full-size sculpture is 1,000–2,000 mm tall, with 1,500 mm as the
+default study height. This is not a minimum size for manufactured test models.
+RAAKA keeps these concepts separate:
 
-- **Physical scale** is the actual manufactured size in millimetres.
+- **Design size** is the full-size master geometry in millimetres.
+- **Model scale** uniformly scales the design into an actual manufactured
+  size, also in millimetres. Presets include 1:1, 1:2 and 1:4, with a custom
+  positive scale or target height planned.
+- **Drawing scale** places the resulting physical model on paper. It must not
+  change the dimensions of the solid exported to Kerros.
 - **Implied scale** controls architectural cues such as board marks, tie points,
   modules and service details. A 1.5 metre sculpture may read as a 60 metre silo.
+
+| Design height | Model scale | Manufactured height |
+| --- | --- | --- |
+| 2,000 mm | 1:1 | 2,000 mm |
+| 2,000 mm | 1:2 | 1,000 mm |
+| 2,000 mm | 1:4 | 500 mm |
+
+Changing model scale preserves the original design parameters, feature IDs and
+seed. It scales all geometric dimensions, positions and offsets uniformly,
+including explicit voids and cores when available. Lengths scale by `s`, areas
+by `s²`, and volumes and same-density mass by `s³`. A half-size model therefore
+has one eighth of the original solid volume; a quarter-size model has one
+sixty-fourth. Keep the ground origin fixed and show both design and model sizes.
+
+Stock thickness, kerf and joint fit belong to the actual manufacturing setup in
+Kerros; they must be selected for the test model, not blindly scaled from the
+full-size mould. Report details that become too small instead of silently
+thickening or removing them. A geometric scale model is not a structural
+validation of a full-size cast.
+
+Model scaling is a confirmed requirement and is not implemented in 0.1.0.
+The current generator clamps the authored height to 1,000–2,000 mm; the planned
+model-scale stage must not apply that clamp again to the smaller output.
 
 Volume, estimated material mass, ground contact and centre of mass must remain
 visible during form finding. These readings inform decisions but never certify
@@ -54,6 +83,29 @@ structural safety, reinforcement, anchors, wind loading or public installation.
 Piloti is the first implemented recipe. Its funnel support has an upper bearing
 area, faceted shoulder, neck, stem and ground footprint. It may appear once, as
 a pair, as a row or eventually as a grid.
+
+### Confirmed Piloti additions
+
+- **Columns** repeat supports across width (X), and **Rows** repeat the same
+  support template through depth (Y). Row count defaults to one, preserving
+  the current single-row composition. Three columns and two rows mean six legs.
+- **Row spacing** controls centre-to-centre distance along Y. Support depth and
+  upper-mass depth must be separately controllable; repeated rows use the same
+  authored leg shape. Preserve explicitly set leg dimensions when repeating
+  rows and report overlap or insufficient bearing rather than silently resizing.
+- **Foot offset X / Y** shifts a stem's bottom centre relative to its neck,
+  allowing it to lean sideways or forwards/backwards. Its bottom face remains
+  horizontal on Z = 0; its upper face stays joined to the shoulder. This is a
+  planar loft, not a rigid rotation that lifts a foot away from the ground.
+- Provide shared offsets for all legs and explicit selected-leg overrides.
+  The UI must make the scope visible. Authored offsets use design millimetres;
+  their effective physical values follow model scale.
+- Row/column identity and keyed variation must remain stable when another row
+  is added or a different leg is edited. Update bounds, contact footprints and
+  later centre-of-mass/bearing feedback from the actual tilted geometry.
+
+These controls are planned. The existing Asymmetry slider is seeded variation
+and is not a substitute for explicit row layout or foot offsets.
 
 ## Operations
 

@@ -6,6 +6,11 @@ items remain unimplemented. The review contains reproductions and evidence;
 this file owns the proposed order. Incorporate the owner's visual feedback
 before changing the form language.
 
+Confirmed additions from the owner on 2026-09-20: physical scale models at
+1:2 and 1:4, repeated support rows in depth, and explicit X/Y foot offsets for
+leaning legs. These are specified in [Product definition](PRODUCT.md) and
+[Architecture](ARCHITECTURE.md); they are not implemented yet.
+
 ## 0.1 — foundation
 
 - [x] React, TypeScript and Three.js application shell
@@ -39,7 +44,8 @@ and the required checks pass on both push and pull-request events.
 
 ## 0.1.2 — preserve and inspect a study
 
-- [ ] project save and open with format and recipe versions, seed and parameters
+- [ ] project save and open with format and recipe versions, seed, parameters
+  and model scale (defaulting to 1:1 for older studies)
 - [ ] validate complete files before replacing the current study
 - [ ] local recovery with explicit saved/recovered state
 - [ ] undo/redo, reset and direct seed entry; one undo step per slider gesture
@@ -53,13 +59,38 @@ Done when an edited study survives save/open and reload, undo restores the
 previous committed edit, invalid files leave current work intact, and essential
 actions remain reachable in desktop and compact layouts.
 
+## 0.1.3 — physical scale models for testing
+
+- [ ] preserve full-size master parameters and add a separate uniform Model scale
+- [ ] presets 1:1, 1:2 and 1:4, plus a validated custom scale or target height
+- [ ] allow physical results below 1,000 mm without reapplying the design clamp
+- [ ] scale all geometry and offsets about the ground origin without rerolling
+- [ ] show master size and manufactured size distinctly; report scaled bounds,
+  volume, mass and ground-contact area from the physical study
+- [ ] persist scale and include it in undo/recovery; repeatable return to 1:1
+- [ ] test linear dimensions by `s`, areas by `s²`, volumes and fixed-density
+  mass by `s³`, including asymmetric and later multi-row/leaning studies
+- [ ] require future mesh/drawing exports to use this same physical geometry,
+  with drawing paper scale and Kerros stock/kerf kept separate
+
+Done when a saved 2,000 mm study yields faithful 1,000 mm and 500 mm models,
+with unchanged seed/master parameters, correct physical readings and no drift
+when switching scales repeatedly. Export verification follows as the output
+milestones land; this stage does not imply that export already exists.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [ ] independent upper width and depth controls
 - [ ] reusable stem/neck/shoulder/bearing support family
-- [ ] single, pair, row and grid support topology
+- [ ] single, pair, row and grid support topology with independent Columns (X)
+  and Rows (Y); preserve the one-row default
+- [ ] shared support template, explicit support depth and Y row spacing;
+  repeat authored leg shapes and report overlaps or missing upper bearing
 - [ ] shared and divided shoulders
-- [ ] support offsets, lean and asymmetric upper masses
+- [ ] Foot offset X/Y for deterministic leg lean, with ground faces at Z = 0
+  and matching stem/shoulder interfaces
+- [ ] shared offsets and explicit selected-leg overrides with visible scope
+- [ ] support placement offsets and asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [ ] focused solid-kernel spike before committing to a boolean dependency
@@ -84,6 +115,10 @@ Start with a few fixtures and expand tests with each supported operation.
 
 Done when the same saved Piloti study drives the preview, physical estimates
 and a watertight, correctly scaled Kerros import. Mould design stays in Kerros.
+Include a three-column/two-row fixture with six stems and six shoulders,
+positive/negative X/Y foot offsets, and 1:1/1:2/1:4 variants. Verify stable
+identities, finite planar geometry, coincident interfaces, correct bounds and
+volume, ground contact and explicit overlap/bearing feedback.
 
 ## 0.3 — first useful drawing output
 

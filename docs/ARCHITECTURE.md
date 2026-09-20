@@ -32,6 +32,37 @@ cross-section agreement, memory cleanup and long-session behaviour.
 - Recipe output is already in physical size; display scaling must never change
   manufacturing dimensions.
 
+### Planned model-scale stage
+
+Preserve the master design and derive a physical study by one explicit uniform
+scale about the ground origin. The intended flow is master recipe geometry →
+model scale → physical geometry, analysis and exports. Rendering and file
+output consume the same physical study; camera zoom is not model scale.
+
+Scale positions, primitive dimensions, loft endpoint offsets and future
+negative/core geometry together. Compute the complete bounds and physical
+readings from the scaled result. Do not feed a 500 mm quarter-scale result back
+through the current 1,000 mm design-height clamp. Store the scale separately
+from the master parameters and seed, and apply it once, not cumulatively.
+
+Project persistence must include model scale with a backward-compatible 1:1
+default. Future drawing documents additionally store a paper scale; their
+dimension labels describe the physical model. Machine stock and kerf remain
+unscaled settings in Kerros. Regression fixtures must cover `s`, `s²`, `s³`,
+ground-plane preservation and repeated switching back to 1:1.
+
+### Planned support grid and lean
+
+Use a shared leg template and stable row/column identities to compose the
+support grid. Resolve global layout and selected-leg overrides before applying
+model scale. Adding rows changes placement without rerolling existing legs.
+
+Define foot offset as the bottom-centre displacement from the neck in the XY
+plane. The bottom stays at Z = 0 and the stem/shoulder interface stays
+coincident. Row placement translates the entire leg; lean changes its endpoint
+relationship. Keep these operations distinct, and include the effective
+endpoint positions in bounds, contact and overlap checks.
+
 ## Data flow
 
 ```text

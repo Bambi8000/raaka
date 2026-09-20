@@ -31,7 +31,7 @@ recorded separately below.
 
 - [x] A01: compute the complete geometry bounds, not just upper-mass size
 - [x] A02: fit the shadow camera to model and receiver; verify Z-up lighting
-- [ ] A03: supply the required automatic token to PR secret scanning and
+- [x] A03: supply the required automatic token to PR secret scanning and
   verify push, ordinary PR and Dependabot PR events
 - [x] A05: distinguish clicks from orbit drags and reconcile deleted selections
 - [x] preserve the camera across seed changes; make Fit and Home explicit
@@ -42,6 +42,14 @@ recorded separately below.
 Done when the seed-319 envelope fixture agrees with all generated corners,
 contact shadows work at both ends of the height range, selection is predictable
 and the required checks pass on both push and pull-request events.
+
+Completed in 0.1.1. GitHub evidence includes successful
+[push](https://github.com/Bambi8000/raaka/actions/runs/35507704816) and
+[ordinary pull-request](https://github.com/Bambi8000/raaka/actions/runs/35507713276)
+runs for the release branch, followed by successful
+[Dependabot push](https://github.com/Bambi8000/raaka/actions/runs/35507857560)
+and [Dependabot pull-request](https://github.com/Bambi8000/raaka/actions/runs/35507859175)
+runs after the bot rebased PR #6.
 
 ## 0.1.2 — preserve and inspect a study
 

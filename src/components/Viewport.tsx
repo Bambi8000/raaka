@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { MassStudy, PieceRole, ScenePiece } from '../core/types'
 import { createFrustumGeometry } from '../geometry/frustum'
+import { fitDirectionalShadow, fitPerspectiveCamera } from '../geometry/view'
 
 interface ViewportProps {
   readonly study: MassStudy
@@ -51,14 +52,25 @@ export function Viewport({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
   const controlsRef = useRef<OrbitControls>(null)
+  const keyLightRef = useRef<THREE.DirectionalLight>(null)
   const modelRootRef = useRef<THREE.Group>(null)
   const selectableRef = useRef<THREE.Mesh[]>([])
   const pieceIdsRef = useRef(new Map<THREE.Object3D, string>())
   const onSelectRef = useRef(onSelect)
+  const selectedPieceIdRef = useRef(selectedPieceId)
+  const studyRef = useRef(study)
 
   useEffect(() => {
     onSelectRef.current = onSelect
   }, [onSelect])
+
+  useEffect(() => {
+    selectedPieceIdRef.current = selectedPieceId
+  }, [selectedPieceId])
+
+  useEffect(() => {
+    studyRef.current = study
+  }, [study])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -86,17 +98,19 @@ export function Viewport({
     controls.maxDistance = 6_000
     controlsRef.current = controls
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x5b5b57, 2.2))
+    const hemisphereLight = new THREE.HemisphereLight(
+      0xffffff,
+      0x5b5b57,
+      2.2,
+    )
+    hemisphereLight.position.set(0, 0, 1)
+    scene.add(hemisphereLight)
 
     const keyLight = new THREE.DirectionalLight(0xffffff, 3.4)
-    keyLight.position.set(-1_500, -2_000, 3_200)
     keyLight.castShadow = true
     keyLight.shadow.mapSize.set(2_048, 2_048)
-    keyLight.shadow.camera.left = -2_000
-    keyLight.shadow.camera.right = 2_000
-    keyLight.shadow.camera.top = 2_000
-    keyLight.shadow.camera.bottom = -2_000
-    scene.add(keyLight)
+    keyLightRef.current = keyLight
+    scene.add(keyLight, keyLight.target)
 
     const modelRoot = new THREE.Group()
     modelRootRef.current = modelRoot
@@ -124,10 +138,24 @@ export function Viewport({
     const observer = new ResizeObserver(resize)
     observer.observe(canvas)
     resize()
+    fitPerspectiveCamera(camera, controls, studyRef.current.bounds, true)
 
     const raycaster = new THREE.Raycaster()
     const pointer = new THREE.Vector2()
+    let pointerStart:
+      | { readonly id: number; readonly x: number; readonly y: number }
+      | undefined
+    const rememberPointer = (event: PointerEvent) => {
+      if (event.button !== 0) return
+      pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY }
+    }
     const selectAtPointer = (event: PointerEvent) => {
+      const start = pointerStart
+      pointerStart = undefined
+      if (!start || start.id !== event.pointerId) return
+      if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 4) {
+        return
+      }
       const bounds = canvas.getBoundingClientRect()
       pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1
       pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1
@@ -136,7 +164,12 @@ export function Viewport({
       const pieceId = hit ? pieceIds.get(hit.object) : undefined
       if (pieceId) onSelectRef.current(pieceId)
     }
-    canvas.addEventListener('pointerdown', selectAtPointer)
+    const cancelPointer = () => {
+      pointerStart = undefined
+    }
+    canvas.addEventListener('pointerdown', rememberPointer)
+    canvas.addEventListener('pointerup', selectAtPointer)
+    canvas.addEventListener('pointercancel', cancelPointer)
 
     let frame = 0
     const render = () => {
@@ -148,16 +181,21 @@ export function Viewport({
 
     return () => {
       cancelAnimationFrame(frame)
-      canvas.removeEventListener('pointerdown', selectAtPointer)
+      canvas.removeEventListener('pointerdown', rememberPointer)
+      canvas.removeEventListener('pointerup', selectAtPointer)
+      canvas.removeEventListener('pointercancel', cancelPointer)
       observer.disconnect()
       controls.dispose()
+      disposeObject(modelRoot)
       ground.geometry.dispose()
       ;(ground.material as THREE.Material).dispose()
       grid.geometry.dispose()
       ;(grid.material as THREE.Material).dispose()
+      keyLight.shadow.dispose()
       renderer.dispose()
       cameraRef.current = null
       controlsRef.current = null
+      keyLightRef.current = null
       modelRootRef.current = null
       selectableRef.current = []
       pieceIds.clear()
@@ -179,7 +217,7 @@ export function Viewport({
       const geometry = geometryForPiece(piece)
       const material = new THREE.MeshStandardMaterial({
         color:
-          piece.id === selectedPieceId
+          piece.id === selectedPieceIdRef.current
             ? SELECTED_COLOUR
             : BASE_COLOURS[piece.role],
         metalness: 0,
@@ -205,22 +243,42 @@ export function Viewport({
       edges.position.copy(mesh.position)
       root.add(edges)
     }
-  }, [selectedPieceId, study])
+    const keyLight = keyLightRef.current
+    if (keyLight) fitDirectionalShadow(keyLight, study.bounds)
+  }, [study])
 
   useEffect(() => {
+    for (const mesh of selectableRef.current) {
+      const pieceId = pieceIdsRef.current.get(mesh)
+      const piece = studyRef.current.pieces.find(({ id }) => id === pieceId)
+      const material = mesh.material
+      if (!piece || !(material instanceof THREE.MeshStandardMaterial)) continue
+      material.color.set(
+        piece.id === selectedPieceId
+          ? SELECTED_COLOUR
+          : BASE_COLOURS[piece.role],
+      )
+    }
+  }, [selectedPieceId])
+
+  const fitView = (useHomeDirection: boolean) => {
     const camera = cameraRef.current
     const controls = controlsRef.current
     if (!camera || !controls) return
-
-    const height = study.heightMm
-    camera.position.set(height * 1.2, -height * 1.5, height * 0.92)
-    controls.target.set(0, 0, height * 0.47)
-    controls.update()
-  }, [study.heightMm, study.seed])
+    fitPerspectiveCamera(camera, controls, studyRef.current.bounds, useHomeDirection)
+  }
 
   return (
     <div className="viewport-shell">
       <canvas ref={canvasRef} aria-label="Interactive 3D massing viewport" />
+      <div className="viewport-controls" aria-label="Viewport controls">
+        <button type="button" onClick={() => fitView(false)}>
+          FIT
+        </button>
+        <button type="button" onClick={() => fitView(true)}>
+          HOME
+        </button>
+      </div>
       <div className="viewport-meta viewport-meta--left">
         PERSPECTIVE · Z UP · MM
       </div>

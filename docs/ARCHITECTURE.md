@@ -95,10 +95,17 @@ from the finished solid instead.
 
 Current pieces are separate closed preview meshes; shared contact faces have
 not been removed by a boolean union. They are not yet an export-ready single
-solid. The reported envelope also currently uses the upper mass dimensions,
-not all piece bounds. See findings A01 and A02 in the
-[baseline review](AUDIT-2026-09-20.md) before relying on the envelope or
-viewport shadows.
+solid. The study envelope is computed from every box and loft endpoint,
+including offsets. It is the common source for physical dimensions, explicit
+camera framing and directional-shadow fitting. The baseline defects and their
+0.1.1 resolution are recorded in the
+[baseline review](AUDIT-2026-09-20.md).
+
+The camera is independent interaction state: changing a seed or physical
+parameter does not overwrite the chosen view. **Fit** preserves the viewing
+direction while reframing the current bounds; **Home** restores the authored
+axonometric direction. The shadow camera includes the sculpture and a padded
+ground receiver at both ends of the supported height range.
 
 ## Selection colours
 

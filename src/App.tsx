@@ -3,6 +3,7 @@ import { Viewport } from './components/Viewport'
 import {
   DEFAULT_PILOTI_PARAMETERS,
   generatePiloti,
+  MAX_SEED,
   RECIPES,
 } from './core/generator'
 import type { PilotiParameters } from './core/types'
@@ -66,6 +67,14 @@ export default function App() {
     value: PilotiParameters[Key],
   ) => {
     setParameters((current) => ({ ...current, [key]: value }))
+    if (key === 'supportCount') {
+      const selectedSupport = /^(?:support|shoulder)-(\d+)$/.exec(
+        selectedPieceId,
+      )
+      if (selectedSupport && Number(selectedSupport[1]) > Number(value)) {
+        setSelectedPieceId('upper-mass')
+      }
+    }
   }
 
   return (
@@ -84,7 +93,9 @@ export default function App() {
           <button
             type="button"
             className="button button--quiet"
-            onClick={() => update('seed', parameters.seed + 1)}
+            onClick={() =>
+              update('seed', (parameters.seed + 1) % (MAX_SEED + 1))
+            }
           >
             NEXT SEED
           </button>
@@ -130,6 +141,7 @@ export default function App() {
                 key={piece.id}
                 className={piece.id === selectedPieceId ? 'is-selected' : ''}
                 onClick={() => setSelectedPieceId(piece.id)}
+                aria-pressed={piece.id === selectedPieceId}
               >
                 <span className={`role-dot role-dot--${piece.role}`} />
                 <span>{piece.label}</span>
@@ -149,7 +161,7 @@ export default function App() {
       </section>
 
       <aside className="right-panel panel">
-        <section className="inspector-lead">
+        <section className="inspector-lead" aria-live="polite">
           <span className="eyebrow">SELECTED OBJECT</span>
           <h1>{selectedPiece?.label ?? 'Mass study'}</h1>
           <p>
@@ -162,7 +174,7 @@ export default function App() {
         <section className="panel-section controls-section">
           <div className="section-heading">
             <span>03</span>
-            <h2>Composition</h2>
+            <h2>Global composition</h2>
           </div>
           <RangeField
             label="Physical height"
@@ -254,7 +266,7 @@ export default function App() {
         </span>
         <span>SEED {parameters.seed}</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.0 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.1 / LOCAL</span>
       </footer>
     </main>
   )

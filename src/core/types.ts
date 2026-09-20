@@ -11,6 +11,11 @@ export type PieceRole = 'mass' | 'support' | 'surface' | 'core' | 'void'
 export type Vec3 = readonly [x: number, y: number, z: number]
 export type Size2 = readonly [width: number, depth: number]
 
+export interface Bounds3 {
+  readonly min: Vec3
+  readonly max: Vec3
+}
+
 export interface BoxPiece {
   readonly kind: 'box'
   readonly id: string
@@ -51,6 +56,7 @@ export interface MassStudy {
   readonly recipe: RecipeId
   readonly seed: number
   readonly pieces: readonly ScenePiece[]
+  readonly bounds: Bounds3
   readonly widthMm: number
   readonly depthMm: number
   readonly heightMm: number

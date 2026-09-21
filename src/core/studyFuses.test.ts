@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { resolveStudyFuses, FuseResolutionError } from './studyFuses'
+import { analyseStability } from './stability'
 import type { BoxPiece, MassStudy } from './types'
 
 function box(
@@ -18,6 +19,15 @@ function box(
 }
 
 function study(pieces: readonly BoxPiece[]): MassStudy {
+  const retainedCore = {
+    status: 'off' as const,
+    pieces: [],
+    volumeMm3: 0,
+    massKg: 0,
+    densityKgM3: 30,
+    minimumCoverMm: 0,
+    message: 'Retained core is disabled.',
+  }
   return {
     recipe: 'piloti',
     seed: 1,
@@ -28,17 +38,10 @@ function study(pieces: readonly BoxPiece[]): MassStudy {
     heightMm: 200,
     concreteVolumeMm3: pieces.length * 1_000_000,
     concreteMassKg: pieces.length * 2.4,
-    retainedCore: {
-      status: 'off',
-      pieces: [],
-      volumeMm3: 0,
-      massKg: 0,
-      densityKgM3: 30,
-      minimumCoverMm: 0,
-      message: 'Retained core is disabled.',
-    },
+    retainedCore,
     estimatedMassKg: pieces.length * 2.4,
     groundContactMm2: 0,
+    stability: analyseStability(pieces, retainedCore),
   }
 }
 
@@ -73,6 +76,9 @@ describe('study fuse resolution', () => {
     expect(resolution.study.concreteVolumeMm3).toBeCloseTo(2_500_000, 5)
     expect(resolution.study.estimatedMassKg).toBeCloseTo(6, 8)
     expect(resolution.study.groundContactMm2).toBeCloseTo(15_000, 8)
+    expect(resolution.study.stability.centreOfMassMm).toEqual([135, 0, 90])
+    expect(resolution.study.stability.status).toBe('outside')
+    expect(resolution.study.stability.signedMarginMm).toBeCloseTo(-35, 8)
   })
 
   it('keeps a fuse dormant while any source piece is hidden', async () => {

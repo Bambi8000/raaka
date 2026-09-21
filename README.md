@@ -194,6 +194,15 @@ core, producing one watertight shell with a sealed internal cavity. Dividing or
 removing the upper mass pauses the saved core intent with an explicit reason;
 upper-mass copies remain solid in this first bounded workflow.
 
+Version 0.1.27 adds a live mass-centre and static support-polygon check. The
+analysis integrates boxes, rectangular and polygon lofts, and finished Fuse
+meshes; an active retained core replaces displaced concrete with its lighter
+foam mass. The viewport draws the convex boundary of the actual grounded feet,
+the three-dimensional mass centre and its vertical ground projection. A signed
+model-millimetre reserve is positive inside the boundary and negative outside.
+The reading follows 1:1, 1:2 and 1:4 model scales and remains explicitly
+advisory: it does not assess connections, loads, reinforcement or anchoring.
+
 ## Run locally
 
 Requirements:
@@ -237,13 +246,14 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.26 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.27 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.
 Mould output, other recipes, drawings, removable/open void workflows and
-stability feedback are planned. The current mass, core and ground-contact
-readings are estimates, not structural engineering approval. The displayed
-envelope is derived from every generated piece, including seeded variation,
+editable material density are planned. The current mass, core, ground-contact
+and static stability readings are estimates, not structural engineering
+approval. The displayed envelope is derived from every generated piece,
+including seeded variation,
 support rows, explicit foot offsets and authored upper-mass placement, plus any
 translated part copies.

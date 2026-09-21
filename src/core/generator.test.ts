@@ -25,6 +25,10 @@ function expectFiniteStudy(parameters: PilotiParameters): void {
     study.retainedCore.massKg,
     study.retainedCore.minimumCoverMm,
     study.groundContactMm2,
+    ...(study.stability.centreOfMassMm ?? []),
+    ...(study.stability.projectionMm ?? []),
+    ...study.stability.supportPolygonMm.flat(),
+    ...(study.stability.signedMarginMm === null ? [] : [study.stability.signedMarginMm]),
     ...(study.supportLayout
       ? [
           study.supportLayout.columns,

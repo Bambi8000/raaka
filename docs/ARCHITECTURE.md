@@ -484,6 +484,24 @@ material volumes and masses cubically. The object list and viewport append the
 core only for inspection; blue transparent rendering is a semantic projection,
 not an additive scene solid.
 
+`stability.ts` derives exact volume centroids for the current analytic pieces
+and completed Fuse meshes. Rectangular loft centroids integrate their changing
+cross-section and centreline; polygon lofts additionally use the true footprint
+centroid; indexed meshes use signed tetrahedral moments about a local reference
+to avoid world-origin cancellation. The manufactured mass centre sums concrete
+moments, subtracts concrete displaced by an active retained core and adds the
+core back at its foam density.
+
+Grounded stem faces and grounded finished meshes contribute contact vertices.
+A deterministic monotonic-chain hull forms the convex support polygon. The
+minimum signed perpendicular distance from the X/Y mass projection to its CCW
+edges is the support reserve: positive inside, zero on an edge and negative
+outside. Uniform model scale transforms the centre, projection, polygon and
+reserve linearly. Fuse resolution recomputes the analysis from the finished
+mesh, while other unfused overlaps keep the same nominal-volume limitation as
+the material estimate. The Three.js overlay only visualises this derived model
+truth and is not selectable or persisted.
+
 The volume equation integrates the product of linearly changing width and
 depth. The one-row default and non-overlapping grids can sum preview-piece
 volumes directly. An authored grid, selected size, selected placement or
@@ -672,6 +690,9 @@ drawing roles; a Muusia adapter maps them to path-set outputs and pens.
 
 ## Safety boundary
 
-Material volume and mass are arithmetic estimates. A centre-of-mass check can
-identify an obviously unsupported form, but RAAKA does not approve structural
-capacity, lifting, reinforcement, anchors, weather exposure or public safety.
+Material volume and mass are arithmetic estimates. The centre-of-mass check can
+identify an obviously unsupported form by comparing its vertical projection to
+the convex hull of grounded support faces. It does not prove that parts are
+connected, that the foot or ground can carry the load, or that a positive
+reserve is sufficient. RAAKA does not approve structural capacity, lifting,
+reinforcement, anchors, weather exposure or public safety.

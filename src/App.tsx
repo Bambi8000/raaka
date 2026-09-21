@@ -2165,7 +2165,38 @@ export default function App() {
               <dt>Ground contact</dt>
               <dd>{formatNumber(study.groundContactMm2 / 1_000_000, 3)} m²</dd>
             </div>
+            <div>
+              <dt>Mass centre X / Y / Z</dt>
+              <dd>{study.stability.centreOfMassMm
+                ? `${study.stability.centreOfMassMm.map((value) => formatNumber(value, 1)).join(' × ')} mm`
+                : 'Not available'}</dd>
+            </div>
+            <div className={study.stability.status === 'outside' ? 'metric-error' : undefined}>
+              <dt>Support reserve</dt>
+              <dd>{study.stability.signedMarginMm === null
+                ? 'Not available'
+                : `${formatNumber(study.stability.signedMarginMm, 1)} mm`}</dd>
+            </div>
           </dl>
+          <div className="layout-advisories stability-advisory" aria-live="polite">
+            <div className={study.stability.status === 'outside'
+              ? 'is-error'
+              : study.stability.status === 'inside'
+                ? 'is-guide'
+                : ''}>
+              <strong>{study.stability.status === 'inside'
+                ? 'MASS PROJECTION INSIDE'
+                : study.stability.status === 'outside'
+                  ? 'MASS PROJECTION OUTSIDE'
+                  : study.stability.status === 'edge'
+                    ? 'MASS PROJECTION ON EDGE'
+                    : 'STABILITY CHECK UNAVAILABLE'}</strong>
+              <span>{study.stability.signedMarginMm === null
+                ? `${study.stability.supportPolygonMm.length} SUPPORT POLYGON POINTS`
+                : `${formatNumber(Math.abs(study.stability.signedMarginMm), 1)} MM ${study.stability.status === 'outside' ? 'BEYOND' : 'TO EDGE'} · MODEL`}</span>
+              <small>{study.stability.message} The blue boundary and vertical marker show static geometry only; connections, loads, reinforcement and anchoring are not assessed.</small>
+            </div>
+          </div>
           {parameters.retainedCoreMode === 'upper-mass' ? (
             <div className="layout-advisories" aria-live="polite">
               <div className={study.retainedCore.status === 'paused' ? 'is-error' : 'is-core'}>
@@ -2400,7 +2431,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.26 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.27 / LOCAL</span>
       </footer>
     </main>
   )

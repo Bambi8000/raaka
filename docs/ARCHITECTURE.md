@@ -93,6 +93,15 @@ without making that angle project truth. Seeded asymmetry remains an additive
 per-leg endpoint variation. Complete bounds include both loft endpoints, while
 volume and contact area remain unchanged by shear.
 
+Version 0.1.29 extracts `supportFamily.ts` as the shared four-station profile
+used by both rectangular and polygon Piloti generators. For rectangles it
+returns explicit foot, neck and bearing sizes; for regular polygon supports it
+returns the corresponding homothetic scales. `footFlareRatio` multiplies the
+legacy 1.18 X / 1.16 Y foot-to-neck factors, while `bearingScaleRatio`
+multiplies the topology's 0.92 divided or 1.00 shared bearing factor. Both
+default to 1, so extraction alone changes no geometry. Layout-specific code
+continues to own placement, lean, linked offsets and selected size overrides.
+
 Version 0.1.4 stores selected-leg overrides as a deterministic array keyed by
 the current semantic support ID. An override contains absolute design-mm X/Y
 values and replaces, rather than adds to, the shared offset. Both a stem and
@@ -395,13 +404,18 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 18 stores every
+version and a separate recipe version. Piloti recipe version 19 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
 override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
 division, mass-part overrides, plan shape, polygon division, radial spread,
 foot offset space, retained-core mode and retained-core scale, concrete density
-and retained-core density, plus one of the supported `modelScale` presets.
+and retained-core density, foot flare and bearing scale, plus one of the
+supported `modelScale` presets.
+Recipe version 19 deliberately requires both support-family fields. There is no
+version 18 fallback because RAAKA has no user project archive during this
+pre-release phase; an incomplete older project file is rejected before state
+replacement.
 Recipe versions 1–17 receive the former 2,400 kg/m³ concrete and 30 kg/m³ core
 defaults, preserving geometry and previous mass readings. Recipe versions 1–16 receive disabled retained
 core intent and its latent 72% default, preserving their exact solid geometry.
@@ -427,11 +441,12 @@ scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.
 
-The browser keeps a recovery copy under `raaka.recovery.v1` after every edit,
+The browser keeps a recovery copy under `raaka.recovery.v2` after every edit,
 undo and redo. Recovery is not a substitute for a project file: it belongs to
 one browser profile, while Save creates the portable artifact the owner can
-archive. Opening a project starts a new history; invalid input preserves the
-current study and reports the reason.
+archive. Version 0.1.29 starts the new recovery namespace instead of reading the
+pre-support-family `v1` copy. Opening a project starts a new history; invalid
+input preserves the current study and reports the reason.
 
 Undo/redo stores immutable Piloti study snapshots—master parameters plus model
 scale—capped at 100 committed steps. Live slider values update the model and

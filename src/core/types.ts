@@ -131,6 +131,8 @@ export interface PilotiParameters {
   readonly shoulderRatio: number
   readonly shoulderMode: PilotiShoulderMode
   readonly neckWidthRatio: number
+  readonly footFlareRatio: number
+  readonly bearingScaleRatio: number
   readonly upperWidthRatio: number
   readonly upperDepthRatio: number
   readonly upperFootprintMode: PilotiUpperFootprintMode

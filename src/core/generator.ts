@@ -7,6 +7,7 @@ import {
 import { divideUpperMass } from './massDivision'
 import { composePiloti } from './composePiloti'
 import { generateRadialPiloti } from './radialPiloti'
+import { rectangularSupportFamily } from './supportFamily'
 import type {
   MassStudy,
   BoxPiece,
@@ -73,6 +74,8 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   shoulderRatio: 0.48,
   shoulderMode: 'divided',
   neckWidthRatio: 0.34,
+  footFlareRatio: 1,
+  bearingScaleRatio: 1,
   upperWidthRatio: 0.72,
   upperDepthRatio: 0.34,
   upperFootprintMode: 'linked',
@@ -194,16 +197,13 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       const supportCentreY = rowCentre + positionY
       const individualShift =
         randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.16
-      const neckWidth = bayWidth * parameters.neckWidthRatio * widthScale
-      const neckDepth =
-        shoulderDepth *
-        ((0.34 + parameters.neckWidthRatio * 0.32) / 0.92) *
-        depthScale
-      const footWidth = neckWidth * 1.18
-      const footDepth = neckDepth * 1.16
-      const shoulderTopWidth =
-        bayWidth * (parameters.shoulderMode === 'shared' ? 1 : 0.92) * widthScale
-      const shoulderTopDepth = shoulderDepth * depthScale
+      const family = rectangularSupportFamily(
+        parameters,
+        bayWidth,
+        shoulderDepth,
+        widthScale,
+        depthScale,
+      )
       const shoulderBasePositionX = bayCentre + individualShift * 0.8
       const shoulderPositionX = shoulderBasePositionX + positionX
       const shoulderTopOffsetX =
@@ -227,8 +227,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
           stemHeight / 2,
         ],
         height: stemHeight,
-        bottomSize: [footWidth, footDepth],
-        topSize: [neckWidth, neckDepth],
+        bottomSize: family.footSize,
+        topSize: family.neckSize,
         bottomOffset: [
           footOffsetOverride?.footOffsetXMm ?? parameters.footOffsetXMm,
           footOffsetOverride?.footOffsetYMm ?? parameters.footOffsetYMm,
@@ -247,8 +247,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
           stemHeight + shoulderHeight / 2,
         ],
         height: shoulderHeight,
-        bottomSize: [neckWidth, neckDepth],
-        topSize: [shoulderTopWidth, shoulderTopDepth],
+        bottomSize: family.neckSize,
+        topSize: family.bearingSize,
         bottomOffset: [0, 0],
         topOffset: [shoulderTopOffsetX, shoulderTopOffsetY],
       })
@@ -257,8 +257,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         column: columnNumber,
         centreX: shoulderCentreX,
         centreY: shoulderCentreY,
-        width: shoulderTopWidth,
-        depth: shoulderTopDepth,
+        width: family.bearingSize[0],
+        depth: family.bearingSize[1],
       })
     }
   }

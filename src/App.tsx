@@ -1775,6 +1775,18 @@ export default function App() {
             onChange={(value) => update('rowSpacingMm', value)}
           />
           </> : null}
+          <ControlGroup visible={canShowControls(
+            'supportDepthRatio',
+            'shoulderRatio',
+            'neckWidthRatio',
+            'footFlareRatio',
+            'bearingScaleRatio',
+          )}>
+          <div className="control-subsection">
+            <span>SUPPORT FAMILY</span>
+            <small>Foot, neck, shoulder and bearing form one shared leg profile. At 100%, foot and bearing keep their current proportions.</small>
+          </div>
+          </ControlGroup>
           <RangeField
             label={radial ? 'Shoulder radial depth' : 'Support depth share'}
             affected={affectedControls.has('supportDepthRatio')}
@@ -1851,6 +1863,30 @@ export default function App() {
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('neckWidthRatio', value)}
+          />
+          <RangeField
+            label="Foot flare"
+            affected={affectedControls.has('footFlareRatio')}
+            value={parameters.footFlareRatio}
+            minimum={PILOTI_PARAMETER_RULES.footFlareRatio.minimum}
+            maximum={PILOTI_PARAMETER_RULES.footFlareRatio.maximum}
+            step={0.01}
+            display="percent"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('footFlareRatio', value)}
+          />
+          <RangeField
+            label="Bearing scale"
+            affected={affectedControls.has('bearingScaleRatio')}
+            value={parameters.bearingScaleRatio}
+            minimum={PILOTI_PARAMETER_RULES.bearingScaleRatio.minimum}
+            maximum={PILOTI_PARAMETER_RULES.bearingScaleRatio.maximum}
+            step={0.01}
+            display="percent"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('bearingScaleRatio', value)}
           />
           <RangeField
             label="Asymmetry"
@@ -2464,7 +2500,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.28 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.29 / LOCAL</span>
       </footer>
     </main>
   )

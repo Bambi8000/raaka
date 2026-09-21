@@ -44,6 +44,7 @@ STL subtraction are implemented in 0.1.26.
 Mass-centre projection and static support-polygon feedback are implemented in
 0.1.27.
 Editable concrete and retained-core densities are implemented in 0.1.28.
+The reusable foot/neck/shoulder/bearing support family is implemented in 0.1.29.
 
 ## 0.1 — foundation
 
@@ -81,6 +82,8 @@ Version 0.1.25 adds a watertight, model-scaled binary STL handoff to Kerros.
 Version 0.1.26 adds retained upper-core intent and subtraction.
 Version 0.1.27 adds material-aware mass-centre and support-polygon feedback.
 Version 0.1.28 makes both material density assumptions editable and saved.
+Version 0.1.29 adds independent foot flare and bearing scale to one shared
+rectangular/polygon support profile.
 
 ## 0.1.1 — correct the baseline
 
@@ -714,10 +717,32 @@ Done when saved and recovered studies reproduce both density assumptions,
 older files retain their previous readings, and edits immediately update every
 mass path without changing the manufactured solid.
 
+## 0.1.29 — reusable Piloti support family
+
+- [x] extract one pure support-family definition used by rectangular, hexagonal
+  and octagonal Piloti layouts
+- [x] expose 60–180% Foot flare without moving the neck or shoulder
+- [x] expose 65–125% Bearing scale without changing the stem or neck interface
+- [x] preserve the established geometry exactly at both 100% defaults
+- [x] retain selected support size, position and lean as separate local edits
+- [x] route authored shared-bearing gaps and overlaps through existing measured
+  feedback instead of automatic correction
+- [x] save both fields in Piloti recipe version 19 without a pre-release version
+  18 migration; start a fresh `raaka.recovery.v2` namespace
+
+Done when one support profile controls every current Piloti plan, the foot and
+bearing stations remain independent around a coincident neck, and downstream
+bounds, volume, ground contact, stability, Fuse and STL paths consume the
+resulting geometry without special cases.
+
+Verification: 431 tests plus lint, strict TypeScript and production build.
+Browser inspection covers dynamic stem/shoulder controls, 180% Foot flare,
+80% Bearing scale and measured shared-shoulder gap feedback.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
-- [ ] reusable stem/neck/shoulder/bearing support family
+- [x] reusable stem/neck/shoulder/bearing support family
 - [x] single, pair, row and grid support topology with independent Columns (X)
   and Rows (Y); preserve the one-row default
 - [x] shared support template, explicit support depth and Y row spacing;

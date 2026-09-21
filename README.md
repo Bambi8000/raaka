@@ -210,6 +210,14 @@ manufacturing panel keeps both controls available because they affect the whole
 study rather than the selected shape. Density changes update material mass and
 mixed-material mass centre without changing geometry, volume or STL output.
 
+Version 0.1.29 turns the Piloti leg into one reusable four-station support
+family. **Foot flare** scales the grounded face around the existing neck, while
+**Bearing scale** independently scales the shoulder top. The controls share one
+definition across rectangular, hexagonal and octagonal plans; 100% reproduces
+the established geometry. Shared bearings meet at 100%, open a measured gap
+below it and create a measured overlap above it instead of being silently
+corrected.
+
 ## Run locally
 
 Requirements:
@@ -253,7 +261,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.28 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.29 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.

@@ -6,12 +6,14 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.28, the
+This document describes the product direction. In version 0.1.29, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
 multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement, divided/shared shoulder rows and semantic part copies.
+The rectangular and polygon Piloti layouts now share one reusable foot, neck,
+shoulder and bearing profile.
 The first watertight STL output and retained lightweight upper core are
 implemented. Live mass-centre projection and support-polygon feedback are also
 implemented, and concrete/core density assumptions are editable; drawings,
@@ -120,6 +122,11 @@ a pair, as a row or as a grid.
 - A selected support may move in X/Y relative to its generated grid position.
   This translates the complete stem-and-shoulder pair and stays distinct from
   foot offset, which changes lean by moving only the bottom endpoint.
+- **Foot flare** scales only the grounded end of the stem around its neck.
+  **Bearing scale** independently scales the shoulder top. Both are shared
+  support-family proportions: 100% preserves the established form, selected
+  support size overrides still scale the complete local leg, and neither
+  control moves the coincident stem/shoulder neck.
 - **Divided shoulders** retain a deliberate gap between adjacent funnel tops.
   **Shared shoulders** widen and align their top faces to meet across each X
   row, producing the continuous folded base seen in the architectural reference.
@@ -354,6 +361,21 @@ undoable. It changes concrete/core mass and, when materials differ spatially,
 the mass centre and support reserve. It never changes geometry, material
 volume, core cover or STL output. Uniform model scale preserves the authored
 density and continues to scale each resulting mass by `s³`.
+
+Version 0.1.29 makes the support itself a reusable four-station family. The
+existing support height, shoulder share, neck width and support depth now join
+two explicit proportions: Foot flare accepts 60–180% of the established foot
+flare, and Bearing scale accepts 65–125% of the topology's established bearing
+face. The default 100% values reproduce the earlier rectangular 1.18/1.16
+foot-to-neck factors and the divided/shared 92%/100% bearing factors exactly.
+The same controls drive homothetic hexagonal and octagonal supports. Shared
+bearings therefore meet at 100%; authored smaller or larger values deliberately
+create the gap or overlap already measured by layout feedback.
+
+Piloti recipe version 19 requires both new fields. RAAKA is still pre-release
+and no user project archive exists, so version 18 files receive no support-profile
+migration. Local recovery moves to a new storage key and therefore begins as a
+fresh study instead of presenting an obsolete recovery warning.
 
 ### Planned high-rise articulation module
 

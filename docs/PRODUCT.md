@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.21, the
+This document describes the product direction. In version 0.1.22, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -198,7 +198,7 @@ Fused objects must be unfused before removing individual parts; an affected
 saved Fuse stays dormant until all its sources return.
 
 Sliders that affect the selected piece receive a yellow edge, yellow track and
-SELECTED label. Other sliders stay grey, legible and editable. This follows the
+SELECTED label. In Show all mode, other sliders stay grey and editable. This follows the
 current geometry, including linked bearings, source copies and explicit leg
 overrides. For a Fuse, highlighting describes its live source pieces, not a
 guarantee that changing an internal source changes the outside union surface.
@@ -267,6 +267,22 @@ Switching mode reinterprets existing values without converting or erasing them.
 The setting is dormant in Rectangle and survives project files, recovery,
 Undo/Redo and model scales. Existing projects migrate to Global without a shape
 change. Ground faces remain horizontal and neck interfaces stay joined.
+
+Version 0.1.22 makes the inspector selection-focused by default. Selecting an
+upper mass hides leg-only sliders and sections; stems, shoulders, cells, copies
+and Fuse sources expose their actual dependencies. Shared dimensions that also
+affect the selection remain visible, so a linked upper mass still exposes grid
+size and the support-height ratio, labelled **Upper base height** in this view.
+**Show all / Show relevant** switches the control list without changing the
+study, project file or history. The toggle stays beside the pinned selection
+name. An empty study falls back to all controls and keeps Restore reachable.
+
+Relevant enabling choices stay available even when they are neutral at the
+current values: Linked/Detached, a mass's inherited Block/Tapered profile and
+Global/Centered for polygon stems at zero lean. Independent mass tops hide the
+shared profile controls. A shoulder's local position and size remain editable,
+but foot lean belongs to its stem. Gizmos are planned next, not implemented in
+this release; translation handles must not be confused with foot-lean handles.
 
 ### Planned high-rise articulation module
 

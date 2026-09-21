@@ -492,8 +492,24 @@ their source shape; Fuse selection checks the group's currently available source
 pieces without invoking WASM. The result is memoized by parameters and selection
 and never enters project or history data. Local copy translation and selected
 support overrides have explicit local scope; foot lean affects stems, not
-shoulders. Grey controls remain editable and describe the absence of an effect
-on the current selection, rather than indicating a disabled control.
+shoulders. In Show all mode, grey controls remain editable and describe the
+absence of an effect on the current selection, rather than a disabled control.
+
+Version 0.1.22 adds `inspectorControls.ts` as a pure reachability layer over that
+influence set. It retains geometry-neutral enabling choices for currently live
+sources: footprint linkage, inherited upper profiles and polygon-stem offset
+space. An independent cell or its copy does not regain irrelevant shared top
+controls. Fuse visibility is the union of its live sources, not a mesh probe.
+
+`InspectorControls` supplies a view-only React context to the shared range
+field; irrelevant sliders are omitted from the DOM in relevant mode, not merely
+dimmed or hidden with CSS. Conditional groups also omit unrelated headings,
+switches and lean readouts. Local selected-leg/cell/copy fields keep explicit
+scope. An empty influence/enablement set falls back to the full inspector with
+an explanation. Model scale and manufacturing readings remain available.
+The Show all flag is transient UI state, outside files, recovery and history;
+recipe version 16 and every geometry parameter remain unchanged. Server-rendered
+App tests check actual wiring as well as pure relevance and field visibility.
 
 The object list is shared by the desktop sidebar and the compact Objects
 disclosure, so Restore and inactive-Fuse access do not disappear below the

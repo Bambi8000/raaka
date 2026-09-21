@@ -120,8 +120,8 @@ Undo bring it back with its authored settings; copies survive removal of their
 original. Saved projects, local recovery and scale presets preserve removals.
 Unfuse a joined part before removing its individual members.
 
-Yellow sliders marked **Selected** affect the current selection; grey sliders
-remain available for other parts. Highlighting follows linked bearings, selected
+Yellow sliders marked **Selected** affect the current selection; **Show all**
+also exposes grey sliders for other parts. Highlighting follows linked bearings, selected
 overrides, live copies and Fuse sources. The selection label stays pinned while
 scrolling, and narrow windows expose the object list through **Objects**.
 
@@ -150,6 +150,13 @@ offset, with explicit slider labels. For evenly spreading feet, use a positive
 **Radial foot offset** and zero **Tangential foot offset**. Both shared and
 selected offsets use this space; necks and shoulders remain fixed. Existing
 studies open in Global, and Rectangle keeps its original world-axis behavior.
+
+Version 0.1.22 makes the sidebar **Relevant controls** by default. Selecting an
+upper mass hides leg-only faders; selecting a stem or shoulder shows the controls
+that affect that part. Shared linked dimensions remain visible. **Show all**
+beside the pinned selection name restores the complete inspector; **Show relevant**
+focuses it again. Filtering does not change geometry, saved files or undo history.
+Translation gizmos are the next planned editing improvement, not yet implemented.
 
 ## Run locally
 
@@ -193,7 +200,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.21 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.22 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

@@ -5,10 +5,10 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type KeyboardEvent,
 } from 'react'
 import { Viewport } from './components/Viewport'
 import { ObjectList } from './components/ObjectList'
+import { ControlGroup, InspectorControls, RangeField } from './components/InspectorControls'
 import {
   DEFAULT_PILOTI_PARAMETERS,
   generatePiloti,
@@ -23,7 +23,8 @@ import {
 } from './core/history'
 import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
 import { partIdForPiece, partInGrid, partLabel } from './core/partSelection'
-import { affectedPilotiControls } from './core/controlInfluence'
+import { affectedPilotiControls, type PilotiControlKey } from './core/controlInfluence'
+import { relevantPilotiControls } from './core/inspectorControls'
 import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress, massPartProfile } from './core/massDivision'
 import {
   PILOTI_FUSE_GROUP_LIMIT,
@@ -52,19 +53,6 @@ import type {
   PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
 } from './core/types'
-
-interface RangeFieldProps {
-  readonly label: string
-  readonly value: number
-  readonly minimum: number
-  readonly maximum: number
-  readonly step: number
-  readonly suffix?: string
-  readonly affected: boolean
-  readonly onChange: (value: number) => void
-  readonly onInteractionStart: () => void
-  readonly onInteractionEnd: () => void
-}
 
 interface Notice {
   readonly kind: 'info' | 'error'
@@ -98,17 +86,6 @@ type FuseRenderState =
       readonly status: 'error'
       readonly message: string
     }
-
-const RANGE_KEYS = new Set([
-  'ArrowDown',
-  'ArrowLeft',
-  'ArrowRight',
-  'ArrowUp',
-  'End',
-  'Home',
-  'PageDown',
-  'PageUp',
-])
 
 const DEFAULT_STUDY: PilotiStudyState = {
   parameters: DEFAULT_PILOTI_PARAMETERS,
@@ -155,59 +132,6 @@ function loadInitialSession(): InitialSession {
     origin: 'DEFAULT',
     baseline: DEFAULT_PROJECT_JSON,
   }
-}
-
-function RangeField({
-  label,
-  value,
-  minimum,
-  maximum,
-  step,
-  suffix = '',
-  affected,
-  onChange,
-  onInteractionStart,
-  onInteractionEnd,
-}: RangeFieldProps) {
-  const beginKeyboardGesture = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (RANGE_KEYS.has(event.key)) onInteractionStart()
-  }
-  const endKeyboardGesture = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (RANGE_KEYS.has(event.key)) onInteractionEnd()
-  }
-
-  return (
-    <label className={`range-field ${affected ? 'affects-selection' : 'other-controls'}`}>
-      <span className="field-heading">
-        <span>
-          {label}
-          {affected ? <small className="field-impact" aria-hidden="true">SELECTED</small> : null}
-        </span>
-        <output>
-          {Number.isInteger(step) ? value.toFixed(0) : value.toFixed(2)}
-          {suffix}
-        </output>
-      </span>
-      <input
-        type="range"
-        aria-label={label}
-        aria-description={affected
-          ? 'Affects the selected part or its live Fuse sources.'
-          : 'Does not affect the selected part in the current study.'}
-        min={minimum}
-        max={maximum}
-        step={step}
-        value={value}
-        onPointerDown={onInteractionStart}
-        onPointerUp={onInteractionEnd}
-        onPointerCancel={onInteractionEnd}
-        onKeyDown={beginKeyboardGesture}
-        onKeyUp={endKeyboardGesture}
-        onBlur={onInteractionEnd}
-        onChange={(event) => onChange(event.currentTarget.valueAsNumber)}
-      />
-    </label>
-  )
 }
 
 function formatNumber(value: number, maximumFractionDigits = 0): string {
@@ -292,6 +216,7 @@ export default function App() {
   })
   const [supportEditScope, setSupportEditScope] =
     useState<SupportEditScope>('shared')
+  const [showAllControls, setShowAllControls] = useState(false)
   const [baselineJson, setBaselineJson] = useState(initialSession.baseline)
   const [projectOrigin, setProjectOrigin] = useState<ProjectOrigin>(
     initialSession.origin,
@@ -454,6 +379,18 @@ export default function App() {
     () => affectedPilotiControls(parameters, selectedPieceId),
     [parameters, selectedPieceId],
   )
+  const relevantControls = useMemo(
+    () => relevantPilotiControls(parameters, selectedPieceId, unfusedMasterStudy.pieces, affectedControls),
+    [parameters, selectedPieceId, unfusedMasterStudy.pieces, affectedControls],
+  )
+  const allControlsVisible = showAllControls || relevantControls.size === 0
+  const canShowControls = (...keys: PilotiControlKey[]) =>
+    allControlsVisible || keys.some((key) => relevantControls.has(key))
+  const selectedStem = selectedSupportId !== undefined && selectedPieceId.startsWith('support-')
+  const showFootReadout = allControlsVisible || (selectedStem &&
+    (activeSupportEditScope === 'selected' || !hasSelectedSupportOverride)) ||
+    affectedControls.has('footOffsetXMm') || affectedControls.has('footOffsetYMm')
+  const showLegEditor = allControlsVisible || selectedSupportId !== undefined || showFootReadout
   const usedFusePieceIds = useMemo(
     () => new Set(parameters.fuseGroups.flatMap((group) => [...group.pieceIds])),
     [parameters.fuseGroups],
@@ -1191,7 +1128,9 @@ export default function App() {
           ) : null}
           <p className="selection-help selection-legend">
             <span>YELLOW CONTROLS</span> affect {selectedFuseGroup ? 'this Fuse’s source parts' : 'the selected part'}.
-            Grey controls remain available for the rest of the study.
+            {' '}{allControlsVisible
+              ? 'Grey controls remain available for the rest of the study.'
+              : 'Only relevant controls are shown. Shared settings may also change linked parts.'}
           </p>
           {validFuseSelectionPieceIds.length > 0 ? (
             <div className="fuse-builder" aria-live="polite">
@@ -1229,12 +1168,21 @@ export default function App() {
           <span>EDITING</span>
           <strong>{selectedPiece?.label ?? (selectedFuseGroup
             ? `Fuse ${fuseNumber(selectedFuseGroup.id)}` : 'No selection')}</strong>
+          <button type="button" aria-pressed={allControlsVisible}
+            disabled={relevantControls.size === 0}
+            aria-label={allControlsVisible ? 'Show relevant controls' : 'Show all controls'}
+            onClick={() => setShowAllControls(!allControlsVisible)}>
+            {allControlsVisible ? 'SHOW RELEVANT' : 'SHOW ALL'}
+          </button>
         </div>
+        <InspectorControls showAll={allControlsVisible}>
         <section className="panel-section controls-section">
           <div className="section-heading">
             <span>03</span>
-            <h2>Composition controls</h2>
+            <h2>{allControlsVisible ? 'All controls' : 'Relevant controls'}</h2>
           </div>
+          {relevantControls.size === 0 ? <p className="selection-help">No active part to filter. Composition controls remain available; select or restore a part to focus the inspector.</p> : null}
+          <ControlGroup visible={canShowControls('planShape')}>
           <div className="control-subsection">
             <span>PLAN SHAPE</span>
             <small>Rectangle uses the support grid. Hexagon and Octagon use one leg per side. Each layout retains its own part edits.</small>
@@ -1246,6 +1194,8 @@ export default function App() {
                 onClick={() => update('planShape', shape)}><span>{shape.toUpperCase()}</span></button>
             ))}
           </div>
+          </ControlGroup>
+          <ControlGroup visible={canShowControls(radial ? 'polygonMassDivision' : 'upperMassDivision')}>
           <div className="control-subsection">
             <span>UPPER MASS DIVISION</span>
             <small>New divisions preserve the original envelope. Whole-mass copies stay whole; cell copies pause outside their source division.</small>
@@ -1273,6 +1223,7 @@ export default function App() {
               </div>
             </>
           ) : null}
+          </ControlGroup>
           {activeMassProfile ? (
             <div className="mass-part-editor">
               <div className="control-subsection">
@@ -1413,6 +1364,7 @@ export default function App() {
               <small>{formatNumber(masterStudy.heightMm)} MM DESIGN</small>
             </div>
           </div>
+          <ControlGroup visible={canShowControls('upperFootprintMode', 'upperWidthRatio', 'upperDepthRatio', 'radialSpreadRatio')}>
           <div className="control-subsection">
             <span>UPPER / SUPPORT FOOTPRINT</span>
             <small>
@@ -1483,6 +1435,8 @@ export default function App() {
               onChange={(value) => update('radialSpreadRatio', value)} />
             <p className="selection-help">Diameter share × design height gives the corner-to-corner base diameter. Radial spread scales the leg ring; Linked also scales the upper footprint. Top scale stays uniform to keep all polygon side faces planar.</p>
           </>}
+          </ControlGroup>
+          <ControlGroup visible={canShowControls('upperOffsetXMm', 'upperOffsetYMm')}>
           <div className="control-subsection">
             <span>UPPER MASS PLACEMENT</span>
             <small>
@@ -1515,6 +1469,8 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('upperOffsetYMm', value)}
           />
+          </ControlGroup>
+          <ControlGroup visible={canShowControls('upperMassProfile', 'upperTopWidthRatio', 'upperTopDepthRatio', 'upperTopOffsetXMm', 'upperTopOffsetYMm')}>
           <div className="control-subsection">
             <span>{activeDivision === 'whole' ? 'UPPER MASS PROFILE' : 'SHARED UPPER MASS PROFILE'}</span>
             <small>The bottom bearing face stays fixed. Independent part tops keep their own profile.</small>
@@ -1591,6 +1547,7 @@ export default function App() {
               />
             </>
           ) : null}
+          </ControlGroup>
           {!radial ? <>
           <RangeField
             label="Columns (X)"
@@ -1639,7 +1596,7 @@ export default function App() {
             onChange={(value) => update('supportDepthRatio', value)}
           />
           <RangeField
-            label="Support height"
+            label={!allControlsVisible && selectedPiece?.role === 'mass' ? 'Upper base height' : 'Support height'}
             affected={affectedControls.has('supportHeightRatio')}
             value={parameters.supportHeightRatio}
             minimum={0.25}
@@ -1660,6 +1617,7 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('shoulderRatio', value)}
           />
+          <ControlGroup visible={canShowControls('shoulderMode')}>
           <div className="control-subsection">
             <span>SHOULDER TOPOLOGY</span>
             <small>{radial ? 'Shared tops meet along radial edges, leaving a central opening below the upper mass.' : 'Shared tops meet across each support row.'}</small>
@@ -1687,6 +1645,7 @@ export default function App() {
               <small>{radial ? 'CONTINUOUS RING' : 'CONTINUOUS ROW'}</small>
             </button>
           </div>
+          </ControlGroup>
           <RangeField
             label="Neck width"
             affected={affectedControls.has('neckWidthRatio')}
@@ -1709,7 +1668,7 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('asymmetry', value)}
           />
-          {radial ? <>
+          {radial && canShowControls('footOffsetSpace') ? <>
             <div className="control-subsection">
               <span>FOOT OFFSET SPACE</span>
               <small>Applies to shared and selected leg offsets. Switching space reinterprets the same values; it does not move necks or shoulders.</small>
@@ -1728,9 +1687,12 @@ export default function App() {
               ? 'Positive radial offset spreads feet away from the ring centre; negative pulls them inward. Positive tangential offset turns counter-clockwise viewed from above. Upper-mass placement does not change this centre.'
               : 'All legs use the same world X/Y directions, regardless of their position around the ring.'}</p>
           </> : null}
+          <ControlGroup visible={showLegEditor}>
           <div className="control-subsection">
             <span>LEG EDIT SCOPE</span>
-            <small>{centeredFeet
+            <small>{!allControlsVisible && selectedSupportId && !selectedStem
+              ? 'Position and size move or resize the whole leg. Select its stem to change foot lean.'
+              : centeredFeet
               ? 'Foot offsets lean. Position moves the whole leg and realigns its outward direction.'
               : 'Foot offsets lean. Position moves the complete leg.'}</small>
           </div>
@@ -1759,6 +1721,11 @@ export default function App() {
               </small>
             </button>
           </div>
+          {!allControlsVisible && activeSupportEditScope === 'shared' && hasSelectedSupportOverride ? (
+            <p className="selection-help">This leg uses its own settings. Choose Selected to edit them; shared foot sliders do not affect this leg.</p>
+          ) : !allControlsVisible && activeSupportEditScope === 'shared' && selectedSupportId && !selectedStem ? (
+            <p className="selection-help">Shared dimensions are above. Choose Selected to edit this leg's position and size.</p>
+          ) : null}
           {activeSupportEditScope === 'selected' &&
           !hasSelectedSupportOverride ? (
             <div className="offset-inheritance">
@@ -1913,6 +1880,7 @@ export default function App() {
               ) : null}
             </>
           )}
+          <ControlGroup visible={showFootReadout}>
           <div
             className="lean-readout"
             aria-label={`${activeSupportEditScope} leg lean result`}
@@ -1943,7 +1911,10 @@ export default function App() {
                 : 'Seeded asymmetry adds per-leg variation.'}
             </small>
           </div>
+          </ControlGroup>
+          </ControlGroup>
         </section>
+        </InspectorControls>
 
         <section className="panel-section metrics-section">
           <div className="section-heading">
@@ -2203,7 +2174,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.21 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.22 / LOCAL</span>
       </footer>
     </main>
   )

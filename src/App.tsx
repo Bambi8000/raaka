@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { Viewport } from './components/Viewport'
+import { ObjectList } from './components/ObjectList'
 import {
   DEFAULT_PILOTI_PARAMETERS,
   generatePiloti,
@@ -21,6 +22,8 @@ import {
   type HistoryState,
 } from './core/history'
 import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
+import { partIdForPiece, partInGrid, partLabel } from './core/partSelection'
+import { affectedPilotiControls } from './core/controlInfluence'
 import {
   PILOTI_FUSE_GROUP_LIMIT,
   PILOTI_PART_COPY_LIMIT,
@@ -55,6 +58,7 @@ interface RangeFieldProps {
   readonly maximum: number
   readonly step: number
   readonly suffix?: string
+  readonly affected: boolean
   readonly onChange: (value: number) => void
   readonly onInteractionStart: () => void
   readonly onInteractionEnd: () => void
@@ -158,6 +162,7 @@ function RangeField({
   maximum,
   step,
   suffix = '',
+  affected,
   onChange,
   onInteractionStart,
   onInteractionEnd,
@@ -170,9 +175,12 @@ function RangeField({
   }
 
   return (
-    <label className="range-field">
+    <label className={`range-field ${affected ? 'affects-selection' : 'other-controls'}`}>
       <span className="field-heading">
-        <span>{label}</span>
+        <span>
+          {label}
+          {affected ? <small className="field-impact" aria-hidden="true">SELECTED</small> : null}
+        </span>
         <output>
           {Number.isInteger(step) ? value.toFixed(0) : value.toFixed(2)}
           {suffix}
@@ -180,6 +188,10 @@ function RangeField({
       </span>
       <input
         type="range"
+        aria-label={label}
+        aria-description={affected
+          ? 'Affects the selected part or its live Fuse sources.'
+          : 'Does not affect the selected part in the current study.'}
         min={minimum}
         max={maximum}
         step={step}
@@ -200,42 +212,17 @@ function formatNumber(value: number, maximumFractionDigits = 0): string {
   return new Intl.NumberFormat('en', { maximumFractionDigits }).format(value)
 }
 
-function selectionExists(
-  selectedPieceId: string,
-  parameters: PilotiParameters,
-): boolean {
-  if (parameters.fuseGroups.some((group) => group.id === selectedPieceId)) {
-    return true
-  }
-  if (
-    parameters.fuseGroups.some((group) =>
-      group.pieceIds.includes(selectedPieceId),
-    )
-  ) {
-    return false
-  }
-  if (selectedPieceId === 'upper-mass') return true
-  const copyId = partCopyIdForPiece(selectedPieceId)
-  if (copyId) {
-    const copy = parameters.partCopies.find((candidate) => candidate.id === copyId)
-    if (!copy) return false
-    if (copy.sourceId === 'upper-mass') return true
-    const sourceAddress = pilotiSupportAddress(copy.sourceId)
-    return (
-      sourceAddress !== undefined &&
-      sourceAddress.column <= parameters.supportCount &&
-      sourceAddress.row <= parameters.supportRowCount
-    )
-  }
-  const selectedSupportId = supportIdForPiece(selectedPieceId)
-  const address = selectedSupportId
-    ? pilotiSupportAddress(selectedSupportId)
-    : undefined
-  return (
-    address !== undefined &&
-    address.column <= parameters.supportCount &&
-    address.row <= parameters.supportRowCount
+function selectablePieceIds(parameters: PilotiParameters): readonly string[] {
+  const pieces = generatePiloti(parameters).pieces
+  const available = new Set(pieces.map((piece) => piece.id))
+  const activeGroups = parameters.fuseGroups.filter((group) =>
+    group.pieceIds.every((id) => available.has(id)),
   )
+  const fusedIds = new Set(activeGroups.flatMap((group) => [...group.pieceIds]))
+  return [
+    ...activeGroups.map((group) => group.id),
+    ...pieces.filter((piece) => !fusedIds.has(piece.id)).map((piece) => piece.id),
+  ]
 }
 
 function partCopyIdForPiece(pieceId: string): string | undefined {
@@ -290,7 +277,10 @@ export default function App() {
     initialSession.study,
     createHistory,
   )
-  const [selectedPieceId, setSelectedPieceId] = useState('upper-mass')
+  const [selectedPieceId, setSelectedPieceId] = useState(() => {
+    const ids = selectablePieceIds(initialSession.study.parameters)
+    return ids.includes('upper-mass') ? 'upper-mass' : (ids[0] ?? '')
+  })
   const [supportEditScope, setSupportEditScope] =
     useState<SupportEditScope>('shared')
   const [baselineJson, setBaselineJson] = useState(initialSession.baseline)
@@ -435,6 +425,11 @@ export default function App() {
   const selectedPiece = study.pieces.find(
     (piece) => piece.id === selectedPieceId,
   )
+  const selectedPartId = selectedPiece ? partIdForPiece(selectedPieceId) : undefined
+  const affectedControls = useMemo(
+    () => affectedPilotiControls(parameters, selectedPieceId),
+    [parameters, selectedPieceId],
+  )
   const usedFusePieceIds = useMemo(
     () => new Set(parameters.fuseGroups.flatMap((group) => [...group.pieceIds])),
     [parameters.fuseGroups],
@@ -462,6 +457,7 @@ export default function App() {
     selectedPartCopy?.sourceId ??
     (selectedPieceId === 'upper-mass' ? 'upper-mass' : selectedSupportId)
   const canDuplicateSelectedPiece =
+    selectedPiece !== undefined &&
     duplicateSourceId !== undefined &&
     parameters.partCopies.length < PILOTI_PART_COPY_LIMIT
   const projectStatus: ProjectOrigin | 'UNSAVED' =
@@ -488,21 +484,23 @@ export default function App() {
   }
 
   const reconcileSelection = (nextParameters: PilotiParameters) => {
-    if (!selectionExists(selectedPieceId, nextParameters)) {
+    const availableIds = selectablePieceIds(nextParameters)
+    if (!availableIds.includes(selectedPieceId)) {
       const owningFuse = nextParameters.fuseGroups.find((group) =>
-        group.pieceIds.includes(selectedPieceId),
+        availableIds.includes(group.id) && group.pieceIds.includes(selectedPieceId),
       )
       const upperMassFuse = nextParameters.fuseGroups.find((group) =>
-        group.pieceIds.includes('upper-mass'),
+        availableIds.includes(group.id) && group.pieceIds.includes('upper-mass'),
       )
-      setSelectedPieceId(owningFuse?.id ?? upperMassFuse?.id ?? 'upper-mass')
+      setSelectedPieceId(owningFuse?.id ?? upperMassFuse?.id ??
+        (availableIds.includes('upper-mass') ? 'upper-mass' : (availableIds[0] ?? '')))
       setSupportEditScope('shared')
     }
   }
 
   const selectPiece = (pieceId: string) => {
     const owningFuse = parameters.fuseGroups.find((group) =>
-      group.pieceIds.includes(pieceId),
+      study.pieces.some((piece) => piece.id === group.id) && group.pieceIds.includes(pieceId),
     )
     const semanticPieceId = owningFuse?.id ?? pieceId
     setSelectedPieceId(semanticPieceId)
@@ -585,25 +583,42 @@ export default function App() {
     })
   }
 
-  const removeSelectedPartCopy = () => {
-    if (!selectedPartCopy) return
-    setSelectedPieceId(selectedPartCopy.sourceId)
+  const removeSelectedPart = () => {
+    if (!selectedPartId) return
+    const nextParameters = {
+      ...parameters,
+      removedPartIds: [...parameters.removedPartIds, selectedPartId],
+    }
+    reconcileSelection(nextParameters)
     setFuseSelectionPieceIds((pieceIds) =>
-      pieceIds.filter((pieceId) => partCopyIdForPiece(pieceId) !== selectedPartCopy.id),
+      pieceIds.filter((pieceId) => partIdForPiece(pieceId) !== selectedPartId),
     )
     setSupportEditScope('shared')
-    replaceStudy({
-      ...studyState,
-      parameters: {
-        ...parameters,
-        partCopies: parameters.partCopies.filter(
-          (copy) => copy.id !== selectedPartCopy.id,
-        ),
-      },
-    })
+    replaceStudy({ ...studyState, parameters: nextParameters })
     setNotice({
       kind: 'info',
-      text: 'Part copy removed. Undo is available.',
+      text: `${partLabel(selectedPartId)} removed. Other parts keep their positions. Undo or Restore is available.`,
+    })
+  }
+
+  const restorePart = (partId: string) => {
+    const nextParameters = {
+      ...parameters,
+      removedPartIds: parameters.removedPartIds.filter((id) => id !== partId),
+    }
+    replaceStudy({ ...studyState, parameters: nextParameters })
+    const copy = parameters.partCopies.find((candidate) => candidate.id === partId)
+    const pieceId = copy ? partCopyPieceId(copy) : partId
+    const ids = selectablePieceIds(nextParameters)
+    const owningFuse = nextParameters.fuseGroups.find((group) =>
+      ids.includes(group.id) && group.pieceIds.includes(pieceId),
+    )
+    if (owningFuse || ids.includes(pieceId)) setSelectedPieceId(owningFuse?.id ?? pieceId)
+    setNotice({
+      kind: 'info',
+      text: partInGrid(partId, parameters)
+        ? `${partLabel(partId)} restored. Undo is available.`
+        : `${partLabel(partId)} restored; increase the grid to show its source row and column.`,
     })
   }
 
@@ -680,15 +695,19 @@ export default function App() {
 
   const unfuseSelectedGroup = () => {
     if (!selectedFuseGroup) return
-    const restoredSelection = selectedFuseGroup.pieceIds[0] ?? 'upper-mass'
+    const nextParameters = {
+      ...parameters,
+      fuseGroups: parameters.fuseGroups.filter(
+        (group) => group.id !== selectedFuseGroup.id,
+      ),
+    }
+    const availableIds = selectablePieceIds(nextParameters)
+    const restoredSelection = selectedFuseGroup.pieceIds.find(
+      (id) => availableIds.includes(id),
+    ) ?? availableIds[0] ?? ''
     replaceStudy({
       ...studyState,
-      parameters: {
-        ...parameters,
-        fuseGroups: parameters.fuseGroups.filter(
-          (group) => group.id !== selectedFuseGroup.id,
-        ),
-      },
+      parameters: nextParameters,
     })
     setSelectedPieceId(restoredSelection)
     setSupportEditScope('shared')
@@ -747,7 +766,8 @@ export default function App() {
       }
       dispatch({ type: 'load', value: openedStudy })
       persistRecovery(openedStudy)
-      setSelectedPieceId('upper-mass')
+      const ids = selectablePieceIds(openedProject.parameters)
+      setSelectedPieceId(ids.includes('upper-mass') ? 'upper-mass' : (ids[0] ?? ''))
       setFuseSelectionPieceIds([])
       setSupportEditScope('shared')
       setBaselineJson(openedJson)
@@ -907,6 +927,17 @@ export default function App() {
 
   const beginGesture = () => dispatch({ type: 'begin-gesture' })
   const endGesture = () => dispatch({ type: 'commit-gesture' })
+  const objectList = (
+    <ObjectList
+      study={study}
+      parameters={parameters}
+      selectedPieceId={selectedPieceId}
+      fuseSelectionPieceIds={validFuseSelectionPieceIds}
+      isResolving={fuseRenderStatus === 'pending'}
+      onSelect={selectPiece}
+      onRestore={restorePart}
+    />
+  )
 
   return (
     <main className="app-shell" data-theme={uiTheme}>
@@ -1037,34 +1068,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="panel-section object-section">
-          <div className="section-heading">
-            <span>02</span>
-            <h2>Objects</h2>
-          </div>
-          <div className="object-list">
-            {study.pieces.map((piece) => (
-              <button
-                type="button"
-                key={piece.id}
-                className={[
-                  piece.id === selectedPieceId ? 'is-selected' : '',
-                  validFuseSelectionPieceIds.includes(piece.id)
-                    ? 'is-fuse-selected'
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => selectPiece(piece.id)}
-                aria-pressed={piece.id === selectedPieceId}
-              >
-                <span className={`role-dot role-dot--${piece.role}`} />
-                <span>{piece.label}</span>
-                <small>{piece.kind.toUpperCase()}</small>
-              </button>
-            ))}
-          </div>
-        </section>
+        {objectList}
       </aside>
 
       <section className="workspace">
@@ -1079,6 +1083,10 @@ export default function App() {
       </section>
 
       <aside className="right-panel panel">
+        <details className="compact-objects">
+          <summary>OBJECTS · {study.pieces.length} VISIBLE · {parameters.removedPartIds.length} REMOVED</summary>
+          {objectList}
+        </details>
         <section className="inspector-lead" aria-live="polite">
           <span className="eyebrow">SELECTED OBJECT</span>
           <h1>
@@ -1094,6 +1102,8 @@ export default function App() {
                 ? 'SOLID KERNEL · RESOLVING'
                 : selectedFuseGroup && fuseRenderStatus === 'error'
                   ? 'SOLID KERNEL · PAUSED'
+                  : selectedFuseGroup
+                    ? 'FUSE · SOURCES MISSING'
               : 'Generated composition'}
           </p>
           <div className="inspector-actions">
@@ -1103,7 +1113,7 @@ export default function App() {
               disabled={!canDuplicateSelectedPiece}
               title={
                 parameters.partCopies.length >= PILOTI_PART_COPY_LIMIT
-                  ? `The ${PILOTI_PART_COPY_LIMIT}-copy limit has been reached.`
+                  ? `The ${PILOTI_PART_COPY_LIMIT}-copy limit includes removed copies. Restore an existing copy to reuse it.`
                   : 'Duplicate the selected semantic part.'
               }
             >
@@ -1118,13 +1128,16 @@ export default function App() {
                 {selectedPieceIsInFuseSet ? 'REMOVE FROM SET' : 'ADD TO FUSE'}
               </button>
             ) : null}
-            {selectedPartCopy ? (
+            {selectedPartId ? (
               <button
                 type="button"
                 className="is-destructive"
-                onClick={removeSelectedPartCopy}
+                onClick={removeSelectedPart}
+                title={selectedPiece?.role === 'support'
+                  ? 'Remove the complete leg: stem and shoulder.'
+                  : 'Remove this mass. Copies keep their live source shape.'}
               >
-                REMOVE COPY
+                {selectedPiece?.role === 'support' ? 'REMOVE LEG' : 'REMOVE MASS'}
               </button>
             ) : null}
             {selectedFuseGroup ? (
@@ -1137,6 +1150,15 @@ export default function App() {
               </button>
             ) : null}
           </div>
+          {selectedFuseGroup ? (
+            <p className="selection-help">Unfuse to remove individual parts.</p>
+          ) : selectedPiece?.role === 'support' ? (
+            <p className="selection-help">Remove leg deletes its stem and shoulder together.</p>
+          ) : null}
+          <p className="selection-help selection-legend">
+            <span>YELLOW CONTROLS</span> affect {selectedFuseGroup ? 'this Fuse’s source parts' : 'the selected part'}.
+            Grey controls remain available for the rest of the study.
+          </p>
           {validFuseSelectionPieceIds.length > 0 ? (
             <div className="fuse-builder" aria-live="polite">
               <span>FUSE SET</span>
@@ -1169,10 +1191,15 @@ export default function App() {
           ) : null}
         </section>
 
+        <div className="selection-context">
+          <span>EDITING</span>
+          <strong>{selectedPiece?.label ?? (selectedFuseGroup
+            ? `Fuse ${fuseNumber(selectedFuseGroup.id)}` : 'No selection')}</strong>
+        </div>
         <section className="panel-section controls-section">
           <div className="section-heading">
             <span>03</span>
-            <h2>Global composition</h2>
+            <h2>Composition controls</h2>
           </div>
           {selectedPartCopy ? (
             <>
@@ -1188,6 +1215,7 @@ export default function App() {
               </div>
               <RangeField
                 label="Copy offset X"
+                affected={true}
                 value={selectedPartCopy.offsetXMm}
                 minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
                 maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
@@ -1201,6 +1229,7 @@ export default function App() {
               />
               <RangeField
                 label="Copy offset Y"
+                affected={true}
                 value={selectedPartCopy.offsetYMm}
                 minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
                 maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
@@ -1214,6 +1243,7 @@ export default function App() {
               />
               <RangeField
                 label="Copy offset Z"
+                affected={true}
                 value={selectedPartCopy.offsetZMm}
                 minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
                 maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
@@ -1238,6 +1268,7 @@ export default function App() {
           ) : null}
           <RangeField
             label="Design height"
+            affected={affectedControls.has('heightMm')}
             value={parameters.heightMm}
             minimum={1_000}
             maximum={2_000}
@@ -1282,7 +1313,7 @@ export default function App() {
             </small>
           </div>
           <div
-            className="offset-scope-switch"
+            className={`offset-scope-switch ${affectedControls.has('upperFootprintMode') ? 'affects-selection' : 'other-controls'}`}
             aria-label="Upper and support footprint relationship"
           >
             <button
@@ -1314,6 +1345,7 @@ export default function App() {
                 ? 'Base width share (3 columns)'
                 : 'Upper width share'
             }
+            affected={affectedControls.has('upperWidthRatio')}
             value={parameters.upperWidthRatio}
             minimum={0.4}
             maximum={1.1}
@@ -1328,6 +1360,7 @@ export default function App() {
                 ? 'Base depth share (1 row)'
                 : 'Upper depth share'
             }
+            affected={affectedControls.has('upperDepthRatio')}
             value={parameters.upperDepthRatio}
             minimum={0.2}
             maximum={0.65}
@@ -1346,6 +1379,7 @@ export default function App() {
           </div>
           <RangeField
             label="Upper offset X"
+            affected={affectedControls.has('upperOffsetXMm')}
             value={parameters.upperOffsetXMm}
             minimum={-400}
             maximum={400}
@@ -1357,6 +1391,7 @@ export default function App() {
           />
           <RangeField
             label="Upper offset Y"
+            affected={affectedControls.has('upperOffsetYMm')}
             value={parameters.upperOffsetYMm}
             minimum={-400}
             maximum={400}
@@ -1370,7 +1405,7 @@ export default function App() {
             <span>UPPER MASS PROFILE</span>
             <small>The bottom bearing face stays fixed.</small>
           </div>
-          <div className="offset-scope-switch" aria-label="Upper mass profile">
+          <div className={`offset-scope-switch ${affectedControls.has('upperMassProfile') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass profile">
             <button
               type="button"
               className={parameters.upperMassProfile === 'block' ? 'is-active' : ''}
@@ -1396,6 +1431,7 @@ export default function App() {
             <>
               <RangeField
                 label="Top width share"
+                affected={affectedControls.has('upperTopWidthRatio')}
                 value={parameters.upperTopWidthRatio}
                 minimum={0.45}
                 maximum={1.25}
@@ -1406,6 +1442,7 @@ export default function App() {
               />
               <RangeField
                 label="Top depth share"
+                affected={affectedControls.has('upperTopDepthRatio')}
                 value={parameters.upperTopDepthRatio}
                 minimum={0.45}
                 maximum={1.25}
@@ -1416,6 +1453,7 @@ export default function App() {
               />
               <RangeField
                 label="Top drift X"
+                affected={affectedControls.has('upperTopOffsetXMm')}
                 value={parameters.upperTopOffsetXMm}
                 minimum={-400}
                 maximum={400}
@@ -1427,6 +1465,7 @@ export default function App() {
               />
               <RangeField
                 label="Top drift Y"
+                affected={affectedControls.has('upperTopOffsetYMm')}
                 value={parameters.upperTopOffsetYMm}
                 minimum={-400}
                 maximum={400}
@@ -1440,6 +1479,7 @@ export default function App() {
           ) : null}
           <RangeField
             label="Columns (X)"
+            affected={affectedControls.has('supportCount')}
             value={parameters.supportCount}
             minimum={1}
             maximum={6}
@@ -1450,6 +1490,7 @@ export default function App() {
           />
           <RangeField
             label="Rows (Y)"
+            affected={affectedControls.has('supportRowCount')}
             value={parameters.supportRowCount}
             minimum={1}
             maximum={3}
@@ -1460,6 +1501,7 @@ export default function App() {
           />
           <RangeField
             label="Row spacing"
+            affected={affectedControls.has('rowSpacingMm')}
             value={parameters.rowSpacingMm}
             minimum={100}
             maximum={800}
@@ -1471,6 +1513,7 @@ export default function App() {
           />
           <RangeField
             label="Support depth share"
+            affected={affectedControls.has('supportDepthRatio')}
             value={parameters.supportDepthRatio}
             minimum={0.25}
             maximum={0.92}
@@ -1481,6 +1524,7 @@ export default function App() {
           />
           <RangeField
             label="Support height"
+            affected={affectedControls.has('supportHeightRatio')}
             value={parameters.supportHeightRatio}
             minimum={0.25}
             maximum={0.58}
@@ -1491,6 +1535,7 @@ export default function App() {
           />
           <RangeField
             label="Shoulder share"
+            affected={affectedControls.has('shoulderRatio')}
             value={parameters.shoulderRatio}
             minimum={0.2}
             maximum={0.8}
@@ -1504,7 +1549,7 @@ export default function App() {
             <small>Shared tops meet across each support row.</small>
           </div>
           <div
-            className="offset-scope-switch"
+            className={`offset-scope-switch ${affectedControls.has('shoulderMode') ? 'affects-selection' : 'other-controls'}`}
             aria-label="Shoulder topology"
           >
             <button
@@ -1528,6 +1573,7 @@ export default function App() {
           </div>
           <RangeField
             label="Neck width"
+            affected={affectedControls.has('neckWidthRatio')}
             value={parameters.neckWidthRatio}
             minimum={0.18}
             maximum={0.7}
@@ -1538,6 +1584,7 @@ export default function App() {
           />
           <RangeField
             label="Asymmetry"
+            affected={affectedControls.has('asymmetry')}
             value={parameters.asymmetry}
             minimum={0}
             maximum={0.5}
@@ -1609,6 +1656,9 @@ export default function App() {
                     ? 'Selected foot X'
                     : 'Foot offset X'
                 }
+                affected={activeSupportEditScope === 'selected'
+                  ? selectedPieceId.startsWith('support-')
+                  : affectedControls.has('footOffsetXMm')}
                 value={activeFootOffsetX}
                 minimum={-300}
                 maximum={300}
@@ -1628,6 +1678,9 @@ export default function App() {
                     ? 'Selected foot Y'
                     : 'Foot offset Y'
                 }
+                affected={activeSupportEditScope === 'selected'
+                  ? selectedPieceId.startsWith('support-')
+                  : affectedControls.has('footOffsetYMm')}
                 value={activeFootOffsetY}
                 minimum={-300}
                 maximum={300}
@@ -1645,6 +1698,7 @@ export default function App() {
                 <>
                   <RangeField
                     label="Selected position X"
+                    affected={true}
                     value={activeSupportPositionX}
                     minimum={-300}
                     maximum={300}
@@ -1658,6 +1712,7 @@ export default function App() {
                   />
                   <RangeField
                     label="Selected position Y"
+                    affected={true}
                     value={activeSupportPositionY}
                     minimum={-300}
                     maximum={300}
@@ -1679,6 +1734,7 @@ export default function App() {
                   </div>
                   <RangeField
                     label="Selected width scale"
+                    affected={true}
                     value={activeSupportWidthScale}
                     minimum={0.55}
                     maximum={1.45}
@@ -1691,6 +1747,7 @@ export default function App() {
                   />
                   <RangeField
                     label="Selected depth scale"
+                    affected={true}
                     value={activeSupportDepthScale}
                     minimum={0.55}
                     maximum={1.45}
@@ -1789,6 +1846,8 @@ export default function App() {
                     ? 'SOLID KERNEL WORKING'
                     : fuseRenderStatus === 'error'
                       ? 'FUSE PAUSED'
+                      : currentFuseRenderState?.status === 'ready' && currentFuseRenderState.dormantFuseGroupIds.length > 0
+                        ? 'FUSE SOURCES MISSING'
                       : 'MEASURED FUSED SOLID'}
                 </strong>
                 <span>
@@ -1805,7 +1864,7 @@ export default function App() {
                       ? 'The preview is temporarily showing separate source pieces.'
                       : currentFuseRenderState?.status === 'ready' &&
                           currentFuseRenderState.dormantFuseGroupIds.length > 0
-                        ? `${currentFuseRenderState.dormantFuseGroupIds.length} Fuse is dormant because a source is outside the visible grid.`
+                        ? `${currentFuseRenderState.dormantFuseGroupIds.length} Fuse is dormant because a source is removed or outside the visible grid.`
                         : 'Internal contact faces are removed and volume comes from the finished union.'}
                 </small>
               </div>
@@ -1986,8 +2045,9 @@ export default function App() {
         <span>
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
+        <span>{study.supportLayout?.totalSupports ?? 0} GRID LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.17 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.18 / LOCAL</span>
       </footer>
     </main>
   )

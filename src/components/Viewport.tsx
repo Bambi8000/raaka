@@ -158,6 +158,7 @@ export function Viewport({
   const selectedPieceIdRef = useRef(selectedPieceId)
   const fuseSelectionPieceIdsRef = useRef(new Set(fuseSelectionPieceIds))
   const studyRef = useRef(study)
+  const wasEmptyRef = useRef(study.pieces.length === 0)
   const modelScaleRef = useRef(modelScale)
   const uiThemeRef = useRef(uiTheme)
 
@@ -363,6 +364,13 @@ export function Viewport({
     }
     const keyLight = keyLightRef.current
     if (keyLight) fitDirectionalShadow(keyLight, study.bounds)
+    const restoredFromEmpty = wasEmptyRef.current && study.pieces.length > 0
+    wasEmptyRef.current = study.pieces.length === 0
+    const camera = cameraRef.current
+    const controls = controlsRef.current
+    if (restoredFromEmpty && camera && controls) {
+      fitPerspectiveCamera(camera, controls, study.bounds, false)
+    }
   }, [study])
 
   useEffect(() => {
@@ -430,6 +438,12 @@ export function Viewport({
   return (
     <div className="viewport-shell">
       <canvas ref={canvasRef} aria-label="Interactive 3D massing viewport" />
+      {study.pieces.length === 0 ? (
+        <div className="viewport-empty" role="status">
+          <strong>NO PARTS VISIBLE</strong>
+          <span>Restore a part from Objects, or use Undo.</span>
+        </div>
+      ) : null}
       <div className="viewport-controls" aria-label="Viewport controls">
         <button type="button" onClick={() => fitView(false)}>
           FIT

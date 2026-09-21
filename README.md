@@ -113,6 +113,18 @@ independent cantilever and overhang feedback. The viewport no longer applies
 distance fog when zoomed out. CI also avoids duplicate feature-branch push runs,
 so the pull-request scan cannot start after its source branch has been deleted.
 
+Version 0.1.18 adds **Remove leg** and **Remove mass**. Remove two middle legs
+from a six-leg grid to leave four without changing the grid spacing or upper
+mass. A leg includes its stem and shoulder. **Removed parts → Restore** and
+Undo bring it back with its authored settings; copies survive removal of their
+original. Saved projects, local recovery and scale presets preserve removals.
+Unfuse a joined part before removing its individual members.
+
+Yellow sliders marked **Selected** affect the current selection; grey sliders
+remain available for other parts. Highlighting follows linked bearings, selected
+overrides, live copies and Fuse sources. The selection label stays pinned while
+scrolling, and narrow windows expose the object list through **Objects**.
+
 ## Run locally
 
 Requirements:
@@ -155,7 +167,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.17 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.18 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

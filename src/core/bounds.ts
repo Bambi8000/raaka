@@ -65,7 +65,7 @@ export function scenePieceBounds(piece: ScenePiece): Bounds3 {
 
 export function sceneBounds(pieces: readonly ScenePiece[]): Bounds3 {
   if (pieces.length === 0) {
-    throw new RangeError('A mass study must contain at least one piece.')
+    return { min: [0, 0, 0], max: [0, 0, 0] }
   }
 
   const first = scenePieceBounds(pieces[0])

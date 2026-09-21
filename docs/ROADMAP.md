@@ -27,6 +27,8 @@ Default dark mode and the persistent Light/Dark switch are implemented in
 0.1.16.
 Linked bearing alignment, fog-free viewing and the feature-branch CI correction
 are implemented in 0.1.17.
+Individual part removal, restoration and selection-aware controls are
+implemented in 0.1.18.
 
 ## 0.1 — foundation
 
@@ -375,6 +377,43 @@ Detached study preserves the independent cantilever; zooming out remains crisp;
 and every feature change has one authoritative pull-request verification before
 the merged `main` run.
 
+## 0.1.18 — remove individual parts and clarify selection
+
+- [x] remove a complete selected leg while retaining its grid slot, seeded
+  neighbours and the upper footprint; support the six-to-four-leg example
+- [x] remove upper masses and copies while keeping original-source copies alive
+- [x] retain authored overrides and restore removed parts individually
+- [x] include removals in project version 13, recovery and undo/redo; migrate
+  older projects without changing geometry
+- [x] update physical readings and base-grid bearing feedback after removal
+- [x] handle an empty study at every model scale and keep Restore reachable
+- [x] reframe the first restored part after an empty study
+- [x] retain affected Fuses as dormant intent; expose inactive Fuses for Unfuse
+- [x] highlight sliders that affect the selected geometry, including linked
+  shoulders, live copies and selected overrides
+- [x] keep unrelated controls readable and editable in neutral grey
+- [x] retain selection context while scrolling and expose Objects/Restore on
+  compact screens
+
+Done when two middle legs can be removed from a three-column/two-row study
+without changing the surviving geometry, the result survives reopening and
+scale changes, and selecting an upper mass, stem or shoulder changes control
+emphasis to match its actual parameter dependencies.
+
+### Proposed interface follow-ups
+
+- [ ] editable numeric values beside sliders, with explicit mm and percentages
+- [ ] group each stem and shoulder under one expandable leg in the object list
+  while retaining separate face/part selection for Fuse
+- [ ] a Selected / Composition inspector split, with selected overrides first
+  and a clear link back to shared source controls for copies
+- [ ] optional affected-controls filter after controls are grouped coherently
+- [ ] front, side and top view buttons for precise placement
+- [ ] review bundle splitting as the solid tools and inspector grow
+
+These are proposals, not implemented controls. Prioritize numeric entry and the
+Selected / Composition split after visual feedback on 0.1.18.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -393,6 +432,7 @@ the merged `main` run.
 - [x] tapered upper mass with authored top proportions and drift
 - [x] linked/detached upper footprint with support-grid X/Y coupling only
 - [x] source-linked upper-mass and complete-support copies with X/Y/Z placement
+- [x] stable individual part removal and restoration without repacking the grid
 - [ ] stepped or multi-part asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata

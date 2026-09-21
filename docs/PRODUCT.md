@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.17, the
+This document describes the product direction. In version 0.1.18, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -184,6 +184,24 @@ switch. Theme remains a local workspace preference rather than project data.
 The 0.1.17 correction makes linked placement truthful: ordinary divided and
 shared shoulder bearings follow upper-mass X/Y placement, while Detached keeps
 the independent cantilever and its explicit overhang feedback.
+
+Version 0.1.18 adds individual part removal and selection-aware controls.
+Removing either a stem or shoulder omits the complete leg without closing its
+grid slot, moving other legs or resizing the upper mass. Upper masses and copies
+can also be removed. Removed parts keep their source parameters and can be
+restored from the object list or through Undo; source-linked copies survive
+removal of the original. Removal updates bounds, nominal volume, mass, contact
+and base-grid bearing analysis, and participates in project files and recovery.
+Fused objects must be unfused before removing individual parts; an affected
+saved Fuse stays dormant until all its sources return.
+
+Sliders that affect the selected piece receive a yellow edge, yellow track and
+SELECTED label. Other sliders stay grey, legible and editable. This follows the
+current geometry, including linked bearings, source copies and explicit leg
+overrides. For a Fuse, highlighting describes its live source pieces, not a
+guarantee that changing an internal source changes the outside union surface.
+A pinned selection label retains context while scrolling. Compact layouts
+provide the same object selection and Restore actions in an Objects disclosure.
 
 ### Planned high-rise articulation module
 

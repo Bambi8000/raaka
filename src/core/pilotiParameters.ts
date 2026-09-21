@@ -28,6 +28,7 @@ type NumericPilotiParameter = Exclude<
   | 'supportPositionOverrides'
   | 'partCopies'
   | 'fuseGroups'
+  | 'removedPartIds'
 >
 
 export const PILOTI_SUPPORT_SIZE_SCALE = {
@@ -194,6 +195,31 @@ export function isPilotiPartCopyId(value: string): boolean {
 
 export function isPilotiPartCopySourceId(value: string): boolean {
   return value === 'upper-mass' || isPilotiSupportId(value)
+}
+
+function readRemovedPartIds(
+  value: unknown,
+  copies: readonly PilotiPartCopy[],
+): readonly string[] {
+  if (!Array.isArray(value)) {
+    throw new ProjectValidationError('Parameter "removedPartIds" must be an array.')
+  }
+  const seen = new Set<string>()
+  return value.map((id: unknown) => {
+    if (
+      typeof id !== 'string' ||
+      (!isPilotiPartCopySourceId(id) && !copies.some((copy) => copy.id === id))
+    ) {
+      throw new ProjectValidationError(
+        'Every removed part must name an upper mass, support or existing copy.',
+      )
+    }
+    if (seen.has(id)) {
+      throw new ProjectValidationError(`Removed part "${id}" is duplicated.`)
+    }
+    seen.add(id)
+    return id
+  })
 }
 
 export function isPilotiFuseGroupId(value: string): boolean {
@@ -466,6 +492,7 @@ function normalizeSupportPositionOverrides(
 export function normalizePilotiParameters(
   input: PilotiParameters,
 ): PilotiParameters {
+  const partCopies = normalizePartCopies(input.partCopies)
   return {
     seed: normalizeValue(input.seed, 'seed'),
     heightMm: normalizeValue(input.heightMm, 'heightMm'),
@@ -520,8 +547,9 @@ export function normalizePilotiParameters(
     supportPositionOverrides: normalizeSupportPositionOverrides(
       input.supportPositionOverrides,
     ),
-    partCopies: normalizePartCopies(input.partCopies),
+    partCopies,
     fuseGroups: normalizeFuseGroups(input.fuseGroups),
+    removedPartIds: readRemovedPartIds(input.removedPartIds, partCopies),
   }
 }
 
@@ -918,6 +946,7 @@ export function parsePilotiParameters(
     throw new ProjectValidationError('Project parameters must be an object.')
   }
   const record = { ...missingDefaults, ...(input as Record<string, unknown>) }
+  const partCopies = readPartCopies(record)
   return {
     seed: readParameter(record, 'seed'),
     heightMm: readParameter(record, 'heightMm'),
@@ -945,7 +974,8 @@ export function parsePilotiParameters(
     footOffsetOverrides: readFootOffsetOverrides(record),
     supportSizeOverrides: readSupportSizeOverrides(record),
     supportPositionOverrides: readSupportPositionOverrides(record),
-    partCopies: readPartCopies(record),
+    partCopies,
     fuseGroups: readFuseGroups(record),
+    removedPartIds: readRemovedPartIds(record.removedPartIds, partCopies),
   }
 }

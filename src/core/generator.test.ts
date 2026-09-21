@@ -1142,6 +1142,7 @@ describe('generatePiloti', () => {
       supportPositionOverrides: [],
       partCopies: [],
       fuseGroups: [],
+      removedPartIds: [],
     })
     expectFiniteStudy({
       seed: MAX_SEED,
@@ -1198,6 +1199,7 @@ describe('generatePiloti', () => {
         },
       ],
       fuseGroups: [],
+      removedPartIds: [],
     })
   })
 

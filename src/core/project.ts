@@ -9,8 +9,8 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 18
-export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
+export const PILOTI_RECIPE_VERSION = 19
+export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v2'
 
 export interface RaakaProject {
   readonly format: typeof PROJECT_FORMAT
@@ -115,6 +115,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 15 &&
     input.recipeVersion !== 16 &&
     input.recipeVersion !== 17 &&
+    input.recipeVersion !== 18 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(

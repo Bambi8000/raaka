@@ -15,7 +15,7 @@ function relevant(parameters: PilotiParameters, id: string) {
 describe('selection-focused inspector controls', () => {
   it('excludes leg-only controls from the upper mass', () => {
     const controls = relevant(defaults, 'upper-mass')
-    for (const key of ['footOffsetXMm', 'footOffsetYMm', 'neckWidthRatio', 'shoulderMode', 'shoulderRatio', 'supportDepthRatio'] as const) {
+    for (const key of ['footOffsetXMm', 'footOffsetYMm', 'neckWidthRatio', 'footFlareRatio', 'bearingScaleRatio', 'shoulderMode', 'shoulderRatio', 'supportDepthRatio'] as const) {
       expect(controls.has(key), key).toBe(false)
     }
     for (const key of ['upperOffsetXMm', 'upperWidthRatio', 'upperFootprintMode', 'upperMassProfile', 'supportCount'] as const) {

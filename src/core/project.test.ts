@@ -12,6 +12,10 @@ import {
 } from './project'
 
 describe('RAAKA project files', () => {
+  it('uses the support-family recovery namespace', () => {
+    expect(RECOVERY_STORAGE_KEY).toBe('raaka.recovery.v2')
+  })
+
   it('round-trips every Piloti parameter and version field', () => {
     const project = createProject(
       {
@@ -22,6 +26,8 @@ describe('RAAKA project files', () => {
         supportRowCount: 3,
         rowSpacingMm: 480,
         supportDepthRatio: 0.46,
+        footFlareRatio: 1.42,
+        bearingScaleRatio: 0.83,
         shoulderMode: 'shared',
         upperFootprintMode: 'detached',
         upperOffsetXMm: 240,
@@ -531,6 +537,36 @@ describe('RAAKA project files', () => {
       )
     },
   )
+
+  it.each(['footFlareRatio', 'bearingScaleRatio'] as const)(
+    'requires %s in the current recipe version',
+    (supportParameter) => {
+      const current = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as { parameters: Record<string, unknown> }
+      delete current.parameters[supportParameter]
+
+      expect(() => parseProject(JSON.stringify(current))).toThrow(
+        `Parameter "${supportParameter}" must be a finite number.`,
+      )
+    },
+  )
+
+  it('does not migrate pre-release recipe version eighteen support profiles', () => {
+    const previous = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    previous.recipeVersion = 18
+    delete previous.parameters.footFlareRatio
+    delete previous.parameters.bearingScaleRatio
+
+    expect(() => parseProject(JSON.stringify(previous))).toThrow(
+      'Parameter "footFlareRatio" must be a finite number.',
+    )
+  })
 
   it.each([
     ['concreteDensityKgM3', 799],

@@ -1,6 +1,7 @@
 import { composePiloti } from './composePiloti'
 import { polygonFace, polygonIntersectionArea, polygonOverhang, regularPolygon } from './polygonLoft'
 import { mulberry32, randomBetween } from './random'
+import { polygonSupportFamily } from './supportFamily'
 import type { MassStudy, PilotiParameters, PolygonLoftPiece, ScenePiece, Vec2 } from './types'
 
 export function dividePolygonMass(parent: PolygonLoftPiece, parameters: PilotiParameters): readonly PolygonLoftPiece[] {
@@ -41,6 +42,7 @@ export function generateRadialPiloti(parameters: PilotiParameters): MassStudy {
   const shoulderHeight = supportHeight * parameters.shoulderRatio
   const stemHeight = supportHeight - shoulderHeight
   const upperHeight = parameters.heightMm - supportHeight
+  const family = polygonSupportFamily(parameters)
   const tapered = parameters.upperMassProfile === 'tapered'
   const upperMass: PolygonLoftPiece = {
     kind: 'polygon-loft', id: 'upper-mass', label: `${label} upper mass`, role: 'mass',
@@ -84,15 +86,15 @@ export function generateRadialPiloti(parameters: PilotiParameters): MassStudy {
     const stem: PolygonLoftPiece = {
       kind: 'polygon-loft', id: supportId, label: `${label} support ${index + 1}`, role: 'support',
       position: [x, y, stemHeight / 2], height: stemHeight, footprint,
-      bottomScale: parameters.neckWidthRatio * 1.18, topScale: parameters.neckWidthRatio,
+      bottomScale: family.footScale, topScale: family.neckScale,
       bottomOffset,
       topOffset: [0, 0],
     }
     const shoulder: PolygonLoftPiece = {
       ...stem, id: `shoulder-${code}-${index + 1}`, label: `${label} shoulder ${index + 1}`,
       position: [x, y, stemHeight + shoulderHeight / 2], height: shoulderHeight,
-      bottomScale: parameters.neckWidthRatio, bottomOffset: [0, 0],
-      topScale: parameters.shoulderMode === 'shared' ? 1 : 0.92,
+      bottomScale: family.neckScale, bottomOffset: [0, 0],
+      topScale: family.bearingScale,
       topOffset: [(linked ? centre[0] : 0) - jitter[0], (linked ? centre[1] : 0) - jitter[1]],
     }
     pieces.push(stem, shoulder)

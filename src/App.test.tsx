@@ -24,6 +24,9 @@ describe('wired selection inspector', () => {
     for (const text of ['aria-label="Foot offset X"', 'aria-label="Neck width"', 'SHOULDER TOPOLOGY', 'LEG EDIT SCOPE', 'SHARED LEAN']) {
       expect(html).not.toContain(text)
     }
+    expect(html).not.toContain('aria-label="Foot flare"')
+    expect(html).not.toContain('aria-label="Bearing scale"')
+    expect(html).not.toContain('SUPPORT FAMILY')
     expect(html).toContain('aria-label="Show all controls"')
     expect(html).toContain('UPPER MASS PROFILE')
     expect(html).toContain('RETAINED LIGHTWEIGHT CORE')
@@ -86,6 +89,9 @@ describe('wired selection inspector', () => {
     const html = renderInspector({ ...defaults, removedPartIds: ['upper-mass'] })
     expect(html).toContain('aria-label="Foot offset X"')
     expect(html).toContain('aria-label="Neck width"')
+    expect(html).toContain('aria-label="Foot flare"')
+    expect(html).not.toContain('aria-label="Bearing scale"')
+    expect(html).toContain('SUPPORT FAMILY')
     expect(html).toContain('LEG EDIT SCOPE')
     expect(html).not.toContain('UPPER MASS PROFILE')
     expect(html).not.toContain('UPPER MASS PLACEMENT')

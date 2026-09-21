@@ -6,7 +6,7 @@ describe('selection control influence', () => {
   it('distinguishes upper proportions from leg-only edits', () => {
     const controls = affectedPilotiControls({ ...DEFAULT_PILOTI_PARAMETERS, upperMassProfile: 'tapered' }, 'upper-mass')
     for (const key of ['heightMm', 'upperWidthRatio', 'upperTopWidthRatio', 'upperTopOffsetXMm', 'supportHeightRatio', 'supportCount'] as const) expect(controls.has(key)).toBe(true)
-    for (const key of ['neckWidthRatio', 'footOffsetXMm', 'shoulderRatio', 'supportDepthRatio'] as const) expect(controls.has(key)).toBe(false)
+    for (const key of ['neckWidthRatio', 'footFlareRatio', 'bearingScaleRatio', 'footOffsetXMm', 'shoulderRatio', 'supportDepthRatio'] as const) expect(controls.has(key)).toBe(false)
   })
 
   it('highlights linked placement for shoulders but not stems', () => {
@@ -15,7 +15,11 @@ describe('selection control influence', () => {
     expect(stem.has('upperOffsetXMm')).toBe(false)
     expect(stem.has('upperOffsetYMm')).toBe(false)
     expect(stem.has('footOffsetXMm')).toBe(true)
+    expect(stem.has('footFlareRatio')).toBe(true)
+    expect(stem.has('bearingScaleRatio')).toBe(false)
     expect(shoulder.has('footOffsetXMm')).toBe(false)
+    expect(shoulder.has('footFlareRatio')).toBe(false)
+    expect(shoulder.has('bearingScaleRatio')).toBe(true)
     expect(shoulder.has('upperOffsetXMm')).toBe(true)
     expect(shoulder.has('upperOffsetYMm')).toBe(true)
     const detached = affectedPilotiControls({ ...DEFAULT_PILOTI_PARAMETERS, upperFootprintMode: 'detached' }, 'shoulder-2')

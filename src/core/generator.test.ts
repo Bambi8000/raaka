@@ -5,7 +5,7 @@ import {
   MAX_SEED,
   RECIPES,
 } from './generator'
-import { scenePieceBounds } from './bounds'
+import { sceneBounds, scenePieceBounds } from './bounds'
 import { PILOTI_PARAMETER_RULES } from './pilotiParameters'
 import type { FrustumPiece, PilotiParameters } from './types'
 import { polygonLoftVertices } from './polygonLoft'
@@ -494,7 +494,7 @@ describe('generatePiloti', () => {
     expect(study.groundContactMm2).toBeGreaterThan(0)
   })
 
-  it('measures the complete seed-319 envelope including shifted supports', () => {
+  it('measures the complete envelope including a displaced support', () => {
     const study = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
       seed: 319,
@@ -502,9 +502,19 @@ describe('generatePiloti', () => {
       upperFootprintMode: 'detached',
       neckWidthRatio: 0.18,
       asymmetry: 0.5,
+      supportPositionOverrides: [{
+        supportId: 'support-1',
+        positionXMm: 300,
+        positionYMm: 0,
+      }],
     })
 
-    expect(study.widthMm).toBeCloseTo(1_434.230572, 5)
+    const expectedBounds = sceneBounds(study.pieces)
+    expect(study.bounds).toEqual(expectedBounds)
+    expect(study.widthMm).toBeCloseTo(
+      expectedBounds.max[0] - expectedBounds.min[0],
+      10,
+    )
     expect(study.widthMm).toBeGreaterThan(1_080)
     for (const piece of study.pieces) {
       const bounds = scenePieceBounds(piece)
@@ -1251,6 +1261,7 @@ describe('generatePiloti', () => {
       upperTopOffsetXMm: -400,
       upperTopOffsetYMm: -400,
       asymmetry: 0,
+      randomLocks: [],
       footOffsetXMm: -300,
       footOffsetYMm: -300,
       footOffsetOverrides: [],
@@ -1297,6 +1308,7 @@ describe('generatePiloti', () => {
       upperTopOffsetXMm: 400,
       upperTopOffsetYMm: 400,
       asymmetry: 0.5,
+      randomLocks: [],
       footOffsetXMm: 300,
       footOffsetYMm: 300,
       footOffsetOverrides: [

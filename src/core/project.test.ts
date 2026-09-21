@@ -12,8 +12,8 @@ import {
 } from './project'
 
 describe('RAAKA project files', () => {
-  it('uses the stepped-upper recovery namespace', () => {
-    expect(RECOVERY_STORAGE_KEY).toBe('raaka.recovery.v3')
+  it('uses the random-lock recovery namespace', () => {
+    expect(RECOVERY_STORAGE_KEY).toBe('raaka.recovery.v4')
   })
 
   it('round-trips every Piloti parameter and version field', () => {
@@ -45,6 +45,10 @@ describe('RAAKA project files', () => {
         upperTopDepthRatio: 0.83,
         upperTopOffsetXMm: 210,
         upperTopOffsetYMm: -130,
+        randomLocks: [
+          { targetId: 'upper-mass', seed: 44 },
+          { targetId: 'support-hex-3', seed: 912 },
+        ],
         retainedCoreMode: 'upper-mass',
         retainedCoreScale: 0.78,
         concreteDensityKgM3: 1_850,
@@ -422,6 +426,21 @@ describe('RAAKA project files', () => {
     expect(migrated.parameters.retainedCoreDensityKgM3).toBe(30)
   })
 
+  it('migrates recipe version seventeen to no random locks', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 17
+    delete legacy.parameters.randomLocks
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.parameters.randomLocks).toEqual([])
+  })
+
   it('requires an override list in the current recipe version', () => {
     const current = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -578,6 +597,17 @@ describe('RAAKA project files', () => {
     },
   )
 
+  it('requires random locks in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.randomLocks
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "randomLocks" must be an array.',
+    )
+  })
+
   it('does not migrate pre-release recipe version eighteen support profiles', () => {
     const previous = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -609,6 +639,36 @@ describe('RAAKA project files', () => {
     expect(() => parseProject(JSON.stringify(previous))).toThrow(
       'Parameter "upperStepScaleRatio" must be a finite number.',
     )
+  })
+
+  it('does not migrate pre-release recipe version twenty random locks', () => {
+    const previous = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    previous.recipeVersion = 20
+    delete previous.parameters.randomLocks
+
+    expect(() => parseProject(JSON.stringify(previous))).toThrow(
+      'Parameter "randomLocks" must be an array.',
+    )
+  })
+
+  it.each([
+    { randomLocks: [{ targetId: 'upper-mass', seed: -1 }] },
+    { randomLocks: [{ targetId: 'upper-mass', seed: 1.5 }] },
+    { randomLocks: [{ targetId: 'upper-mass', seed: 1 }, { targetId: 'upper-mass', seed: 2 }] },
+    { randomLocks: [{ targetId: 'upper-mass-copy-1', seed: 1 }] },
+    { randomLocks: [{ targetId: 'support-hex-7', seed: 1 }] },
+  ])('rejects invalid random locks $randomLocks', ({ randomLocks }) => {
+    const current = createProject({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      randomLocks,
+    })
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow()
   })
 
   it.each([

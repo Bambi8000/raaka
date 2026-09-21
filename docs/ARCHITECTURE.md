@@ -118,6 +118,25 @@ top-minus-bottom drift rather than treating every bottom offset as zero. Large
 steps are allowed as authored form, but the existing Manifold boundary reports
 multiple components and Fuse/STL refuse disconnected results.
 
+Version 0.1.31 replaces Piloti's call-order random consumption with named
+feature streams. `featureRandom(seed, featureId)` hashes the UTF-16 feature ID
+with FNV-1a, avalanches it together with the unsigned project seed, then gives
+the result to the existing Mulberry32 generator. The pinned stream values are a
+compatibility boundary: adding or evaluating an unrelated feature does not
+advance another stream. Rectangle uses separate upper-mass, shared-layout and
+per-support keys; Hexagon and Octagon use shape-qualified upper and support
+keys. Second- and third-row supports therefore retain their random choice when
+the column count changes.
+
+`randomLocks.ts` maps rendered pieces, mass divisions, retained core and copies
+back to either `upper-mass` or one stable support ID. A lock stores that target's
+seed, not frozen geometry. Generation resolves the lock seed before opening the
+named stream, so authored dimensions and linked dependencies still apply. A
+support lock freezes its own layout/jitter samples; an unlocked linked upper
+mass may still move the support's bearing target. Copies inherit their source
+lock and Fuses remain immutable until opened. Inactive shapes, removed parts
+and grid slots keep their lock records.
+
 Version 0.1.4 stores selected-leg overrides as a deterministic array keyed by
 the current semantic support ID. An override contains absolute design-mm X/Y
 values and replaces, rather than adds to, the shared offset. Both a stem and
@@ -420,14 +439,14 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 20 stores every
+version and a separate recipe version. Piloti recipe version 21 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
 override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
 division, mass-part overrides, plan shape, polygon division, radial spread,
 foot offset space, retained-core mode and retained-core scale, concrete density
-and retained-core density, foot flare, bearing scale and upper-level scale/X/Y
-step, plus one of the supported `modelScale` presets.
+and retained-core density, foot flare, bearing scale, upper-level scale/X/Y
+step and source random locks, plus one of the supported `modelScale` presets.
 Recipe version 19 deliberately requires both support-family fields. There is no
 version 18 fallback because RAAKA has no user project archive during this
 pre-release phase; an incomplete older project file is rejected before state
@@ -437,6 +456,11 @@ There is likewise no version 19 fallback; the owner confirmed that no existing
 project archive needs preservation during this pre-release phase. Versions
 1–17 receive latent neutral-compatible defaults only as part of their existing
 legacy migration chain.
+Recipe version 21 deliberately requires the random-lock array. There is no
+version 20 fallback because the keyed streams intentionally replace the prior
+call-order geometry and the owner confirmed that no project archive requires a
+compatibility bridge. Versions 1–17 receive an empty latent lock list through
+their existing migration path.
 Recipe versions 1–17 receive the former 2,400 kg/m³ concrete and 30 kg/m³ core
 defaults, preserving geometry and previous mass readings. Recipe versions 1–16 receive disabled retained
 core intent and its latent 72% default, preserving their exact solid geometry.
@@ -462,11 +486,11 @@ scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.
 
-The browser keeps a recovery copy under `raaka.recovery.v3` after every edit,
+The browser keeps a recovery copy under `raaka.recovery.v4` after every edit,
 undo and redo. Recovery is not a substitute for a project file: it belongs to
 one browser profile, while Save creates the portable artifact the owner can
-archive. Version 0.1.30 starts the new recovery namespace instead of reading the
-pre-level `v2` copy. Opening a project starts a new history; invalid
+archive. Version 0.1.31 starts the new recovery namespace instead of reading the
+pre-keyed-random `v3` copy. Opening a project starts a new history; invalid
 input preserves the current study and reports the reason.
 
 Undo/redo stores immutable Piloti study snapshots—master parameters plus model

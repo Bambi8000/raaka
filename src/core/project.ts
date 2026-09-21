@@ -9,8 +9,8 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 20
-export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v3'
+export const PILOTI_RECIPE_VERSION = 21
+export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v4'
 
 export interface RaakaProject {
   readonly format: typeof PROJECT_FORMAT
@@ -52,6 +52,7 @@ export function createProject(
       ...parameters,
       removedPartIds: [...parameters.removedPartIds],
       massPartOverrides: parameters.massPartOverrides.map((override) => ({ ...override })),
+      randomLocks: parameters.randomLocks.map((lock) => ({ ...lock })),
       footOffsetOverrides: parameters.footOffsetOverrides.map((override) => ({
         ...override,
       })),
@@ -117,6 +118,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 17 &&
     input.recipeVersion !== 18 &&
     input.recipeVersion !== 19 &&
+    input.recipeVersion !== 20 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -261,6 +263,7 @@ export function parseProject(serialized: string): RaakaProject {
         upperStepScaleRatio: 0.86,
         upperStepOffsetXMm: 90,
         upperStepOffsetYMm: 0,
+        randomLocks: [],
       } : {}),
     }),
     modelScale,

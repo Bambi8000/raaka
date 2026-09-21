@@ -32,6 +32,8 @@ describe('wired selection inspector', () => {
     expect(html).toContain('UPPER MASS PROFILE')
     expect(html).toContain('RETAINED LIGHTWEIGHT CORE')
     expect(html).toContain('UPPER CORE')
+    expect(html).toContain('LOCK VARIATION')
+    expect(html).toContain('Follows the global seed')
     expect(html).toContain('MODEL SCALE')
     expect(html).toContain('MOVE XY')
     expect(html).toContain('UPPER MASS · SHARED XY')
@@ -50,6 +52,19 @@ describe('wired selection inspector', () => {
     expect(html).toContain('aria-label="Retained core density"')
     expect(html).toContain('value="2400"')
     expect(html).toContain('value="30"')
+  })
+
+  it('shows a saved seed lock on the selected upper-mass source and object list', () => {
+    const html = renderInspector({
+      ...defaults,
+      seed: 920,
+      randomLocks: [{ targetId: 'upper-mass', seed: 318 }],
+    })
+
+    expect(html).toContain('UNLOCK VARIATION')
+    expect(html).toContain('Locked to seed 318')
+    expect(html).toContain('LOCKED · BOX')
+    expect(html).toContain('PILOTI / 0920')
   })
 
   it('shows an explicit warning when the mass projection leaves the support polygon', () => {

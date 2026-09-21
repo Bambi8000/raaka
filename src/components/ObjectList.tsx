@@ -1,4 +1,5 @@
 import { partInGrid, partLabel } from '../core/partSelection'
+import { randomLockTargetForPiece } from '../core/randomLocks'
 import type { MassStudy, PilotiParameters } from '../core/types'
 
 interface ObjectListProps {
@@ -15,6 +16,13 @@ export function ObjectList({
   study, parameters, selectedPieceId, fuseSelectionPieceIds, isResolving, onSelect, onRestore,
 }: ObjectListProps) {
   const visiblePieces = [...study.pieces, ...study.retainedCore.pieces]
+  const lockedTargets = new Set(
+    parameters.randomLocks.map((lock) => lock.targetId),
+  )
+  const isVariationLocked = (pieceId: string) => {
+    const targetId = randomLockTargetForPiece(parameters, pieceId)
+    return targetId !== undefined && lockedTargets.has(targetId)
+  }
   return (
     <section className="panel-section object-section">
       <div className="section-heading"><span>02</span><h2>Objects</h2></div>
@@ -35,7 +43,7 @@ export function ObjectList({
           >
             <span className={`role-dot role-dot--${piece.role}`} />
             <span>{piece.label}</span>
-            <small>{piece.kind.toUpperCase()}</small>
+            <small>{isVariationLocked(piece.id) ? 'LOCKED · ' : ''}{piece.kind.toUpperCase()}</small>
           </button>
         ))}
       </div>
@@ -58,7 +66,11 @@ export function ObjectList({
           <p>Other part positions and source shapes are retained.</p>
           {parameters.removedPartIds.map((partId) => (
             <div key={partId}>
-              <span>{partLabel(partId)}{partInGrid(partId, parameters) ? '' : ' · inactive layout'}</span>
+              <span>
+                {partLabel(partId)}
+                {partInGrid(partId, parameters) ? '' : ' · inactive layout'}
+                {isVariationLocked(partId) ? ' · locked variation' : ''}
+              </span>
               <button type="button" onClick={() => onRestore(partId)} aria-label={`Restore ${partLabel(partId)}`}>
                 RESTORE
               </button>

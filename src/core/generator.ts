@@ -1,4 +1,5 @@
-import { mulberry32, randomBetween } from './random'
+import { randomBetween } from './random'
+import { featureRandomForTarget } from './randomLocks'
 import {
   DEFAULT_CONCRETE_DENSITY_KG_M3,
   DEFAULT_RETAINED_CORE_DENSITY_KG_M3,
@@ -96,6 +97,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   upperTopOffsetXMm: 120,
   upperTopOffsetYMm: 0,
   asymmetry: 0.12,
+  randomLocks: [],
   footOffsetXMm: 0,
   footOffsetYMm: 0,
   footOffsetSpace: 'global',
@@ -114,7 +116,6 @@ function nonNegativeMeasurement(value: number): number {
 export function generatePiloti(input: PilotiParameters): MassStudy {
   const parameters = normalizePilotiParameters(input)
   if (parameters.planShape !== 'rectangle') return generateRadialPiloti(parameters)
-  const random = mulberry32(parameters.seed)
   const height = parameters.heightMm
   const supportHeight = height * parameters.supportHeightRatio
   const shoulderHeight = supportHeight * parameters.shoulderRatio
@@ -165,10 +166,13 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     readonly width: number
     readonly depth: number
   }[] = []
-  const supportShift =
-    randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.45
+  const upperRandom = featureRandomForTarget(
+    parameters,
+    'upper-mass',
+    'piloti/rectangle/upper-mass',
+  )
   const massShift =
-    randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.65
+    randomBetween(upperRandom, -1, 1) * parameters.asymmetry * bayWidth * 0.65
   const upperCentreX = massShift + parameters.upperOffsetXMm
   const upperCentreY = parameters.upperOffsetYMm
 
@@ -185,6 +189,19 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
           ? String(columnNumber)
           : `r${rowNumber}-c${columnNumber}`
       const supportId = `support-${supportSuffix}`
+      const supportLayoutRandom = featureRandomForTarget(
+        parameters,
+        supportId,
+        'piloti/rectangle/support-layout',
+      )
+      const supportRandom = featureRandomForTarget(
+        parameters,
+        supportId,
+        `piloti/rectangle/${supportId}`,
+      )
+      const supportShift =
+        randomBetween(supportLayoutRandom, -1, 1) *
+        parameters.asymmetry * bayWidth * 0.45
       const footOffsetOverride = footOffsetOverrides.get(supportId)
       const supportSizeOverride = supportSizeOverrides.get(supportId)
       const supportPositionOverride = supportPositionOverrides.get(supportId)
@@ -199,7 +216,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       const supportCentreX = bayCentre + positionX
       const supportCentreY = rowCentre + positionY
       const individualShift =
-        randomBetween(random, -1, 1) * parameters.asymmetry * bayWidth * 0.16
+        randomBetween(supportRandom, -1, 1) *
+        parameters.asymmetry * bayWidth * 0.16
       const family = rectangularSupportFamily(
         parameters,
         bayWidth,

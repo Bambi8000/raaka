@@ -46,6 +46,8 @@ Mass-centre projection and static support-polygon feedback are implemented in
 Editable concrete and retained-core densities are implemented in 0.1.28.
 The reusable foot/neck/shoulder/bearing support family is implemented in 0.1.29.
 Two-, three- and four-level stepped upper masses are implemented in 0.1.30.
+Named feature streams, durable random targets and source locks are implemented
+in 0.1.31.
 
 ## 0.1 — foundation
 
@@ -87,6 +89,8 @@ Version 0.1.29 adds independent foot flare and bearing scale to one shared
 rectangular/polygon support profile.
 Version 0.1.30 adds selectable Z levels with cumulative scale/offset steps and
 independent per-level tops.
+Version 0.1.31 makes seed variation order-independent and lockable per upper
+mass or support source.
 
 ## 0.1.1 — correct the baseline
 
@@ -768,6 +772,35 @@ Automated UI and geometry coverage includes rectangle and polygon level counts,
 cumulative scale and X/Y steps, selected-level taper, removal, copying, Fuse
 and model scaling. Owner visual inspection follows on the published build.
 
+## 0.1.31 — stable random streams and source locks
+
+- [x] derive every Piloti random choice from a named feature stream instead of
+  one call-order sequence
+- [x] keep second- and third-row support variation stable when columns are
+  added
+- [x] retain rectangle, hexagon and octagon source IDs across layout switches
+- [x] lock the selected upper-mass family or complete support to its current
+  seed while unlocked sources follow the global seed
+- [x] map divided masses, retained core and source-linked copies to their
+  semantic lock source
+- [x] keep authored dimensions, local overrides and linked geometry live under
+  a variation lock
+- [x] mark locked visible and removed sources in the object list
+- [x] preserve locks through inactive layouts, removal, project files,
+  recovery and Undo/Redo
+- [x] require Unfuse before changing an individual source lock
+- [x] save locks in Piloti recipe version 21 without a pre-release version 20
+  migration; start `raaka.recovery.v4`
+
+Done when adding or reordering random consumers cannot reroll an existing
+semantic feature, and the owner can preserve one source's generated character
+while continuing to explore the rest of the composition by seed.
+
+Verification: 483 tests plus lint, strict TypeScript and production build.
+Automated UI and geometry coverage includes pinned streams, row/column identity,
+rectangle and polygon locks, copy/source mapping, persistence and Undo/Redo.
+Owner visual inspection follows on the published build.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -788,7 +821,7 @@ and model scaling. Owner visual inspection follows on the published build.
 - [x] source-linked upper-mass and complete-support copies with X/Y/Z placement
 - [x] stable individual part removal and restoration without repacking the grid
 - [x] stepped or multi-part asymmetric upper masses
-- [ ] stable per-feature random streams, durable IDs and lock controls
+- [x] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [x] focused solid-kernel spike before committing to a boolean dependency
 - [x] union selected preview pieces and resolve their internal contact faces
@@ -897,7 +930,7 @@ drawings.
 | Place, align, repeat, mirror, group | Selected semantic parts can be translated and repeated; align, mirror and grouping remain planned | Shared composition tools |
 | Union, subtract, plane-cut, chamfer | Selected-part Union/Fuse and bounded retained-core subtraction are implemented; general subtract, plane-cut and chamfer remain planned | Finished solids and voids |
 | Step, stagger, lean and vary | Shared and selected Piloti foot lean plus seeded variation implemented | Support grids and Ziggurat |
-| Lock and branch | Planned; requires persistence and stable identity | Repeatable variants |
+| Lock and branch | Seed-variation source locks implemented; study branching planned | Repeatable variants |
 
 Build these only as needed by a concrete recipe or output. Preserve a
 constrained massing workflow rather than accumulating general modelling tools.

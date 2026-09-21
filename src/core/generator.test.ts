@@ -169,6 +169,90 @@ describe('generatePiloti', () => {
     expect(expandedStem.topSize).toEqual(baseStem.topSize)
   })
 
+  it.each(['divided', 'shared'] as const)(
+    'keeps %s linked shoulder bearings inside an offset upper mass',
+    (shoulderMode) => {
+      const centred = generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        seed: 318,
+        upperFootprintMode: 'linked',
+        shoulderMode,
+        upperWidthRatio: 0.71,
+        upperDepthRatio: 0.27,
+      })
+      const shifted = generatePiloti({
+        ...DEFAULT_PILOTI_PARAMETERS,
+        seed: 318,
+        upperFootprintMode: 'linked',
+        shoulderMode,
+        upperWidthRatio: 0.71,
+        upperDepthRatio: 0.27,
+        upperOffsetXMm: 60,
+        upperOffsetYMm: -90,
+        upperMassProfile: 'tapered',
+        upperTopWidthRatio: 0.53,
+        upperTopDepthRatio: 0.75,
+      })
+      const mass = shifted.pieces.find(
+        (piece): piece is FrustumPiece =>
+          piece.id === 'upper-mass' && piece.kind === 'frustum',
+      )
+
+      expect(mass).toBeDefined()
+      if (!mass) return
+      const massMinX = mass.position[0] - mass.bottomSize[0] / 2
+      const massMaxX = mass.position[0] + mass.bottomSize[0] / 2
+      const massMinY = mass.position[1] - mass.bottomSize[1] / 2
+      const massMaxY = mass.position[1] + mass.bottomSize[1] / 2
+
+      for (let column = 1; column <= 3; column += 1) {
+        const originalStem = centred.pieces.find(
+          (piece) => piece.id === `support-${column}`,
+        )
+        const shiftedStem = shifted.pieces.find(
+          (piece) => piece.id === `support-${column}`,
+        )
+        const originalShoulder = centred.pieces.find(
+          (piece): piece is FrustumPiece => piece.id === `shoulder-${column}`,
+        )
+        const shoulder = shifted.pieces.find(
+          (piece): piece is FrustumPiece => piece.id === `shoulder-${column}`,
+        )
+
+        expect(shiftedStem).toEqual(originalStem)
+        expect(originalShoulder).toBeDefined()
+        expect(shoulder).toBeDefined()
+        if (!originalShoulder || !shoulder) continue
+        expect(shoulder.position).toEqual(originalShoulder.position)
+        expect(shoulder.bottomOffset).toEqual(originalShoulder.bottomOffset)
+        expect(
+          shoulder.topOffset[0] - originalShoulder.topOffset[0],
+        ).toBeCloseTo(60, 10)
+        expect(
+          shoulder.topOffset[1] - originalShoulder.topOffset[1],
+        ).toBeCloseTo(-90, 10)
+
+        const centreX = shoulder.position[0] + shoulder.topOffset[0]
+        const centreY = shoulder.position[1] + shoulder.topOffset[1]
+        expect(centreX - shoulder.topSize[0] / 2).toBeGreaterThanOrEqual(
+          massMinX - 1e-9,
+        )
+        expect(centreX + shoulder.topSize[0] / 2).toBeLessThanOrEqual(
+          massMaxX + 1e-9,
+        )
+        expect(centreY - shoulder.topSize[1] / 2).toBeGreaterThanOrEqual(
+          massMinY - 1e-9,
+        )
+        expect(centreY + shoulder.topSize[1] / 2).toBeLessThanOrEqual(
+          massMaxY + 1e-9,
+        )
+      }
+      expect(shifted.supportLayout?.bearingOverhangMm).toBeCloseTo(0, 10)
+      expect(shifted.supportLayout?.sideBearingOverhangMm).toBeCloseTo(0, 10)
+      expect(shifted.supportLayout?.adjacentColumnOverlapMm).toBe(0)
+    },
+  )
+
   it('keeps the upper X/Y footprint independent when detached', () => {
     const base = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
@@ -740,16 +824,18 @@ describe('generatePiloti', () => {
     expect(shared.groundContactMm2).toBe(divided.groundContactMm2)
   })
 
-  it('moves the upper mass independently from divided supports', () => {
+  it('moves the detached upper mass independently from divided supports', () => {
     const centred = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
       seed: 319,
       shoulderMode: 'divided',
+      upperFootprintMode: 'detached',
     })
     const shifted = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
       seed: 319,
       shoulderMode: 'divided',
+      upperFootprintMode: 'detached',
       upperOffsetXMm: 180,
       upperOffsetYMm: -120,
     })

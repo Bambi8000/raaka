@@ -25,6 +25,8 @@ The Manifold solid-kernel gate is complete in 0.1.14.
 User-facing multi-selection, Fuse and Unfuse are implemented in 0.1.15.
 Default dark mode and the persistent Light/Dark switch are implemented in
 0.1.16.
+Linked bearing alignment, fog-free viewing and the feature-branch CI correction
+are implemented in 0.1.17.
 
 ## 0.1 — foundation
 
@@ -53,6 +55,8 @@ Version 0.1.13 adds source-linked semantic part copies and X/Y/Z placement.
 Version 0.1.14 validates the solid-kernel boundary before user-facing Fuse.
 Version 0.1.15 adds saved, measured Fuse groups and reversible Unfuse.
 Version 0.1.16 adds a default dark workspace and persistent Light/Dark switch.
+Version 0.1.17 corrects linked bearing placement, removes distance fog and
+serialises feature-branch verification through pull requests.
 
 ## 0.1.1 — correct the baseline
 
@@ -353,6 +357,23 @@ the sources, and project/history/model-scale round trips preserve the intent.
 Done when a new browser profile opens in Dark mode, either palette remains
 legible across the application and viewport, reloading restores the chosen
 mode, and switching themes never marks or mutates the current study.
+
+## 0.1.17 — linked-bearing and workspace clarity corrections
+
+- [x] align ordinary divided and shared shoulder bearing tops to linked upper
+  X/Y placement while keeping stems and feet fixed
+- [x] retain independent mass placement and overhang feedback in Detached mode
+- [x] preserve selected-support size and placement overrides as local authored
+  exceptions that may still overhang
+- [x] remove viewport distance fog so zoomed-out geometry and grids stay crisp
+- [x] run feature verification only through pull requests and reserve push
+  verification for `main`, eliminating delayed scans of deleted PR branches
+
+Done when the linked screenshot case with a tapered mass, X/Y placement and
+unaltered supports reports zero ordinary bearing overhang, while the equivalent
+Detached study preserves the independent cantilever; zooming out remains crisp;
+and every feature change has one authoritative pull-request verification before
+the merged `main` run.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

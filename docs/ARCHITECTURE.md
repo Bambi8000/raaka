@@ -19,6 +19,14 @@ data and security must be designed as a separate change.
 - ESLint with type-aware async rules
 - pnpm with a committed lockfile
 
+The Verify workflow runs quality and secret-scanning jobs for pull requests and
+for pushes to `main`. It deliberately does not run a second push workflow for a
+feature branch: that duplicate previously let a green push check appear before
+the actual pull-request check, after which squash-merge branch deletion could
+leave the delayed scanner without its source commit. Pull requests now have one
+authoritative pre-merge run; the merged commit receives the separate `main`
+run.
+
 Manifold 3.5.3 is the accepted solid kernel for boolean geometry,
 cross-sections and watertight mesh output. Version 0.1.14 adds it as a pinned
 dependency after a focused gate covering deterministic booleans, planar face
@@ -154,14 +162,19 @@ shift is resolved. The seeded shift and authored placement remain independent:
 changing either offset must not consume randomness or alter support identities,
 dimensions or ground footprints.
 
-Divided shoulders remain unchanged when the mass moves, exposing the resulting
-bearing overhang. In shared mode each shoulder top continues to target its
-corresponding upper-mass bay centre in X, so an authored X offset changes only
-the shoulder's top offset while the neck and stem remain fixed. This produces a
-continuous sloping row without pretending that the preview pieces are unioned.
-An authored Y offset moves only the mass; actual shoulder rectangles and the
-translated mass bounds drive the existing Y-bearing feedback. The later model
-scale stage scales the complete resulting geometry and all distance feedback.
+In linked mode every ordinary divided or shared shoulder top targets its
+corresponding upper-mass bay centre in X and row centre in Y. Authored upper
+X/Y placement therefore changes only the shoulder's top offset while its neck,
+stem and foot remain fixed. This produces a sloping transition and keeps the
+bearing rectangle inside the linked lower mass face without pretending that
+the preview pieces are unioned. A selected support's size or placement remains
+authoritative and may still produce explicit overhang.
+
+Detached mode preserves the earlier independent cantilever: divided shoulders
+remain unchanged, while shared shoulders retain their continuous X alignment;
+an authored Y offset moves only the mass. Actual shoulder rectangles and the
+translated mass bounds drive bearing feedback. The later model-scale stage
+scales the complete resulting geometry and all distance feedback.
 
 ### Upper-mass profile
 
@@ -195,6 +208,13 @@ produce bearing feedback. Both modes preserve support and upper Z dimensions,
 seed order, placement offsets and the tapered top relationship. Selected-leg
 size or placement overrides remain local and may still produce explicit
 overhang instead of silently resizing the full composition.
+
+Version 0.1.17 closes a mismatch between the stored relationship and its
+preview: linked upper X/Y placement now shifts ordinary shoulder bearing tops
+to the corresponding mass bays and rows. Stems and feet remain fixed, so the
+authored cantilever is expressed by planar shoulder lean rather than an
+accidental bearing overhang. Detached remains the explicit way to move the
+mass independently.
 
 ### Semantic part copies
 
@@ -326,7 +346,8 @@ the viewing direction but automatically reframes the new physical bounds so a
 quarter-scale model remains inspectable. **Fit** performs the same directional
 reframe on demand; **Home** restores the authored axonometric direction. The
 shadow camera includes the sculpture and a padded ground receiver at every
-supported scale and height.
+supported scale and height. Version 0.1.17 removes distance fog entirely, so
+zooming out never fades geometry or the drawing-like grid into artificial haze.
 
 ## Selection colours
 

@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.16, the
+This document describes the product direction. In version 0.1.17, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -125,8 +125,10 @@ a pair, as a row or as a grid.
   resize the supports below.
 - The upper mass and support grid are **linked in X/Y by default**. Column count
   extends the composition by complete support bays; row count and row spacing
-  extend its depth. Detaching the footprint restores independent upper X/Y
-  dimensions. Neither mode couples Z, and an individual support override stays
+  extend its depth. Authored upper X/Y placement moves ordinary shoulder
+  bearing tops with the mass while their stems and feet stay fixed. Detaching
+  the footprint restores independent upper X/Y dimensions and bearing
+  placement. Neither mode couples Z, and an individual support override stays
   local instead of resizing the complete upper mass.
 - A selected upper mass can be duplicated as one semantic mass, while a
   selected stem or shoulder duplicates its complete support pair. Copies retain
@@ -179,6 +181,9 @@ contact. Unfuse restores the source pieces. Disconnected inputs are refused,
 while ordinary unfused copies retain the explicit nominal-volume warning.
 Version 0.1.16 adds the default dark interface and a persistent Light/Dark mode
 switch. Theme remains a local workspace preference rather than project data.
+The 0.1.17 correction makes linked placement truthful: ordinary divided and
+shared shoulder bearings follow upper-mass X/Y placement, while Detached keeps
+the independent cantilever and its explicit overhang feedback.
 
 ### Planned high-rise articulation module
 

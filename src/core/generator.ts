@@ -15,6 +15,7 @@ import type {
 } from './types'
 
 const LINKED_FOOTPRINT_REFERENCE_COLUMNS = 3
+const MEASUREMENT_EPSILON_MM = 1e-9
 export { MAX_SEED } from './pilotiParameters'
 
 export const RECIPES: readonly RecipeSummary[] = [
@@ -103,6 +104,10 @@ function copyPiece(
       piece.position[2] + copy.offsetZMm,
     ],
   }
+}
+
+function nonNegativeMeasurement(value: number): number {
+  return value > MEASUREMENT_EPSILON_MM ? value : 0
 }
 
 export function generatePiloti(input: PilotiParameters): MassStudy {
@@ -202,12 +207,17 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       const shoulderTopWidth =
         bayWidth * (parameters.shoulderMode === 'shared' ? 1 : 0.92) * widthScale
       const shoulderTopDepth = shoulderDepth * depthScale
-      const shoulderPositionX = supportCentreX + individualShift * 0.8
+      const shoulderBasePositionX = bayCentre + individualShift * 0.8
+      const shoulderPositionX = shoulderBasePositionX + positionX
       const shoulderTopOffsetX =
+        parameters.upperFootprintMode === 'linked' ||
         parameters.shoulderMode === 'shared'
-          ? massBayCentre + positionX - shoulderPositionX
+          ? massBayCentre - shoulderBasePositionX
           : -individualShift * 0.45
+      const shoulderTopOffsetY =
+        parameters.upperFootprintMode === 'linked' ? upperCentreY : 0
       const shoulderCentreX = shoulderPositionX + shoulderTopOffsetX
+      const shoulderCentreY = supportCentreY + shoulderTopOffsetY
 
       pieces.push({
         kind: 'frustum',
@@ -243,13 +253,13 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         bottomSize: [neckWidth, neckDepth],
         topSize: [shoulderTopWidth, shoulderTopDepth],
         bottomOffset: [0, 0],
-        topOffset: [shoulderTopOffsetX, 0],
+        topOffset: [shoulderTopOffsetX, shoulderTopOffsetY],
       })
       shoulderBearings.push({
         row: rowNumber,
         column: columnNumber,
         centreX: shoulderCentreX,
-        centreY: supportCentreY,
+        centreY: shoulderCentreY,
         width: shoulderTopWidth,
         depth: shoulderTopDepth,
       })
@@ -346,8 +356,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     secondCentre: number,
     secondSize: number,
   ) =>
-    Math.max(
-      0,
+    nonNegativeMeasurement(
       Math.min(firstCentre + firstSize / 2, secondCentre + secondSize / 2) -
         Math.max(firstCentre - firstSize / 2, secondCentre - secondSize / 2),
     )
@@ -357,8 +366,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     secondCentre: number,
     secondSize: number,
   ) =>
-    Math.max(
-      0,
+    nonNegativeMeasurement(
       Math.abs(secondCentre - firstCentre) - (firstSize + secondSize) / 2,
     )
   let adjacentRowOverlapMm = 0
@@ -436,23 +444,27 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   const massMaxX = upperCentreX + upperWidth / 2
   const massMinY = upperCentreY - upperDepth / 2
   const massMaxY = upperCentreY + upperDepth / 2
-  const bearingOverhangMm = shoulderBearings.reduce(
-    (maximum, bearing) =>
-      Math.max(
-        maximum,
-        massMinY - (bearing.centreY - bearing.depth / 2),
-        bearing.centreY + bearing.depth / 2 - massMaxY,
-      ),
-    0,
+  const bearingOverhangMm = nonNegativeMeasurement(
+    shoulderBearings.reduce(
+      (maximum, bearing) =>
+        Math.max(
+          maximum,
+          massMinY - (bearing.centreY - bearing.depth / 2),
+          bearing.centreY + bearing.depth / 2 - massMaxY,
+        ),
+      0,
+    ),
   )
-  const sideBearingOverhangMm = shoulderBearings.reduce(
-    (maximum, bearing) =>
-      Math.max(
-        maximum,
-        massMinX - (bearing.centreX - bearing.width / 2),
-        bearing.centreX + bearing.width / 2 - massMaxX,
-      ),
-    0,
+  const sideBearingOverhangMm = nonNegativeMeasurement(
+    shoulderBearings.reduce(
+      (maximum, bearing) =>
+        Math.max(
+          maximum,
+          massMinX - (bearing.centreX - bearing.width / 2),
+          bearing.centreX + bearing.width / 2 - massMaxX,
+        ),
+      0,
+    ),
   )
 
   return {

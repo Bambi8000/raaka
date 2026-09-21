@@ -1276,7 +1276,10 @@ export default function App() {
           </div>
           <div className="control-subsection">
             <span>UPPER / SUPPORT FOOTPRINT</span>
-            <small>Linked couples X/Y to the support grid. Z stays independent.</small>
+            <small>
+              Linked keeps ordinary bearings under the upper X/Y footprint. Z
+              stays independent.
+            </small>
           </div>
           <div
             className="offset-scope-switch"
@@ -1335,7 +1338,11 @@ export default function App() {
           />
           <div className="control-subsection">
             <span>UPPER MASS PLACEMENT</span>
-            <small>Authored cantilever in design millimetres.</small>
+            <small>
+              {parameters.upperFootprintMode === 'linked'
+                ? 'Shoulder tops follow X/Y; stems and feet stay fixed.'
+                : 'Independent cantilever in design millimetres.'}
+            </small>
           </div>
           <RangeField
             label="Upper offset X"
@@ -1980,7 +1987,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.16 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.17 / LOCAL</span>
       </footer>
     </main>
   )

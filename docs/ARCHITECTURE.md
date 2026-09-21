@@ -63,8 +63,8 @@ only when the first solid operation is requested.
 Version 0.1.5 preserves the master design and derives a physical study by one
 explicit uniform scale about the ground origin. The flow is master recipe
 geometry → model scale → physical geometry and analysis. Rendering consumes
-the physical study; future exports must consume the same result. Camera zoom
-is not model scale.
+the physical study; STL export consumes that same result and future drawings
+must do likewise. Camera zoom is not model scale.
 
 The scale stage transforms positions, primitive dimensions and loft endpoint
 offsets together, then recomputes complete bounds. Areas use `s²`; volume and
@@ -465,8 +465,9 @@ unfused copy may deliberately overlap another piece; RAAKA labels those
 remaining sums nominal and warns about double-counting. Active Fuse groups use
 the kernel's finished-union volume and remove internal contact faces.
 
-Pieces outside a Fuse remain separate closed preview meshes, so the complete
-composition is not automatically one export-ready solid. The study envelope is
+Pieces outside a Fuse remain separate closed preview meshes during editing.
+The STL boundary resolves all visible pieces into a final union and refuses
+multiple connected components. The study envelope is
 computed from every analytic endpoint and finished mesh vertex. It is the
 common source for physical dimensions, explicit camera framing and
 directional-shadow fitting. The baseline defects and their 0.1.1 resolution are
@@ -568,6 +569,35 @@ millimetre step, preventing the browser from displaying a rounded slider value
 beside a more precise model value. This is interface state only: recipe version
 16, project serialization, recovery and generated geometry remain unchanged.
 
+### Manufacturing STL boundary
+
+Version 0.1.25 makes `stlExport.ts` the first manufacturing output boundary.
+The caller passes `study.pieces`, which is already the uniformly scaled physical
+study produced by `scaleMassStudy`; the exporter never re-reads master recipe
+dimensions or applies a second scale. `finishScenePieces` accepts one or more
+analytic or derived pieces, converts them through the existing Manifold adapter
+and returns one indexed union mesh with kernel bounds, volume and connected-
+component count. Existing user-authored Fuse groups have already replaced their
+visible sources before this final whole-study union.
+
+Export accepts exactly one connected result. An empty study and a union that
+decomposes into multiple solids stop with explicit, actionable messages. This
+prevents a single STL filename from concealing independent loose parts. The
+positive sculpture is encoded as binary STL with finite Float32 vertices,
+outward unit normals, zero attribute words and an exact `84 + 50n` byte length.
+The header records `UNITS=MM` and `Z=UP`; STL has no standard unit field, so the
+contract is that numeric coordinates are millimetres. Z = 0 and the authored
+X/Y origin are preserved.
+
+The UI downloads a seed- and scale-labelled file and reports triangle count,
+physical W × D × H and finished-solid litres. No project data or history is
+changed. Unit fixtures independently parse the bytes and verify bounds,
+watertight edges, normals, signed volume and cubic scaling at 1:1, 1:2 and 1:4.
+A written six-leg, two-row 1:4 file is also loaded through Kerros's real
+`meshImport.ts`: it is detected as binary STL, retains its 361.4 × 275.0 ×
+500.0 mm envelope and returns zero open edges. Mould construction and stock
+compensation remain Kerros responsibilities.
+
 ## Interface themes
 
 Version 0.1.16 defaults to a charcoal dark interface and provides an explicit
@@ -586,7 +616,7 @@ does not change model roles or geometry.
 
 ## File boundaries
 
-The first transfer to Kerros may use STL because Kerros already imports it.
+The first transfer to Kerros uses binary STL because Kerros already imports it.
 Long term, an STL-only handoff is insufficient: it discards planar face
 identity, cast direction, surface intent, core roles and recipe metadata. A
 RAAKA manufacturing package should eventually carry the solid plus explicit

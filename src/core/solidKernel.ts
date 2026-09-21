@@ -136,12 +136,12 @@ function copyPositions(
   return positions
 }
 
-async function withFusedManifold<Result>(
+async function withSceneManifold<Result>(
   pieces: readonly ScenePiece[],
   readResult: (result: ManifoldSolid) => Result,
 ): Promise<Result> {
-  if (pieces.length < 2) {
-    throw new RangeError('Fuse requires at least two scene pieces.')
+  if (pieces.length === 0) {
+    throw new RangeError('A solid operation requires at least one scene piece.')
   }
 
   const kernel = await loadSolidKernel()
@@ -149,7 +149,10 @@ async function withFusedManifold<Result>(
   let result: ManifoldSolid | undefined
   try {
     for (const piece of pieces) operands.push(manifoldForPiece(kernel, piece))
-    result = kernel.Manifold.union(operands)
+    result = operands.length === 1
+      ? operands.pop()
+      : kernel.Manifold.union(operands)
+    if (!result) throw new Error('The solid kernel returned no result.')
     const status = result.status()
     if (status !== 'NoError') {
       throw new Error(`Solid-kernel union failed with status ${status}.`)
@@ -162,37 +165,49 @@ async function withFusedManifold<Result>(
   }
 }
 
+function readSolidKernelMesh(result: ManifoldSolid): SolidKernelMesh {
+  const mesh = result.getMesh()
+  const components = result.decompose()
+  try {
+    const kernelBounds = result.boundingBox()
+    const groundSection =
+      Math.abs(kernelBounds.min[2]) < 1e-6 ? result.slice(0) : undefined
+    let groundContactMm2 = 0
+    try {
+      groundContactMm2 = groundSection?.area() ?? 0
+    } finally {
+      groundSection?.delete()
+    }
+    return {
+      positions: copyPositions(mesh.vertProperties, mesh.numProp),
+      triangles: new Uint32Array(mesh.triVerts),
+      bounds: {
+        min: [...kernelBounds.min],
+        max: [...kernelBounds.max],
+      },
+      volumeMm3: result.volume(),
+      componentCount: components.length,
+      groundContactMm2,
+    }
+  } finally {
+    for (const component of components) component.delete()
+  }
+}
+
+/** Resolve one or more semantic pieces into one finished indexed kernel mesh. */
+export async function finishScenePieces(
+  pieces: readonly ScenePiece[],
+): Promise<SolidKernelMesh> {
+  return withSceneManifold(pieces, readSolidKernelMesh)
+}
+
 export async function fuseScenePieces(
   pieces: readonly ScenePiece[],
 ): Promise<SolidKernelMesh> {
-  return withFusedManifold(pieces, (result) => {
-    const mesh = result.getMesh()
-    const components = result.decompose()
-    try {
-      const kernelBounds = result.boundingBox()
-      const groundSection =
-        Math.abs(kernelBounds.min[2]) < 1e-6 ? result.slice(0) : undefined
-      let groundContactMm2 = 0
-      try {
-        groundContactMm2 = groundSection?.area() ?? 0
-      } finally {
-        groundSection?.delete()
-      }
-      return {
-        positions: copyPositions(mesh.vertProperties, mesh.numProp),
-        triangles: new Uint32Array(mesh.triVerts),
-        bounds: {
-          min: [...kernelBounds.min],
-          max: [...kernelBounds.max],
-        },
-        volumeMm3: result.volume(),
-        componentCount: components.length,
-        groundContactMm2,
-      }
-    } finally {
-      for (const component of components) component.delete()
-    }
-  })
+  if (pieces.length < 2) {
+    throw new RangeError('Fuse requires at least two scene pieces.')
+  }
+  return finishScenePieces(pieces)
 }
 
 export async function sectionScenePiecesAtZ(
@@ -202,7 +217,7 @@ export async function sectionScenePiecesAtZ(
   if (!Number.isFinite(zMm)) {
     throw new RangeError('Section height must be finite.')
   }
-  return withFusedManifold(pieces, (result) => {
+  return withSceneManifold(pieces, (result) => {
     const section = result.slice(zMm)
     let simplified: ReturnType<ManifoldSolid['slice']> | undefined
     try {

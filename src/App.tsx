@@ -9,6 +9,7 @@ import {
 import { Viewport } from './components/Viewport'
 import { ObjectList } from './components/ObjectList'
 import { ControlGroup, InspectorControls, RangeField } from './components/InspectorControls'
+import { boundsSize } from './core/bounds'
 import {
   DEFAULT_PILOTI_PARAMETERS,
   generatePiloti,
@@ -45,6 +46,10 @@ import {
   writeRecovery,
 } from './core/project'
 import { fuseScenePieces } from './core/solidKernel'
+import {
+  createManufacturingStl,
+  manufacturingStlFilename,
+} from './core/stlExport'
 import { resolveStudyFuses } from './core/studyFuses'
 import { readUiTheme, writeUiTheme } from './core/uiTheme'
 import type {
@@ -236,6 +241,7 @@ export default function App() {
     readonly string[]
   >([])
   const [fuseActionPending, setFuseActionPending] = useState(false)
+  const [exportPending, setExportPending] = useState(false)
   const [fuseRenderState, setFuseRenderState] = useState<
     FuseRenderState | undefined
   >()
@@ -737,6 +743,42 @@ export default function App() {
     setNotice({ kind: 'info', text: `Saved ${link.download}.` })
   }
 
+  const exportManufacturingStl = async () => {
+    if (exportPending) return
+    setExportPending(true)
+    const filename = manufacturingStlFilename(
+      parameters.seed,
+      modelScaleDenominator,
+    )
+    try {
+      const exported = await createManufacturingStl(
+        study.pieces,
+        `PILOTI ${parameters.seed} SCALE 1:${modelScaleDenominator}`,
+      )
+      const blob = new Blob([new Uint8Array(exported.bytes)], { type: 'model/stl' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 0)
+      const [widthMm, depthMm, heightMm] = boundsSize(exported.bounds)
+      setNotice({
+        kind: 'info',
+        text: `Exported ${filename}: ${exported.triangleCount} triangles · ${formatNumber(widthMm, 1)} × ${formatNumber(depthMm, 1)} × ${formatNumber(heightMm, 1)} mm · ${formatNumber(exported.volumeMm3 / 1_000_000, 2)} L finished solid.`,
+      })
+    } catch (error) {
+      setNotice({
+        kind: 'error',
+        text: `Export failed: ${
+          error instanceof Error ? error.message : 'Unknown STL error.'
+        }`,
+      })
+    } finally {
+      setExportPending(false)
+    }
+  }
+
   const openProjectFile = async (file: File) => {
     try {
       const openedProject = parseProject(await file.text())
@@ -991,9 +1033,16 @@ export default function App() {
           >
             NEXT SEED
           </button>
-          <button type="button" className="button button--primary" disabled>
+          <button
+            type="button"
+            className="button button--primary"
+            aria-label="Export finished solid as binary STL in millimetres"
+            disabled={exportPending}
+            onClick={() => void exportManufacturingStl()}
+            title="Union all visible model-scaled parts into one watertight millimetre STL."
+          >
             EXPORT
-            <span>SOON</span>
+            <span>{exportPending ? 'BUILDING…' : 'STL · MM'}</span>
           </button>
         </div>
       </header>
@@ -2255,7 +2304,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.24 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.25 / LOCAL</span>
       </footer>
     </main>
   )

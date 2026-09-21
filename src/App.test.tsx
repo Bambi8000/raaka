@@ -33,6 +33,8 @@ describe('wired selection inspector', () => {
     expect(html).toContain('aria-label="Upper offset X numeric value"')
     expect(html).toContain('aria-label="Base width share (3 columns) numeric value"')
     expect(html).toContain('min="40" max="110" step="1" value="72"')
+    expect(html).toContain('Export finished solid as binary STL in millimetres')
+    expect(html).toContain('STL · MM')
   })
 
   it('switches to stem controls when the upper mass has been removed', () => {

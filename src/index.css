@@ -806,6 +806,34 @@ input:focus-visible {
   font-size: 8px;
 }
 
+.selection-context > strong {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.selection-context > button {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.selection-context > button:hover:not(:disabled),
+.selection-context > button[aria-pressed="true"]:not(:disabled) {
+  background: var(--yellow);
+  color: var(--accent-ink);
+}
+
+.selection-context > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .offset-scope-switch.other-controls button.is-active {
   color: var(--ink);
   background: var(--hover);

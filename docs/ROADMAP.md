@@ -34,6 +34,7 @@ implemented in 0.1.19.
 Hexagonal/octagonal Piloti plans, radial support rings and matching six/eight
 upper-mass sectors are implemented in 0.1.20.
 Global and centered foot offset spaces for polygon Piloti are implemented in 0.1.21.
+The selection-focused inspector with Show all is implemented in 0.1.22.
 
 ## 0.1 — foundation
 
@@ -412,12 +413,14 @@ emphasis to match its actual parameter dependencies.
   while retaining separate face/part selection for Fuse
 - [ ] a Selected / Composition inspector split, with selected overrides first
   and a clear link back to shared source controls for copies
-- [ ] optional affected-controls filter after controls are grouped coherently
+- [x] selection-focused controls by default with Show all (0.1.22)
 - [ ] front, side and top view buttons for precise placement
 - [ ] review bundle splitting as the solid tools and inspector grow
 
-These are proposals, not implemented controls. Prioritize numeric entry and the
-Selected / Composition split after visual feedback on 0.1.18.
+Unchecked items remain proposals. The owner-requested dynamic inspector is now
+implemented; fuller selected-first ordering and copy-source navigation remain
+open. Next: scoped translation gizmos, then numeric entry and the first STL
+handoff. Keep the existing manufacturing and weight/core gates below in scope.
 
 ## 0.1.19 — divided upper masses and opposing tapers
 
@@ -504,6 +507,52 @@ Browser checks cover Global/Centered geometry, Hexagon and Octagon, shared and
 selected radial/tangential values, Undo/Redo, reload recovery, 1:4 scale and
 retained mode after switching through Rectangle. The existing bundle-size
 warning remains tracked separately.
+
+## 0.1.22 — selection-focused inspector
+
+- [x] show only relevant controls by default; omit unrelated sliders and sections
+- [x] pin Show all / Show relevant beside the current selection name
+- [x] retain genuine shared dependencies such as linked grid size and upper base height
+- [x] keep neutral enabling choices reachable without false yellow highlighting
+- [x] handle stems, shoulders, independent cells, live copies and Fuse sources
+- [x] retain local position/size while hiding foot lean for a selected shoulder
+- [x] keep full controls and Restore reachable when no live target exists
+- [x] keep filtering outside project files, recovery and Undo/Redo
+- [x] cover pure relevance, rendered fields and actual App wiring in regressions
+
+Done when selecting an upper mass removes leg-only faders, selecting a stem
+restores its lean controls, and Show all restores the full composition without
+changing the model. Geometry and the recipe schema are unchanged.
+
+Verification: 348 tests plus lint, strict TypeScript and production build.
+Browser checks cover Show all without history edits, upper/stem/shoulder
+selection, local overrides, independent tops, live copies, a connected Fuse,
+zero-offset Global/Centered reachability, keyboard-edit Undo and 1:4 recovery.
+The existing bundle-size and Manifold externalization warnings remain unchanged.
+
+### Next — scoped translation gizmos
+
+- [ ] upper-mass X/Y handles write the existing authored placement offsets;
+  preserve linked shoulder-top behavior and independent Z proportions
+- [ ] selected-leg X/Y handles move the whole stem/shoulder pair, retain ground
+  contact and explicitly create a local override when required
+- [ ] copied-part X/Y/Z handles write that copy's existing translation fields
+- [ ] keep feet/lean handles visually and semantically separate from whole-part
+  translation; unsupported rotation/scale/vertical axes stay unavailable
+- [ ] use shared upper placement for original cells until independent cell
+  placement has an explicit model contract; never imply a local move exists
+- [ ] one completed drag equals one undo step; Escape cancels to the starting
+  values; dragging blocks camera orbit and releases it reliably afterwards
+- [ ] convert physical handle movement back to design millimetres at 1:1, 1:2
+  and 1:4; model truth stays in recipe parameters, not Three.js transforms
+- [ ] show the handle's target and scope; retain keyboard/numeric alternatives
+  and require Unfuse before direct manipulation of a Fuse's individual sources
+- [ ] test selection changes, drag cancellation, history, file recovery, linked
+  bearings and rectangular/polygon layouts before release
+
+Gizmos are not implemented in 0.1.22. Numeric fields beside sliders are the
+following precision-editing step. The next output milestone remains a watertight
+STL and measured millimetre round trip into Kerros; mould construction stays there.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

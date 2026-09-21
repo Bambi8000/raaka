@@ -313,6 +313,7 @@ export default function App() {
   const studyState = history.present
   const parameters = studyState.parameters
   const radial = parameters.planShape !== 'rectangle'
+  const centeredFeet = radial && parameters.footOffsetSpace === 'centered'
   const polygonSides = parameters.planShape === 'hexagon' ? 6 : 8
   const activeDivision = radial ? parameters.polygonMassDivision : parameters.upperMassDivision
   const divisionChoices = radial ? [
@@ -1708,9 +1709,30 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('asymmetry', value)}
           />
+          {radial ? <>
+            <div className="control-subsection">
+              <span>FOOT OFFSET SPACE</span>
+              <small>Applies to shared and selected leg offsets. Switching space reinterprets the same values; it does not move necks or shoulders.</small>
+            </div>
+            <div className={`offset-scope-switch ${affectedControls.has('footOffsetSpace') ? 'affects-selection' : 'other-controls'}`} aria-label="Foot offset space">
+              <button type="button" className={!centeredFeet ? 'is-active' : ''}
+                aria-pressed={!centeredFeet} onClick={() => update('footOffsetSpace', 'global')}>
+                <span>GLOBAL</span><small>WORLD X/Y</small>
+              </button>
+              <button type="button" className={centeredFeet ? 'is-active' : ''}
+                aria-pressed={centeredFeet} onClick={() => update('footOffsetSpace', 'centered')}>
+                <span>CENTERED</span><small>OUTWARD / TANGENT</small>
+              </button>
+            </div>
+            <p className="selection-help">{centeredFeet
+              ? 'Positive radial offset spreads feet away from the ring centre; negative pulls them inward. Positive tangential offset turns counter-clockwise viewed from above. Upper-mass placement does not change this centre.'
+              : 'All legs use the same world X/Y directions, regardless of their position around the ring.'}</p>
+          </> : null}
           <div className="control-subsection">
             <span>LEG EDIT SCOPE</span>
-            <small>Foot offsets lean. Position moves the complete leg.</small>
+            <small>{centeredFeet
+              ? 'Foot offsets lean. Position moves the whole leg and realigns its outward direction.'
+              : 'Foot offsets lean. Position moves the complete leg.'}</small>
           </div>
           <div className="offset-scope-switch" aria-label="Leg edit scope">
             <button
@@ -1742,7 +1764,7 @@ export default function App() {
             <div className="offset-inheritance">
               <span>INHERITS SHARED LEG</span>
               <small>
-                OFFSET X {parameters.footOffsetXMm} MM · Y{' '}
+                {centeredFeet ? 'RADIAL' : 'OFFSET X'} {parameters.footOffsetXMm} MM · {centeredFeet ? 'TANGENTIAL' : 'Y'}{' '}
                 {parameters.footOffsetYMm} MM · POSITION 0 × 0 MM · SIZE 100 ×
                 100%
               </small>
@@ -1767,7 +1789,9 @@ export default function App() {
               ) : null}
               <RangeField
                 label={
-                  activeSupportEditScope === 'selected'
+                  centeredFeet
+                    ? activeSupportEditScope === 'selected' ? 'Selected radial offset' : 'Radial foot offset'
+                    : activeSupportEditScope === 'selected'
                     ? 'Selected foot X'
                     : 'Foot offset X'
                 }
@@ -1789,7 +1813,9 @@ export default function App() {
               />
               <RangeField
                 label={
-                  activeSupportEditScope === 'selected'
+                  centeredFeet
+                    ? activeSupportEditScope === 'selected' ? 'Selected tangential offset' : 'Tangential foot offset'
+                    : activeSupportEditScope === 'selected'
                     ? 'Selected foot Y'
                     : 'Foot offset Y'
                 }
@@ -1845,7 +1871,9 @@ export default function App() {
                       X {formatNumber(activeSupportPositionX)} · Y{' '}
                       {formatNumber(activeSupportPositionY)} MM
                     </strong>
-                    <small>Translation from the generated grid position.</small>
+                    <small>{centeredFeet
+                      ? 'World X/Y placement. The outward foot direction follows this leg’s new position.'
+                      : 'Translation from the generated support position.'}</small>
                   </div>
                   <RangeField
                     label="Selected width scale"
@@ -1901,7 +1929,7 @@ export default function App() {
               {formatNumber(footOffsetMm, 1)} MM DESIGN OFFSET ·{' '}
               {footDirectionDeg === undefined
                 ? 'NO DIRECTION'
-                : `${footDirectionDeg.toFixed(0)}° FOOT DIRECTION`}
+                : `${footDirectionDeg.toFixed(0)}° ${centeredFeet ? 'FROM OUTWARD · CCW' : 'FOOT DIRECTION'}`}
             </small>
             <small>
               {formatNumber(footOffsetMm * modelScale, 1)} MM MODEL OFFSET AT
@@ -2175,7 +2203,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.20 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.21 / LOCAL</span>
       </footer>
     </main>
   )

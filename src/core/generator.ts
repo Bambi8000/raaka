@@ -84,6 +84,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   asymmetry: 0.12,
   footOffsetXMm: 0,
   footOffsetYMm: 0,
+  footOffsetSpace: 'global',
   footOffsetOverrides: [],
   supportSizeOverrides: [],
   supportPositionOverrides: [],

@@ -10,6 +10,7 @@ export type PilotiControlKey =
   | 'shoulderMode'
   | 'planShape'
   | 'polygonMassDivision'
+  | 'footOffsetSpace'
 
 function geometryValues(piece: ScenePiece): readonly number[] {
   if (piece.kind === 'box') return [...piece.position, ...piece.size]
@@ -67,6 +68,7 @@ export function affectedPilotiControls(
     )) affected.add(key)
   }
   const choices = {
+    footOffsetSpace: parameters.footOffsetSpace === 'global' ? 'centered' : 'global',
     planShape: parameters.planShape === 'rectangle' ? 'hexagon' : 'rectangle',
     polygonMassDivision: parameters.polygonMassDivision === 'whole' ? 'sectors' : 'whole',
     shoulderMode: parameters.shoulderMode === 'shared' ? 'divided' : 'shared',

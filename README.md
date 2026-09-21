@@ -143,6 +143,14 @@ and, while Linked, the upper footprint. Rectangular grid settings and each
 layout's individual edits remain available when switching back. Polygon parts
 support the same copies, removal, Fuse, project files, recovery and scale presets.
 
+Version 0.1.21 adds **Foot offset space → Global / Centered** for Hexagon and
+Octagon. Global uses one world X/Y compass for all legs. Centered interprets X
+as outward/inward radial offset and Y as counter-clockwise/clockwise tangential
+offset, with explicit slider labels. For evenly spreading feet, use a positive
+**Radial foot offset** and zero **Tangential foot offset**. Both shared and
+selected offsets use this space; necks and shoulders remain fixed. Existing
+studies open in Global, and Rectangle keeps its original world-axis behavior.
+
 ## Run locally
 
 Requirements:
@@ -185,7 +193,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.20 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.21 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

@@ -11,6 +11,7 @@ export type PieceRole = 'mass' | 'support' | 'surface' | 'core' | 'void'
 export type Vec3 = readonly [x: number, y: number, z: number]
 export type Vec2 = readonly [x: number, y: number]
 export type PilotiPlanShape = 'rectangle' | 'hexagon' | 'octagon'
+export type PilotiFootOffsetSpace = 'global' | 'centered'
 export type Size2 = readonly [width: number, depth: number]
 export type ModelScale = 1 | 0.5 | 0.25
 export type PilotiShoulderMode = 'divided' | 'shared'
@@ -145,6 +146,7 @@ export interface PilotiParameters {
   readonly footOffsetXMm: number
   readonly footOffsetYMm: number
   readonly footOffsetOverrides: readonly PilotiFootOffsetOverride[]
+  readonly footOffsetSpace: PilotiFootOffsetSpace
   readonly supportSizeOverrides: readonly PilotiSupportSizeOverride[]
   readonly supportPositionOverrides: readonly PilotiSupportPositionOverride[]
   readonly partCopies: readonly PilotiPartCopy[]

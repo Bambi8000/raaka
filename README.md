@@ -134,6 +134,15 @@ one cell; **Whole** returns to the shared mass rather than fusing edited cells.
 Cells support removal, Restore, Duplicate and Fuse, with save/recovery/history.
 Whole-mass copies stay whole; cell copies pause outside their source division.
 
+Version 0.1.20 adds **Plan shape → Hexagon / Octagon** with six or eight radial
+legs, one per polygon side. Choose **6 sectors / 8 sectors** to divide the upper
+mass into matching triangular wedges. Each sector has its own uniform **Part top
+scale** and signed **Part top drift X/Y**; the untouched division preserves the
+whole polygon, including its taper. **Radial spread** changes the support ring
+and, while Linked, the upper footprint. Rectangular grid settings and each
+layout's individual edits remain available when switching back. Polygon parts
+support the same copies, removal, Fuse, project files, recovery and scale presets.
+
 ## Run locally
 
 Requirements:
@@ -176,7 +185,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.19 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.20 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

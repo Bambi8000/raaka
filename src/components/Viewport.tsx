@@ -9,6 +9,7 @@ import type {
 } from '../core/types'
 import type { UiTheme } from '../core/uiTheme'
 import { createFrustumGeometry } from '../geometry/frustum'
+import { polygonLoftMesh } from '../core/polygonLoft'
 import { fitDirectionalShadow, fitPerspectiveCamera } from '../geometry/view'
 
 interface ViewportProps {
@@ -106,13 +107,14 @@ function geometryForPiece(piece: ScenePiece): THREE.BufferGeometry {
   if (piece.kind === 'box') {
     return new THREE.BoxGeometry(...piece.size)
   }
-  if (piece.kind === 'mesh') {
+  if (piece.kind === 'mesh' || piece.kind === 'polygon-loft') {
+    const mesh = piece.kind === 'mesh' ? piece : polygonLoftMesh(piece)
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
       'position',
-      new THREE.Float32BufferAttribute(piece.positions, 3),
+      new THREE.Float32BufferAttribute(mesh.positions, 3),
     )
-    geometry.setIndex(new THREE.BufferAttribute(piece.triangles, 1))
+    geometry.setIndex(new THREE.BufferAttribute(mesh.triangles, 1))
     geometry.computeVertexNormals()
     return geometry
   }

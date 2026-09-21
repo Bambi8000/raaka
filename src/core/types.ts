@@ -9,6 +9,8 @@ export type RecipeId =
 export type PieceRole = 'mass' | 'support' | 'surface' | 'core' | 'void'
 
 export type Vec3 = readonly [x: number, y: number, z: number]
+export type Vec2 = readonly [x: number, y: number]
+export type PilotiPlanShape = 'rectangle' | 'hexagon' | 'octagon'
 export type Size2 = readonly [width: number, depth: number]
 export type ModelScale = 1 | 0.5 | 0.25
 export type PilotiShoulderMode = 'divided' | 'shared'
@@ -56,7 +58,22 @@ export interface MeshPiece {
   readonly sourcePieceIds: readonly string[]
 }
 
-export type ScenePiece = BoxPiece | FrustumPiece | MeshPiece
+/** Convex CCW footprint; homothetic end faces keep every side planar. */
+export interface PolygonLoftPiece {
+  readonly kind: 'polygon-loft'
+  readonly id: string
+  readonly label: string
+  readonly role: PieceRole
+  readonly position: Vec3
+  readonly height: number
+  readonly footprint: readonly Vec2[]
+  readonly bottomScale: number
+  readonly topScale: number
+  readonly bottomOffset: Vec2
+  readonly topOffset: Vec2
+}
+
+export type ScenePiece = BoxPiece | FrustumPiece | PolygonLoftPiece | MeshPiece
 
 export interface PilotiFootOffsetOverride {
   readonly supportId: string
@@ -99,6 +116,9 @@ export interface PilotiMassPartOverride {
 }
 
 export interface PilotiParameters {
+  readonly planShape: PilotiPlanShape
+  readonly polygonMassDivision: 'whole' | 'sectors'
+  readonly radialSpreadRatio: number
   readonly seed: number
   readonly heightMm: number
   readonly supportCount: number
@@ -158,6 +178,12 @@ export interface MassStudy {
   readonly estimatedMassKg: number
   readonly groundContactMm2: number
   readonly supportLayout?: SupportLayoutAnalysis
+  readonly radialLayout?: {
+    readonly sides: 6 | 8
+    readonly totalSupports: number
+    readonly bearingOverhangMm: number
+    readonly shoulderOverlapMm2: number
+  }
 }
 
 export interface RecipeSummary {

@@ -11,6 +11,7 @@ import type {
   PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
   PilotiUpperMassProfile,
+  PilotiPlanShape,
 } from './types'
 
 export const MAX_SEED = 0xffff_ffff
@@ -24,6 +25,8 @@ interface ParameterRule {
 type NumericPilotiParameter = Exclude<
   keyof PilotiParameters,
   | 'shoulderMode'
+  | 'planShape'
+  | 'polygonMassDivision'
   | 'upperFootprintMode'
   | 'upperMassProfile'
   | 'upperMassDivision'
@@ -103,6 +106,7 @@ function normalizeUpperMassProfile(value: unknown): PilotiUpperMassProfile {
 }
 
 export const PILOTI_PARAMETER_RULES = {
+  radialSpreadRatio: { minimum: 0.55, maximum: 1.45 },
   seed: { minimum: 0, maximum: MAX_SEED, integer: true },
   heightMm: { minimum: 1_000, maximum: 2_000 },
   supportCount: { minimum: 1, maximum: 6, integer: true },
@@ -143,6 +147,7 @@ function normalizeValue(
 }
 
 export interface PilotiSupportAddress {
+  readonly planShape?: 'hexagon' | 'octagon'
   readonly row: number
   readonly column: number
 }
@@ -150,6 +155,13 @@ export interface PilotiSupportAddress {
 export function pilotiSupportAddress(
   value: string,
 ): PilotiSupportAddress | undefined {
+  const radial = /^support-(hex|oct)-([1-8])$/.exec(value)
+  if (radial) {
+    const limit = radial[1] === 'hex' ? 6 : 8
+    return Number(radial[2]) <= limit
+      ? { row: 1, column: Number(radial[2]), planShape: radial[1] === 'hex' ? 'hexagon' : 'octagon' }
+      : undefined
+  }
   const firstRowMatch = /^support-(\d+)$/.exec(value)
   if (firstRowMatch) {
     const column = Number(firstRowMatch[1])
@@ -499,6 +511,9 @@ export function normalizePilotiParameters(
 ): PilotiParameters {
   const partCopies = normalizePartCopies(input.partCopies)
   return {
+    planShape: readPlanShape(input.planShape),
+    polygonMassDivision: readPolygonDivision(input.polygonMassDivision),
+    radialSpreadRatio: normalizeValue(input.radialSpreadRatio, 'radialSpreadRatio'),
     seed: normalizeValue(input.seed, 'seed'),
     heightMm: normalizeValue(input.heightMm, 'heightMm'),
     supportCount: normalizeValue(input.supportCount, 'supportCount'),
@@ -951,6 +966,20 @@ function readMassDivision(value: unknown): PilotiUpperMassDivision {
   return choice.value
 }
 
+function readPlanShape(value: unknown): PilotiPlanShape {
+  if (value !== 'rectangle' && value !== 'hexagon' && value !== 'octagon') {
+    throw new ProjectValidationError('Plan shape must be rectangle, hexagon or octagon.')
+  }
+  return value
+}
+
+function readPolygonDivision(value: unknown): 'whole' | 'sectors' {
+  if (value !== 'whole' && value !== 'sectors') {
+    throw new ProjectValidationError('Polygon mass division must be whole or sectors.')
+  }
+  return value
+}
+
 function readMassPartOverrides(value: unknown): readonly PilotiMassPartOverride[] {
   if (!Array.isArray(value)) throw new ProjectValidationError('Mass part overrides must be an array.')
   const seen = new Set<string>()
@@ -988,6 +1017,9 @@ export function parsePilotiParameters(
   const record = { ...missingDefaults, ...(input as Record<string, unknown>) }
   const partCopies = readPartCopies(record)
   return {
+    planShape: readPlanShape(record.planShape),
+    polygonMassDivision: readPolygonDivision(record.polygonMassDivision),
+    radialSpreadRatio: readParameter(record, 'radialSpreadRatio'),
     seed: readParameter(record, 'seed'),
     heightMm: readParameter(record, 'heightMm'),
     supportCount: readParameter(record, 'supportCount'),

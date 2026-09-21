@@ -8,6 +8,7 @@ import {
 import { scenePieceBounds } from './bounds'
 import { PILOTI_PARAMETER_RULES } from './pilotiParameters'
 import type { FrustumPiece, PilotiParameters } from './types'
+import { polygonLoftVertices } from './polygonLoft'
 
 function expectFiniteStudy(parameters: PilotiParameters): void {
   const study = generatePiloti(parameters)
@@ -47,7 +48,7 @@ function expectFiniteStudy(parameters: PilotiParameters): void {
               ...piece.bottomOffset,
               ...piece.topOffset,
             ]
-          : [
+          : piece.kind === 'polygon-loft' ? polygonLoftVertices(piece).flat() : [
               ...piece.positions,
               ...piece.triangles,
               piece.volumeMm3,
@@ -1115,6 +1116,9 @@ describe('generatePiloti', () => {
   it('keeps geometry finite at both ends of every supported range', () => {
     expectFiniteStudy({
       seed: 0,
+      planShape: 'rectangle',
+      polygonMassDivision: 'whole',
+      radialSpreadRatio: 0.55,
       upperMassDivision: 'whole',
       massPartOverrides: [],
       heightMm: 1_000,
@@ -1148,6 +1152,9 @@ describe('generatePiloti', () => {
     })
     expectFiniteStudy({
       seed: MAX_SEED,
+      planShape: 'rectangle',
+      polygonMassDivision: 'sectors',
+      radialSpreadRatio: 1.45,
       upperMassDivision: 'xy4',
       massPartOverrides: [],
       heightMm: 2_000,

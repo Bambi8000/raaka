@@ -1,6 +1,16 @@
 import type { Bounds3, ScenePiece, Vec3 } from './types'
+import { polygonLoftVertices } from './polygonLoft'
 
 export function scenePieceBounds(piece: ScenePiece): Bounds3 {
+  if (piece.kind === 'polygon-loft') {
+    const vertices = polygonLoftVertices(piece)
+    const extent = (operation: (...values: number[]) => number): Vec3 => [
+      operation(...vertices.map((p) => p[0])), operation(...vertices.map((p) => p[1])), operation(...vertices.map((p) => p[2])),
+    ]
+    return {
+      min: extent(Math.min), max: extent(Math.max),
+    }
+  }
   if (piece.kind === 'box') {
     return {
       min: [

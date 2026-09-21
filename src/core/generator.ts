@@ -1,18 +1,12 @@
 import { mulberry32, randomBetween } from './random'
-import { boundsSize, sceneBounds } from './bounds'
 import { normalizePilotiParameters } from './pilotiParameters'
-import { partIdForPiece } from './partSelection'
-import { divideUpperMass, massPartAddress } from './massDivision'
-import {
-  CONCRETE_DENSITY_KG_M3,
-  scenePieceGroundContact,
-  scenePieceVolume,
-} from './pieceMetrics'
+import { divideUpperMass } from './massDivision'
+import { composePiloti } from './composePiloti'
+import { generateRadialPiloti } from './radialPiloti'
 import type {
   MassStudy,
   BoxPiece,
   FrustumPiece,
-  PilotiPartCopy,
   PilotiParameters,
   RecipeSummary,
   ScenePiece,
@@ -62,6 +56,9 @@ export const RECIPES: readonly RecipeSummary[] = [
 ]
 
 export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
+  planShape: 'rectangle',
+  polygonMassDivision: 'whole',
+  radialSpreadRatio: 1,
   seed: 318,
   heightMm: 1_500,
   supportCount: 3,
@@ -95,30 +92,13 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   removedPartIds: [],
 }
 
-function copyPiece(
-  piece: ScenePiece,
-  id: string,
-  label: string,
-  copy: PilotiPartCopy,
-): ScenePiece {
-  return {
-    ...piece,
-    id,
-    label,
-    position: [
-      piece.position[0] + copy.offsetXMm,
-      piece.position[1] + copy.offsetYMm,
-      piece.position[2] + copy.offsetZMm,
-    ],
-  }
-}
-
 function nonNegativeMeasurement(value: number): number {
   return value > MEASUREMENT_EPSILON_MM ? value : 0
 }
 
 export function generatePiloti(input: PilotiParameters): MassStudy {
   const parameters = normalizePilotiParameters(input)
+  if (parameters.planShape !== 'rectangle') return generateRadialPiloti(parameters)
   const random = mulberry32(parameters.seed)
   const height = parameters.heightMm
   const supportHeight = height * parameters.supportHeightRatio
@@ -142,7 +122,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       ? baseUpperDepth
       : upperDepth) * parameters.supportDepthRatio
   const bayWidth = upperWidth / parameters.supportCount
-  let pieces: ScenePiece[] = []
+  const pieces: ScenePiece[] = []
   const removedPartIds = new Set(parameters.removedPartIds)
   const footOffsetOverrides = new Map(
     parameters.footOffsetOverrides.map((override) => [
@@ -312,60 +292,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         }
   pieces.push(...divideUpperMass(upperMass, parameters.upperMassDivision, parameters.massPartOverrides))
 
-  const sourcePieces = new Map(pieces.map((piece) => [piece.id, piece]))
-  // Whole-mass copies retain their existing source; part copies follow one cell.
-  sourcePieces.set('upper-mass', upperMass)
-  for (const copy of parameters.partCopies) {
-    const copyNumber = copy.id.slice('copy-'.length)
-    if (copy.sourceId === 'upper-mass' || massPartAddress(copy.sourceId)) {
-      const source = sourcePieces.get(copy.sourceId)
-      if (source) {
-        pieces.push(
-          copyPiece(
-            source,
-            `upper-mass-${copy.id}`,
-            `${source.label} copy ${copyNumber}`,
-            copy,
-          ),
-        )
-      }
-      continue
-    }
-
-    const sourceStem = sourcePieces.get(copy.sourceId)
-    const sourceSuffix = copy.sourceId.slice('support-'.length)
-    const sourceShoulder = sourcePieces.get(`shoulder-${sourceSuffix}`)
-    if (!sourceStem || !sourceShoulder) continue
-    pieces.push(
-      copyPiece(
-        sourceStem,
-        `support-${copy.id}`,
-        `Support copy ${copyNumber}`,
-        copy,
-      ),
-      copyPiece(
-        sourceShoulder,
-        `shoulder-${copy.id}`,
-        `Shoulder copy ${copyNumber}`,
-        copy,
-      ),
-    )
-  }
-
-  // Resolve copies before omissions: deleting an original keeps its copies alive.
-  // Every grid slot still consumes its seeded choices, even when removed.
-  pieces = pieces.filter((piece) =>
-    !removedPartIds.has(partIdForPiece(piece.id) ?? '') &&
-    !(massPartAddress(piece.id) && removedPartIds.has('upper-mass')),
-  )
-  const concreteVolumeMm3 = pieces.reduce(
-    (sum, piece) => sum + scenePieceVolume(piece),
-    0,
-  )
-  const groundContactMm2 = pieces
-    .reduce((sum, piece) => sum + scenePieceGroundContact(piece), 0)
-  const bounds = sceneBounds(pieces)
-  const [widthMm, depthMm, heightMm] = boundsSize(bounds)
+  const study = composePiloti(parameters, pieces, upperMass)
   const intervalOverlap = (
     firstCentre: number,
     firstSize: number,
@@ -484,17 +411,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
   )
 
   return {
-    recipe: 'piloti',
-    seed: parameters.seed,
-    pieces,
-    bounds,
-    widthMm,
-    depthMm,
-    heightMm,
-    concreteVolumeMm3,
-    estimatedMassKg:
-      (concreteVolumeMm3 / 1_000_000_000) * CONCRETE_DENSITY_KG_M3,
-    groundContactMm2,
+    ...study,
     supportLayout: {
       columns: parameters.supportCount,
       rows: parameters.supportRowCount,

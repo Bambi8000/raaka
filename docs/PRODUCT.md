@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.19, the
+This document describes the product direction. In version 0.1.20, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -14,7 +14,9 @@ multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement, divided/shared shoulder rows and semantic part copies.
 Outputs, cores and the remaining recipe families are planned. Authored X/Y
 upper-mass offsets add a controlled cantilever without replacing seeded
-asymmetry, and the upper mass can be a block or a tapered rectangular loft. See
+asymmetry, and the upper mass can be a block or a tapered loft. Piloti supports
+rectangular grids and regular hexagonal/octagonal plans with radial legs and
+matching upper-mass sectors. See
 [Roadmap](ROADMAP.md) and the
 [baseline review](AUDIT-2026-09-20.md) for delivery status and known issues.
 
@@ -219,6 +221,32 @@ pause outside its division. This is form composition, not manufacturing slicing.
 Independent tapers may overlap or separate, and remaining unfused volumes are
 nominal. Bearing feedback only checks the outer footprint, not holes left by
 removed cells. Public-sculpture engineering and mould design remain out of scope.
+
+Version 0.1.20 adds **Rectangle / Hexagon / Octagon** plan shapes. The polygon
+plans use six or eight legs, one per side, and support **Whole** or matching
+**6 sectors / 8 sectors** mass division. Sectors extend from the centre to one
+outer edge; unedited sectors preserve the parent at every height, including
+existing taper and drift. Each sector can then taper and drift independently.
+Polygon top scale is uniform, unlike rectangular width/depth controls: this
+keeps every side face planar. This is a radial form composition, not a new recipe.
+
+**Polygon diameter share** times design height gives the corner-to-corner base
+diameter. **Radial spread** multiplies the support ring radius and, while
+**Linked**, the upper footprint. **Detached** leaves the upper diameter fixed.
+Linked upper X/Y placement moves shoulder tops only; necks, stems and feet stay
+fixed, and Z remains independent. **Shoulder radial depth** controls the bearing
+ring depth. Shared shoulders meet along radial edges, leaving a central opening
+below the mass; selected size or placement can intentionally break this match.
+Bearing feedback uses actual polygon edges and shoulder intersection areas.
+
+Rectangle retains its grid and separate depth settings. Hexagon and Octagon
+retain distinct support and sector edits, removals, copies and Fuse intent when
+inactive. Shared composition parameters still affect the active shape; whole-mass
+copies follow the current whole parent. Polygon division mode is shared between
+Hexagon and Octagon, but their local sector edits are separate. Save, recovery,
+Undo/Redo and 1:1, 1:2 and 1:4 scales preserve all three layouts. Existing projects
+open as Rectangle without changing their geometry. Partial-bearing assessment,
+manufacturing slicing and structural approval remain outside this feature.
 
 ### Planned high-rise articulation module
 

@@ -1179,6 +1179,15 @@ input[type="range"] {
   background: var(--yellow);
 }
 
+.plan-shape-switch {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.plan-shape-switch button {
+  min-width: 0;
+  padding: 8px 4px;
+}
+
 .mass-division-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -259,6 +259,7 @@ function supportIdForPiece(pieceId: string): string | undefined {
 
 function formatSupportId(supportId: string): string {
   const address = pilotiSupportAddress(supportId)
+  if (address?.planShape) return `${address.planShape.toUpperCase()} · LEG ${address.column}`
   return address
     ? `ROW ${address.row} · COLUMN ${address.column}`
     : supportId.toUpperCase()
@@ -272,6 +273,7 @@ function compareSupportIds(
   const rightAddress = pilotiSupportAddress(right.supportId)
   if (!leftAddress || !rightAddress) return 0
   return (
+    (leftAddress.planShape ?? '').localeCompare(rightAddress.planShape ?? '') ||
     leftAddress.row - rightAddress.row ||
     leftAddress.column - rightAddress.column
   )
@@ -310,6 +312,13 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const studyState = history.present
   const parameters = studyState.parameters
+  const radial = parameters.planShape !== 'rectangle'
+  const polygonSides = parameters.planShape === 'hexagon' ? 6 : 8
+  const activeDivision = radial ? parameters.polygonMassDivision : parameters.upperMassDivision
+  const divisionChoices = radial ? [
+    { value: 'whole' as const, label: 'WHOLE', description: 'ONE POLYGON' },
+    { value: 'sectors' as const, label: `${polygonSides} SECTORS`, description: 'RADIAL DIVISION' },
+  ] : MASS_DIVISIONS
   const modelScale = studyState.modelScale
   const modelScaleDenominator = Math.round(1 / modelScale)
   const project = useMemo(
@@ -642,7 +651,7 @@ export default function App() {
         ? `${partLabel(partId)} restored, but the original upper mass is still removed. Restore Upper mass to show its cells.`
         : partInGrid(partId, parameters)
         ? `${partLabel(partId)} restored. Undo is available.`
-        : `${partLabel(partId)} restored; select its mass division or increase the support grid to show its source.`,
+        : `${partLabel(partId)} restored; select its plan shape and mass division, or increase its support grid, to show its source.`,
     })
   }
 
@@ -1226,20 +1235,33 @@ export default function App() {
             <h2>Composition controls</h2>
           </div>
           <div className="control-subsection">
+            <span>PLAN SHAPE</span>
+            <small>Rectangle uses the support grid. Hexagon and Octagon use one leg per side. Each layout retains its own part edits.</small>
+          </div>
+          <div className={`offset-scope-switch plan-shape-switch ${affectedControls.has('planShape') ? 'affects-selection' : 'other-controls'}`} aria-label="Piloti plan shape">
+            {(['rectangle', 'hexagon', 'octagon'] as const).map((shape) => (
+              <button type="button" key={shape} aria-pressed={parameters.planShape === shape}
+                className={parameters.planShape === shape ? 'is-active' : ''}
+                onClick={() => update('planShape', shape)}><span>{shape.toUpperCase()}</span></button>
+            ))}
+          </div>
+          <div className="control-subsection">
             <span>UPPER MASS DIVISION</span>
             <small>New divisions preserve the original envelope. Whole-mass copies stay whole; cell copies pause outside their source division.</small>
           </div>
-          <div className={`offset-scope-switch mass-division-switch ${affectedControls.has('upperMassDivision') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass division">
-            {MASS_DIVISIONS.map((division) => (
+          <div className={`offset-scope-switch mass-division-switch ${affectedControls.has(radial ? 'polygonMassDivision' : 'upperMassDivision') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass division">
+            {divisionChoices.map((division) => (
               <button key={division.value} type="button"
-                className={parameters.upperMassDivision === division.value ? 'is-active' : ''}
-                aria-pressed={parameters.upperMassDivision === division.value}
-                onClick={() => update('upperMassDivision', division.value)}>
+                className={activeDivision === division.value ? 'is-active' : ''}
+                aria-pressed={activeDivision === division.value}
+                onClick={() => radial
+                  ? update('polygonMassDivision', division.value === 'sectors' ? 'sectors' : 'whole')
+                  : division.value !== 'sectors' && update('upperMassDivision', division.value)}>
                 <span>{division.label}</span><small>{division.description}</small>
               </button>
             ))}
           </div>
-          {parameters.upperMassDivision !== 'whole' ? (
+          {activeDivision !== 'whole' ? (
             <>
               <p className="selection-help">Select a mass part in the view or below. Whole restores the shared profile, not a union of edited parts. Each division remembers its edits. Part copies and Fuses pause when their source division is inactive.</p>
               <div className="mass-part-picker" aria-label="Select mass part">
@@ -1271,8 +1293,8 @@ export default function App() {
                     ['topDepthRatio', 'Part top depth share', 0.01, ''],
                     ['topOffsetXMm', 'Part top drift X', 1, ' mm'],
                     ['topOffsetYMm', 'Part top drift Y', 1, ' mm'],
-                  ] as const).map(([key, label, step, suffix]) => (
-                    <RangeField key={key} label={label} affected={true} value={activeMassProfile[key]}
+                  ] as const).filter(([key]) => !radial || key !== 'topDepthRatio').map(([key, label, step, suffix]) => (
+                    <RangeField key={key} label={radial && key === 'topWidthRatio' ? 'Part top scale' : label} affected={true} value={activeMassProfile[key]}
                       minimum={MASS_PART_RULES[key].minimum} maximum={MASS_PART_RULES[key].maximum}
                       step={step} suffix={suffix} onInteractionStart={beginGesture} onInteractionEnd={endGesture}
                       onChange={(value) => updateMassPart({ [key]: value })} />
@@ -1410,7 +1432,7 @@ export default function App() {
               onClick={() => update('upperFootprintMode', 'linked')}
             >
               <span>LINKED</span>
-              <small>GRID DRIVES X/Y</small>
+              <small>{radial ? 'RING DRIVES X/Y' : 'GRID DRIVES X/Y'}</small>
             </button>
             <button
               type="button"
@@ -1426,7 +1448,7 @@ export default function App() {
           </div>
           <RangeField
             label={
-              parameters.upperFootprintMode === 'linked'
+              radial ? 'Polygon diameter share' : parameters.upperFootprintMode === 'linked'
                 ? 'Base width share (3 columns)'
                 : 'Upper width share'
             }
@@ -1439,7 +1461,7 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('upperWidthRatio', value)}
           />
-          <RangeField
+          {!radial ? <RangeField
             label={
               parameters.upperFootprintMode === 'linked'
                 ? 'Base depth share (1 row)'
@@ -1453,7 +1475,13 @@ export default function App() {
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('upperDepthRatio', value)}
-          />
+          /> : <>
+            <RangeField label="Radial spread" affected={affectedControls.has('radialSpreadRatio')}
+              value={parameters.radialSpreadRatio} minimum={0.55} maximum={1.45} step={0.01}
+              onInteractionStart={beginGesture} onInteractionEnd={endGesture}
+              onChange={(value) => update('radialSpreadRatio', value)} />
+            <p className="selection-help">Diameter share × design height gives the corner-to-corner base diameter. Radial spread scales the leg ring; Linked also scales the upper footprint. Top scale stays uniform to keep all polygon side faces planar.</p>
+          </>}
           <div className="control-subsection">
             <span>UPPER MASS PLACEMENT</span>
             <small>
@@ -1487,7 +1515,7 @@ export default function App() {
             onChange={(value) => update('upperOffsetYMm', value)}
           />
           <div className="control-subsection">
-            <span>{parameters.upperMassDivision === 'whole' ? 'UPPER MASS PROFILE' : 'SHARED UPPER MASS PROFILE'}</span>
+            <span>{activeDivision === 'whole' ? 'UPPER MASS PROFILE' : 'SHARED UPPER MASS PROFILE'}</span>
             <small>The bottom bearing face stays fixed. Independent part tops keep their own profile.</small>
           </div>
           <div className={`offset-scope-switch ${affectedControls.has('upperMassProfile') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass profile">
@@ -1515,7 +1543,7 @@ export default function App() {
           {parameters.upperMassProfile === 'tapered' ? (
             <>
               <RangeField
-                label="Top width share"
+                label={radial ? 'Top scale' : 'Top width share'}
                 affected={affectedControls.has('upperTopWidthRatio')}
                 value={parameters.upperTopWidthRatio}
                 minimum={0.45}
@@ -1525,7 +1553,7 @@ export default function App() {
                 onInteractionEnd={endGesture}
                 onChange={(value) => update('upperTopWidthRatio', value)}
               />
-              <RangeField
+              {!radial ? <RangeField
                 label="Top depth share"
                 affected={affectedControls.has('upperTopDepthRatio')}
                 value={parameters.upperTopDepthRatio}
@@ -1535,7 +1563,7 @@ export default function App() {
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
                 onChange={(value) => update('upperTopDepthRatio', value)}
-              />
+              /> : null}
               <RangeField
                 label="Top drift X"
                 affected={affectedControls.has('upperTopOffsetXMm')}
@@ -1562,6 +1590,7 @@ export default function App() {
               />
             </>
           ) : null}
+          {!radial ? <>
           <RangeField
             label="Columns (X)"
             affected={affectedControls.has('supportCount')}
@@ -1596,8 +1625,9 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('rowSpacingMm', value)}
           />
+          </> : null}
           <RangeField
-            label="Support depth share"
+            label={radial ? 'Shoulder radial depth' : 'Support depth share'}
             affected={affectedControls.has('supportDepthRatio')}
             value={parameters.supportDepthRatio}
             minimum={0.25}
@@ -1631,7 +1661,7 @@ export default function App() {
           />
           <div className="control-subsection">
             <span>SHOULDER TOPOLOGY</span>
-            <small>Shared tops meet across each support row.</small>
+            <small>{radial ? 'Shared tops meet along radial edges, leaving a central opening below the upper mass.' : 'Shared tops meet across each support row.'}</small>
           </div>
           <div
             className={`offset-scope-switch ${affectedControls.has('shoulderMode') ? 'affects-selection' : 'other-controls'}`}
@@ -1653,7 +1683,7 @@ export default function App() {
               onClick={() => update('shoulderMode', 'shared')}
             >
               <span>SHARED</span>
-              <small>CONTINUOUS ROW</small>
+              <small>{radial ? 'CONTINUOUS RING' : 'CONTINUOUS ROW'}</small>
             </button>
           </div>
           <RangeField
@@ -1971,9 +2001,19 @@ export default function App() {
               </div>
             </div>
           ) : null}
-          {parameters.upperMassDivision !== 'whole' ? (
+          {activeDivision !== 'whole' ? (
             <p className="notice">Divided masses remain separate until fused. Independent tapers may create gaps or overlaps; overlapping volumes are counted twice outside a Fuse. Bearing checks use the outer footprint only, not gaps left by removed mass parts.</p>
           ) : null}
+          {study.radialLayout ? <div className="layout-advisories">
+            <div><strong>RADIAL SUPPORTS</strong><span>{study.radialLayout.totalSupports} / {study.radialLayout.sides} LEGS</span>
+              <small>One leg per side. Removing a leg retains the polygon and other positions. Selected size or placement may cause gaps, overlap or overhang.</small></div>
+            {study.radialLayout.bearingOverhangMm > 0 ? <div><strong>POLYGON BEARING OVERHANG</strong>
+              <span>{formatNumber(study.radialLayout.bearingOverhangMm, 1)} MM MODEL</span>
+              <small>A shoulder crosses a polygon edge. Check linkage, radial spread or selected overrides.</small></div> : null}
+            {study.radialLayout.shoulderOverlapMm2 > 0 ? <div><strong>RADIAL SHOULDER OVERLAP</strong>
+              <span>{formatNumber(study.radialLayout.shoulderOverlapMm2, 1)} MM² MODEL</span>
+              <small>Largest pairwise bearing overlap. Unfused volumes remain nominal.</small></div> : null}
+          </div> : null}
           {masterStudy.supportLayout &&
           (masterStudy.supportLayout.adjacentRowOverlapMm > 0 ||
             masterStudy.supportLayout.adjacentColumnOverlapMm > 0 ||
@@ -2131,11 +2171,11 @@ export default function App() {
         <span>SEED {parameters.seed}</span>
         <span>SCALE 1:{modelScaleDenominator}</span>
         <span>
-          {parameters.supportCount} × {parameters.supportRowCount} GRID
+          {radial ? `${polygonSides}-SIDE RING` : `${parameters.supportCount} × ${parameters.supportRowCount} GRID`}
         </span>
-        <span>{study.supportLayout?.totalSupports ?? 0} GRID LEGS</span>
+        <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.19 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.20 / LOCAL</span>
       </footer>
     </main>
   )

@@ -34,7 +34,7 @@ contact, section agreement, topology and repeated memory cleanup. Three.js
 remains a renderer only and is not an input to the kernel.
 
 `src/core/solidKernel.ts` initializes the WASM module once, converts semantic
-boxes and rectangular lofts directly, copies finished mesh data back into
+boxes, rectangular lofts and convex polygon lofts directly, copies finished mesh data back into
 owned JavaScript arrays and explicitly deletes every Manifold and CrossSection
 object. Its current union boundary returns bounds, finished-solid volume,
 component count and a closed indexed mesh. Horizontal sections are simplified
@@ -216,6 +216,56 @@ authored cantilever is expressed by planar shoulder lean rather than an
 accidental bearing overhang. Detached remains the explicit way to move the
 mass independently.
 
+### Polygon Piloti and radial division
+
+Version 0.1.20 adds `planShape` (`rectangle`, `hexagon`, `octagon`),
+`polygonMassDivision` (`whole`, `sectors`) and `radialSpreadRatio`. The normalized
+generator dispatches polygon plans to `radialPiloti.ts`; the existing rectangle
+path retains its geometry and random sequence. `composePiloti.ts` owns the shared
+copy-before-omission order, bounds and nominal metrics for both paths.
+
+The base circumradius is `heightMm * upperWidthRatio / 2`. Radial spread scales
+the support ring; Linked applies the same radius to the upper mass, while
+Detached retains the base radius. One support pair sits under each polygon side.
+Its trapezoid footprint spans from the outer ring to the inner ring at
+`1 - supportDepthRatio`. Homothetic neck and foot faces keep side faces planar.
+Shared shoulder tops tile the ring; divided tops shrink to 92% about each local
+centre. Selected X/Y size, placement and foot offsets keep their existing scope.
+Linked upper offsets move only shoulder tops; stems and feet remain fixed.
+
+Hexagonal IDs are `support-hex-N` / `shoulder-hex-N` and `upper-mass-hex6-N`;
+octagonal IDs use `oct` and `oct8`. Seeded per-shape streams generate every slot
+before removal. Shape changes retain dormant overrides, copies, removals and
+Fuse source IDs without reassigning them to another layout. Rectangle's row,
+column and depth settings remain latent in polygon mode. The polygon division
+mode is shared by both polygon shapes, but their sector overrides are distinct.
+
+`PolygonLoftPiece` stores a convex CCW footprint with uniform bottom/top scales,
+endpoint offsets, position and height. Polygon tops deliberately do not use
+independent X/Y ratios: those could make side quads non-planar. Analytic volume
+is `A * h * (b² + b*t + t²) / 3`; bounds use all endpoint vertices, and grounded
+support contact uses the bottom area. Uniform model scale transforms footprint,
+position, height and offsets together, leaving dimensionless face scales intact.
+
+Upper sectors share the parent's coordinate frame and fan from its centre to
+each edge. An independent top scales about its sector centroid and adds local
+signed X/Y drift; first-edit snapshots preserve the current top geometry.
+Unedited sectors therefore tile every intermediate parent section. Do not
+recenter sectors and reconstruct their inherited shared endpoints independently:
+cancellation followed by Float32 rounding can open seams. `polygonLoftMesh`
+quantizes shared world endpoints once and chooses the side-quad diagonal by
+world-coordinate endpoint order, not local winding. Neighbours traverse a shared
+edge in opposite directions and must still use the same physical diagonal.
+Both requirements are covered by closed-mesh, union and section regressions,
+including shifted tapered hexagons and octagons.
+
+Radial bearing feedback uses convex polygon half-planes and actual pairwise
+shoulder intersection area, not the polygon's bounding box or rectangle-grid
+analysis. Small numerical residue is suppressed only in reported distances and
+areas, never in authored geometry. Readings exclude removed original supports;
+copies and remaining unfused intersections retain the nominal-volume warning.
+The outer parent footprint is not a partial-bearing or structural assessment.
+
 ### Semantic part copies
 
 Version 0.1.13 stores up to 24 source-linked part copies. A copy has a stable
@@ -305,11 +355,14 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 14 stores every
+version and a separate recipe version. Piloti recipe version 15 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
 override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
-division, mass-part overrides and one of the supported `modelScale` presets.
+division, mass-part overrides, plan shape, polygon division, radial spread and
+one of the supported `modelScale` presets. Recipe versions 1–14 receive
+`rectangle`, `whole` polygon division and radial spread 1 without changing their
+existing geometry.
 Recipe versions 1–13 receive `whole` division and no mass-part overrides.
 Recipe versions 1–12 receive an empty removed
 part list; versions 1–11 receive an empty Fuse-group list;
@@ -362,7 +415,8 @@ limitation rather than claiming structural safety. Shared-profile highlighting
 is derived from the generator and stays neutral for independently overridden tops.
 
 `src/core/generator.ts` creates the editable Piloti sources as boxes and
-rectangular frustums. `src/core/studyFuses.ts` replaces active source groups
+rectangular frustums, or delegates polygon plans to `radialPiloti.ts` for convex
+polygon lofts. `src/core/studyFuses.ts` replaces active source groups
 with derived closed meshes. The same result drives the object list, viewport
 and physical readings. Three.js adapters convert analytic lofts and display
 kernel meshes without owning either form.

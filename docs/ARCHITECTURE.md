@@ -260,6 +260,26 @@ source grid part is temporarily hidden, the group stays dormant and reactivates
 when that source returns. Other unfused pieces remain separately summed, so the
 physical reading states whether it mixes finished unions and nominal pieces.
 
+### Part removal
+
+Version 0.1.18 stores `removedPartIds` as stable semantic IDs: `upper-mass`,
+base `support-*` IDs or an existing `copy-N`. A support ID addresses both its
+stem and shoulder. The pure generator first generates the complete grid and
+copies, then filters removed parts. This preserves seeded choices, bay spacing,
+the linked upper envelope and live copy sources even when the original is
+removed. Reducing the grid still makes copies of out-of-grid sources dormant,
+as before. Removed overrides and copies remain authored data until restored.
+
+Base-grid bearing analysis excludes removed legs, and `totalSupports` counts
+remaining base-grid legs; columns and rows continue to describe the authored
+grid. Overhang against a removed upper mass is not reported. Dimensions, volume,
+mass and contact derive from the remaining pieces. An empty study has zero
+bounds and measurements, remains saveable and can be restored at every scale.
+Restoring the first visible part automatically reframes the viewport, including
+after loading an empty project; ordinary edits preserve the camera as before.
+Saved Fuses with missing sources become dormant without deleting their intent.
+Inactive Fuses remain reachable in the object list for Unfuse.
+
 ## Data flow
 
 ```text
@@ -285,11 +305,12 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 12 stores every
+version and a separate recipe version. Piloti recipe version 13 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
-override arrays, semantic part copies, Fuse groups and one of the supported
-`modelScale` presets. Recipe versions 1–11 receive an empty Fuse-group list;
+override arrays, semantic part copies, Fuse groups, removed part IDs and one of
+the supported `modelScale` presets. Recipe versions 1–12 receive an empty removed
+part list; versions 1–11 receive an empty Fuse-group list;
 recipe versions 1–10 receive an empty part-copy list; versions 1–8
 receive the block upper-mass profile and latent tapered defaults; recipe
 versions 1–9 receive the detached footprint relationship to preserve their
@@ -358,6 +379,22 @@ zooming out never fades geometry or the drawing-like grid into artificial haze.
 - primary mass and supports: neutral concrete greys
 
 Roles are semantic model data. Colours are a UI projection of those roles.
+
+`controlInfluence.ts` derives global control highlighting from the actual pure
+generator: it probes each allowed parameter range and compares the selected
+analytic piece's geometric values with a small numeric tolerance. Copies follow
+their source shape; Fuse selection checks the group's currently available source
+pieces without invoking WASM. The result is memoized by parameters and selection
+and never enters project or history data. Local copy translation and selected
+support overrides have explicit local scope; foot lean affects stems, not
+shoulders. Grey controls remain editable and describe the absence of an effect
+on the current selection, rather than indicating a disabled control.
+
+The object list is shared by the desktop sidebar and the compact Objects
+disclosure, so Restore and inactive-Fuse access do not disappear below the
+sidebar breakpoint. A sticky selection label keeps the target visible while
+scrolling through controls. Yellow field borders and SELECTED labels supplement
+colour, and sliders expose their current influence through accessible text.
 
 ## Interface themes
 

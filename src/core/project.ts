@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 12
+export const PILOTI_RECIPE_VERSION = 13
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -48,6 +48,7 @@ export function createProject(
     modelScale,
     parameters: {
       ...parameters,
+      removedPartIds: [...parameters.removedPartIds],
       footOffsetOverrides: parameters.footOffsetOverrides.map((override) => ({
         ...override,
       })),
@@ -105,6 +106,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 9 &&
     input.recipeVersion !== 10 &&
     input.recipeVersion !== 11 &&
+    input.recipeVersion !== 12 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -233,7 +235,10 @@ export function parseProject(serialized: string): RaakaProject {
                           ? fuseGroupsDefault
                           : undefined
   return createProject(
-    parsePilotiParameters(input.parameters, missingDefaults),
+    parsePilotiParameters(input.parameters, {
+      ...missingDefaults,
+      ...(input.recipeVersion < 13 ? { removedPartIds: [] } : {}),
+    }),
     modelScale,
   )
 }

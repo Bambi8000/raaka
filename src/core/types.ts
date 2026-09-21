@@ -117,6 +117,7 @@ export interface PilotiParameters {
   readonly supportPositionOverrides: readonly PilotiSupportPositionOverride[]
   readonly partCopies: readonly PilotiPartCopy[]
   readonly fuseGroups: readonly PilotiFuseGroup[]
+  readonly removedPartIds: readonly string[]
 }
 
 export interface SupportLayoutAnalysis {

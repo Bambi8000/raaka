@@ -1,6 +1,7 @@
 import { mulberry32, randomBetween } from './random'
 import { boundsSize, sceneBounds } from './bounds'
 import { normalizePilotiParameters } from './pilotiParameters'
+import { partIdForPiece } from './partSelection'
 import {
   CONCRETE_DENSITY_KG_M3,
   scenePieceGroundContact,
@@ -86,6 +87,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   supportPositionOverrides: [],
   partCopies: [],
   fuseGroups: [],
+  removedPartIds: [],
 }
 
 function copyPiece(
@@ -135,7 +137,8 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       ? baseUpperDepth
       : upperDepth) * parameters.supportDepthRatio
   const bayWidth = upperWidth / parameters.supportCount
-  const pieces: ScenePiece[] = []
+  let pieces: ScenePiece[] = []
+  const removedPartIds = new Set(parameters.removedPartIds)
   const footOffsetOverrides = new Map(
     parameters.footOffsetOverrides.map((override) => [
       override.supportId,
@@ -255,7 +258,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         bottomOffset: [0, 0],
         topOffset: [shoulderTopOffsetX, shoulderTopOffsetY],
       })
-      shoulderBearings.push({
+      if (!removedPartIds.has(supportId)) shoulderBearings.push({
         row: rowNumber,
         column: columnNumber,
         centreX: shoulderCentreX,
@@ -342,6 +345,9 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     )
   }
 
+  // Resolve copies before omissions: deleting an original keeps its copies alive.
+  // Every grid slot still consumes its seeded choices, even when removed.
+  pieces = pieces.filter((piece) => !removedPartIds.has(partIdForPiece(piece.id) ?? ''))
   const concreteVolumeMm3 = pieces.reduce(
     (sum, piece) => sum + scenePieceVolume(piece),
     0,
@@ -482,15 +488,15 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     supportLayout: {
       columns: parameters.supportCount,
       rows: parameters.supportRowCount,
-      totalSupports: parameters.supportCount * parameters.supportRowCount,
+      totalSupports: shoulderBearings.length,
       rowSpacingMm: parameters.rowSpacingMm,
       shoulderDepthMm: shoulderDepth,
       adjacentRowOverlapMm,
       adjacentColumnOverlapMm,
       adjacentColumnGapMm,
       nonAdjacentBearingOverlapMm,
-      bearingOverhangMm,
-      sideBearingOverhangMm,
+      bearingOverhangMm: removedPartIds.has('upper-mass') ? 0 : bearingOverhangMm,
+      sideBearingOverhangMm: removedPartIds.has('upper-mass') ? 0 : sideBearingOverhangMm,
     },
   }
 }

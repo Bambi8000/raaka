@@ -337,6 +337,41 @@ input:focus-visible {
   border-left: 1px solid var(--ink);
 }
 
+.compact-objects {
+  display: none;
+}
+
+.viewport-empty {
+  position: absolute;
+  inset: 35% 16px auto;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  background: var(--overlay);
+  border: 1px solid var(--line);
+  text-align: center;
+  pointer-events: none;
+}
+
+.viewport-empty strong {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.viewport-empty span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.compact-objects > summary {
+  padding: 14px 15px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .panel-section {
   padding: 15px;
   border-bottom: 1px solid var(--ink);
@@ -411,6 +446,52 @@ input:focus-visible {
 .object-list {
   display: grid;
   gap: 1px;
+}
+
+.removed-parts {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+}
+
+.removed-parts summary {
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.removed-parts p,
+.empty-study {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.removed-parts > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.removed-parts button,
+.inactive-fuse {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.inactive-fuse {
+  width: 100%;
+  margin-top: 6px;
+  text-align: left;
+}
+
+.inactive-fuse[aria-pressed="true"] {
+  border-color: var(--yellow);
 }
 
 .object-list button {
@@ -559,6 +640,14 @@ input:focus-visible {
   letter-spacing: 0.1em;
 }
 
+.inspector-lead p.selection-help {
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.5;
+}
+
 .inspector-actions {
   display: flex;
   flex-wrap: wrap;
@@ -662,6 +751,65 @@ input:focus-visible {
 .range-field {
   display: grid;
   gap: 7px;
+  padding: 9px 10px;
+  border-left: 3px solid transparent;
+}
+
+.range-field.affects-selection {
+  border-color: var(--yellow);
+  background: var(--paper);
+}
+
+.range-field.other-controls {
+  color: var(--muted);
+}
+
+.range-field.other-controls input {
+  accent-color: var(--concrete);
+}
+
+.field-impact {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 3px;
+  background: var(--yellow);
+  color: var(--accent-ink);
+  font-size: 7px;
+  letter-spacing: 0.05em;
+}
+
+.selection-legend > span {
+  display: inline-block;
+  padding: 2px 4px;
+  background: var(--yellow);
+  color: var(--accent-ink);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.selection-context {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 10px 15px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 3px 0 var(--yellow);
+  font-size: 10px;
+}
+
+.selection-context > span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.offset-scope-switch.other-controls button.is-active {
+  color: var(--ink);
+  background: var(--hover);
+  box-shadow: inset 0 -3px var(--concrete);
 }
 
 .field-heading {
@@ -763,7 +911,7 @@ input[type="range"] {
   margin: 2px -15px 0;
   padding: 11px 15px 0 20px;
   border-top: 1px solid var(--ink);
-  box-shadow: inset 5px 0 0 var(--yellow);
+  box-shadow: inset 3px 0 0 var(--line);
 }
 
 .control-subsection span,
@@ -1047,6 +1195,10 @@ input[type="range"] {
 
   .left-panel {
     display: none;
+  }
+
+  .compact-objects {
+    display: block;
   }
 
   .brand-block > span:last-child,

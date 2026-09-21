@@ -158,7 +158,11 @@ describe('upper mass division', () => {
     ['xy4', ['upper-mass-xy4-1', 'upper-mass-xy4-2']],
     ['z3', ['upper-mass-rect-level-1', 'upper-mass-rect-level-2']],
   ] as const)('pauses and restores %s Fuses when their division is inactive', async (upperMassDivision, pieceIds) => {
-    const parameters: PilotiParameters = { ...defaults, upperMassDivision }
+    const parameters: PilotiParameters = {
+      ...defaults,
+      upperMassDivision,
+      asymmetry: 0,
+    }
     const fuseGroups = [{ id: 'fuse-1', pieceIds: [...pieceIds] }]
     const project = parseProject(serializeProject(createProject({ ...parameters, fuseGroups })))
     const active = await resolveStudyFuses(generatePiloti(project.parameters), fuseGroups)

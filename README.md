@@ -226,6 +226,16 @@ block/tapered top, removal, live copy and Fuse participation. The first level
 IDs stay stable when the count grows. Large steps may deliberately separate
 levels; Fuse and STL export then refuse to describe the islands as one solid.
 
+Version 0.1.31 gives every generated Piloti choice a named random stream keyed
+to its durable semantic ID. Adding columns or future random features therefore
+does not consume another part's sequence. Select an upper mass, level, support
+or source-linked copy and choose **Lock variation** to keep that source's
+generated jitter on its current seed while **Next seed** explores the remaining
+composition. Locks remain responsive to authored dimensions and linked
+geometry, survive inactive layouts and removal, and participate in project
+files, local recovery and Undo/Redo. Locked sources are marked in the object
+list.
+
 ## Run locally
 
 Requirements:
@@ -269,7 +279,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.30 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.31 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.

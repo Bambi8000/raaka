@@ -14,6 +14,7 @@ import type {
   PilotiSupportSizeOverride,
   PilotiUpperMassProfile,
   PilotiPlanShape,
+  PilotiRandomLock,
   PilotiRetainedCoreMode,
 } from './types'
 
@@ -36,6 +37,7 @@ type NumericPilotiParameter = Exclude<
   | 'upperMassProfile'
   | 'upperMassDivision'
   | 'massPartOverrides'
+  | 'randomLocks'
   | 'retainedCoreMode'
   | 'footOffsetOverrides'
   | 'footOffsetSpace'
@@ -59,6 +61,7 @@ export const PILOTI_SUPPORT_POSITION_MM = {
 export const PILOTI_PART_COPY_LIMIT = 24
 export const PILOTI_FUSE_GROUP_LIMIT = 12
 export const PILOTI_FUSE_PART_LIMIT = 24
+export const PILOTI_RANDOM_LOCK_LIMIT = 33
 
 export const PILOTI_PART_COPY_OFFSET_MM = {
   minimum: -2_000,
@@ -226,6 +229,10 @@ export function pilotiSupportAddress(
 
 export function isPilotiSupportId(value: string): boolean {
   return pilotiSupportAddress(value) !== undefined
+}
+
+export function isPilotiRandomLockTargetId(value: string): boolean {
+  return value === 'upper-mass' || isPilotiSupportId(value)
 }
 
 export function isPilotiPartCopyId(value: string): boolean {
@@ -403,6 +410,40 @@ function normalizePartCopies(
       offsetXMm: normalizePartCopyOffset(copy.offsetXMm, 'offsetXMm'),
       offsetYMm: normalizePartCopyOffset(copy.offsetYMm, 'offsetYMm'),
       offsetZMm: normalizePartCopyOffset(copy.offsetZMm, 'offsetZMm'),
+    }
+  })
+}
+
+function normalizeRandomLocks(
+  input: readonly PilotiRandomLock[],
+): readonly PilotiRandomLock[] {
+  if (!Array.isArray(input)) {
+    throw new RangeError('Piloti random locks must be an array.')
+  }
+  if (input.length > PILOTI_RANDOM_LOCK_LIMIT) {
+    throw new RangeError(
+      `Piloti supports at most ${PILOTI_RANDOM_LOCK_LIMIT} random locks.`,
+    )
+  }
+  const locks: readonly PilotiRandomLock[] = input
+  const targetIds = new Set<string>()
+  return locks.map((lock) => {
+    if (
+      typeof lock !== 'object' ||
+      lock === null ||
+      !isPilotiRandomLockTargetId(lock.targetId)
+    ) {
+      throw new RangeError('Piloti random lock has an invalid target ID.')
+    }
+    if (targetIds.has(lock.targetId)) {
+      throw new RangeError(
+        `Piloti random lock for "${lock.targetId}" is duplicated.`,
+      )
+    }
+    targetIds.add(lock.targetId)
+    return {
+      targetId: lock.targetId,
+      seed: normalizeValue(lock.seed, 'seed'),
     }
   })
 }
@@ -619,6 +660,7 @@ export function normalizePilotiParameters(
       'upperTopOffsetYMm',
     ),
     asymmetry: normalizeValue(input.asymmetry, 'asymmetry'),
+    randomLocks: normalizeRandomLocks(input.randomLocks),
     footOffsetXMm: normalizeValue(input.footOffsetXMm, 'footOffsetXMm'),
     footOffsetYMm: normalizeValue(input.footOffsetYMm, 'footOffsetYMm'),
     footOffsetOverrides: normalizeFootOffsetOverrides(
@@ -1014,6 +1056,56 @@ function readFuseGroups(
   })
 }
 
+function readRandomLocks(
+  input: Record<string, unknown>,
+): readonly PilotiRandomLock[] {
+  const value = input.randomLocks
+  if (!Array.isArray(value)) {
+    throw new ProjectValidationError('Parameter "randomLocks" must be an array.')
+  }
+  if (value.length > PILOTI_RANDOM_LOCK_LIMIT) {
+    throw new ProjectValidationError(
+      `Random locks must contain at most ${PILOTI_RANDOM_LOCK_LIMIT} entries.`,
+    )
+  }
+  const targetIds = new Set<string>()
+  return value.map((candidate) => {
+    if (
+      typeof candidate !== 'object' ||
+      candidate === null ||
+      Array.isArray(candidate)
+    ) {
+      throw new ProjectValidationError('Every random lock must be an object.')
+    }
+    const lock = candidate as Record<string, unknown>
+    if (
+      typeof lock.targetId !== 'string' ||
+      !isPilotiRandomLockTargetId(lock.targetId)
+    ) {
+      throw new ProjectValidationError(
+        'Every random lock must name an upper mass or support source ID.',
+      )
+    }
+    if (targetIds.has(lock.targetId)) {
+      throw new ProjectValidationError(
+        `Random lock for "${lock.targetId}" is duplicated.`,
+      )
+    }
+    if (
+      typeof lock.seed !== 'number' ||
+      !Number.isInteger(lock.seed) ||
+      lock.seed < 0 ||
+      lock.seed > MAX_SEED
+    ) {
+      throw new ProjectValidationError(
+        `Random lock for "${lock.targetId}" must contain an integer seed from 0 to ${MAX_SEED}.`,
+      )
+    }
+    targetIds.add(lock.targetId)
+    return { targetId: lock.targetId, seed: lock.seed }
+  })
+}
+
 export class ProjectValidationError extends Error {
   public constructor(message: string) {
     super(message)
@@ -1136,6 +1228,7 @@ export function parsePilotiParameters(
     upperTopOffsetXMm: readParameter(record, 'upperTopOffsetXMm'),
     upperTopOffsetYMm: readParameter(record, 'upperTopOffsetYMm'),
     asymmetry: readParameter(record, 'asymmetry'),
+    randomLocks: readRandomLocks(record),
     footOffsetXMm: readParameter(record, 'footOffsetXMm'),
     footOffsetYMm: readParameter(record, 'footOffsetYMm'),
     footOffsetOverrides: readFootOffsetOverrides(record),

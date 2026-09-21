@@ -1,6 +1,7 @@
 import { composePiloti } from './composePiloti'
 import { polygonFace, polygonIntersectionArea, polygonOverhang, regularPolygon } from './polygonLoft'
-import { mulberry32, randomBetween } from './random'
+import { randomBetween } from './random'
+import { featureRandomForTarget } from './randomLocks'
 import { polygonSupportFamily } from './supportFamily'
 import { divideUpperMassLevels, isUpperMassLevelDivision } from './upperMassLevels'
 import type { MassStudy, PilotiParameters, PolygonLoftPiece, ScenePiece, Vec2 } from './types'
@@ -47,8 +48,12 @@ export function generateRadialPiloti(parameters: PilotiParameters): MassStudy {
   const ringRadius = radius * parameters.radialSpreadRatio
   const linked = parameters.upperFootprintMode === 'linked'
   const massRadius = linked ? ringRadius : radius
-  const random = mulberry32(parameters.seed ^ (sides === 6 ? 0x6a09e667 : 0x3c6ef372))
-  const centre: Vec2 = [parameters.upperOffsetXMm + randomBetween(random, -1, 1) * radius * parameters.asymmetry * 0.1, parameters.upperOffsetYMm]
+  const upperRandom = featureRandomForTarget(
+    parameters,
+    'upper-mass',
+    `piloti/${code}/upper-mass`,
+  )
+  const centre: Vec2 = [parameters.upperOffsetXMm + randomBetween(upperRandom, -1, 1) * radius * parameters.asymmetry * 0.1, parameters.upperOffsetYMm]
   const supportHeight = parameters.heightMm * parameters.supportHeightRatio
   const shoulderHeight = supportHeight * parameters.shoulderRatio
   const stemHeight = supportHeight - shoulderHeight
@@ -68,6 +73,11 @@ export function generateRadialPiloti(parameters: PilotiParameters): MassStudy {
   ring.forEach((a, index) => {
     const b = ring[(index + 1) % sides]
     const supportId = `support-${code}-${index + 1}`
+    const supportRandom = featureRandomForTarget(
+      parameters,
+      supportId,
+      `piloti/${code}/${supportId}`,
+    )
     const size = parameters.supportSizeOverrides.find((entry) => entry.supportId === supportId)
     const placement = parameters.supportPositionOverrides.find((entry) => entry.supportId === supportId)
     const lean = parameters.footOffsetOverrides.find((entry) => entry.supportId === supportId)
@@ -78,8 +88,8 @@ export function generateRadialPiloti(parameters: PilotiParameters): MassStudy {
       (x - bearingCentre[0]) * (size?.widthScale ?? 1),
       (y - bearingCentre[1]) * (size?.depthScale ?? 1),
     ])
-    const jitter: Vec2 = [randomBetween(random, -1, 1) * ringRadius * parameters.asymmetry * 0.08,
-      randomBetween(random, -1, 1) * ringRadius * parameters.asymmetry * 0.08]
+    const jitter: Vec2 = [randomBetween(supportRandom, -1, 1) * ringRadius * parameters.asymmetry * 0.08,
+      randomBetween(supportRandom, -1, 1) * ringRadius * parameters.asymmetry * 0.08]
     const x = bearingCentre[0] + jitter[0] + (placement?.positionXMm ?? 0)
     const y = bearingCentre[1] + jitter[1] + (placement?.positionYMm ?? 0)
     const offsetX = lean?.footOffsetXMm ?? parameters.footOffsetXMm

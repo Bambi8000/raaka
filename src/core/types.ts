@@ -127,6 +127,11 @@ export interface PilotiMassPartOverride {
   readonly topOffsetYMm: number
 }
 
+export interface PilotiRandomLock {
+  readonly targetId: string
+  readonly seed: number
+}
+
 export interface PilotiParameters {
   readonly planShape: PilotiPlanShape
   readonly polygonMassDivision: PilotiPolygonMassDivision
@@ -163,6 +168,7 @@ export interface PilotiParameters {
   readonly upperTopOffsetXMm: number
   readonly upperTopOffsetYMm: number
   readonly asymmetry: number
+  readonly randomLocks: readonly PilotiRandomLock[]
   readonly footOffsetXMm: number
   readonly footOffsetYMm: number
   readonly footOffsetOverrides: readonly PilotiFootOffsetOverride[]

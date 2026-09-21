@@ -57,6 +57,10 @@ import {
 } from './core/stlExport'
 import { resolveStudyFuses } from './core/studyFuses'
 import { readUiTheme, writeUiTheme } from './core/uiTheme'
+import {
+  randomLockTargetForPiece,
+  toggleRandomLockForTarget,
+} from './core/randomLocks'
 import type {
   MassStudy,
   ModelScale,
@@ -341,6 +345,12 @@ export default function App() {
   const selectedPartCopy = parameters.partCopies.find(
     (copy) => copy.id === selectedPartCopyId,
   )
+  const selectedRandomLockTarget = selectedFuseGroup
+    ? undefined
+    : randomLockTargetForPiece(parameters, selectedPieceId)
+  const selectedRandomLock = parameters.randomLocks.find(
+    (lock) => lock.targetId === selectedRandomLockTarget,
+  )
   const massSourceId = selectedPartCopy?.sourceId ?? selectedPieceId
   const selectedMassPartId = massPartAddress(massSourceId) ? massSourceId : undefined
   const selectedRawPiece = unfusedMasterStudy.pieces.find((piece) => piece.id === selectedPieceId)
@@ -524,6 +534,20 @@ export default function App() {
   const updateModelScale = (nextModelScale: ModelScale) => {
     if (nextModelScale === modelScale) return
     replaceStudy({ ...studyState, modelScale: nextModelScale })
+  }
+
+  const toggleSelectedRandomLock = () => {
+    if (!selectedRandomLockTarget) return
+    update(
+      'randomLocks',
+      toggleRandomLockForTarget(parameters, selectedRandomLockTarget),
+    )
+    setNotice({
+      kind: 'info',
+      text: selectedRandomLock
+        ? `${partLabel(selectedRandomLockTarget)} now follows the global seed.`
+        : `${partLabel(selectedRandomLockTarget)} variation locked to seed ${parameters.seed}.`,
+    })
   }
 
   const updateMassPart = (patch: Partial<Omit<PilotiMassPartOverride, 'partId'>>) => {
@@ -1212,6 +1236,17 @@ export default function App() {
             >
               DUPLICATE
             </button>
+            {selectedRandomLockTarget ? (
+              <button
+                type="button"
+                className={selectedRandomLock ? 'is-constructive' : ''}
+                aria-pressed={selectedRandomLock !== undefined}
+                onClick={toggleSelectedRandomLock}
+                title="Lock only this source's generated jitter. Authored controls remain live."
+              >
+                {selectedRandomLock ? 'UNLOCK VARIATION' : 'LOCK VARIATION'}
+              </button>
+            ) : null}
             {selectedPieceCanJoinFuse ? (
               <button
                 type="button"
@@ -1243,6 +1278,14 @@ export default function App() {
               </button>
             ) : null}
           </div>
+          {selectedRandomLockTarget ? (
+            <p className="selection-help">
+              <span>SEED VARIATION</span>{' '}
+              {selectedRandomLock
+                ? `Locked to seed ${selectedRandomLock.seed}. Authored controls and linked geometry remain live.`
+                : 'Follows the global seed. Lock it before exploring another seed.'}
+            </p>
+          ) : null}
           {selectedFuseGroup ? (
             <p className="selection-help">Unfuse to remove or move individual parts.</p>
           ) : selectedPiece?.role === 'support' ? (
@@ -2570,7 +2613,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.30 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.31 / LOCAL</span>
       </footer>
     </main>
   )

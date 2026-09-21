@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.30, the
+This document describes the product direction. In version 0.1.31, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -15,7 +15,8 @@ support placement, divided/shared shoulder rows and semantic part copies.
 The rectangular and polygon Piloti layouts now share one reusable foot, neck,
 shoulder and bearing profile. Their upper masses can also become two, three or
 four independently editable vertical levels with one cumulative scale and X/Y
-step.
+step. Named per-feature random streams and selected-source variation locks keep
+seed exploration stable as the composition grows.
 The first watertight STL output and retained lightweight upper core are
 implemented. Live mass-centre projection and support-polygon feedback are also
 implemented, and concrete/core density assumptions are editable; drawings,
@@ -428,7 +429,22 @@ not yet accept another Fuse as an operand, so adding more pieces currently
 means Unfuse and rebuilding the selection set.
 
 Every generated choice has a stable seed stream. A local change must not reroll
-unrelated decisions.
+unrelated decisions. Version 0.1.31 implements this for Piloti's upper-mass
+shift and every rectangular, hexagonal and octagonal support jitter. Streams
+are keyed by semantic feature and durable source ID rather than their position
+in one shared random sequence. Adding columns or another random consumer cannot
+advance an existing support's stream.
+
+**Lock variation** stores the current seed against the selected semantic source.
+All upper-mass divisions and their copies address one upper-mass source; stems,
+shoulders and complete-support copies address their stable support source. A
+locked source keeps only its generated jitter while global seed changes reroll
+unlocked sources. Authored dimensions, offsets, local overrides and linked
+geometry remain live. Locks remain dormant rather than being deleted when a
+layout or source is hidden or removed. Fuse must be opened before its individual
+sources can be locked. Project files, recovery and Undo/Redo preserve the lock
+list. Recipe version 21 requires it; version 20 receives no pre-release
+migration, and recovery starts in `raaka.recovery.v4`.
 
 ## Space and core intent
 

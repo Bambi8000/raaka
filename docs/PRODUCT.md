@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.27, the
+This document describes the product direction. In version 0.1.28, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -14,7 +14,8 @@ multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement, divided/shared shoulder rows and semantic part copies.
 The first watertight STL output and retained lightweight upper core are
 implemented. Live mass-centre projection and support-polygon feedback are also
-implemented; drawings, open/removable void workflows and the remaining recipe
+implemented, and concrete/core density assumptions are editable; drawings,
+open/removable void workflows and the remaining recipe
 families are planned. Authored X/Y
 upper-mass offsets add a controlled cantilever without replacing seeded
 asymmetry, and the upper mass can be a block or a tapered loft. Piloti supports
@@ -343,6 +344,16 @@ whether separate preview parts are connected, whether the ground or foot can
 carry the load, or whether reinforcement, anchors, handling and environmental
 loads are adequate. Unfused overlapping volumes retain the same nominal-mass
 limitation as the manufacturing estimate.
+
+Version 0.1.28 stores whole-number material densities with the study. Concrete
+accepts 800–4,000 kg/m³ and the retained lightweight core accepts 10–500 kg/m³;
+2,400 kg/m³ and 30 kg/m³ remain the defaults. Both controls live with the
+manufacturing estimate because they apply to the complete composition rather
+than reshaping the selected part. A density edit is saved, recoverable and
+undoable. It changes concrete/core mass and, when materials differ spatially,
+the mass centre and support reserve. It never changes geometry, material
+volume, core cover or STL output. Uniform model scale preserves the authored
+density and continues to scale each resulting mass by `s³`.
 
 ### Planned high-rise articulation module
 

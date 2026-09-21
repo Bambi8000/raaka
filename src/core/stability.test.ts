@@ -7,6 +7,7 @@ const noCore = {
   pieces: [],
   densityKgM3: 30,
 }
+const concreteDensityKgM3 = 2_400
 
 function support(id: string, x: number, y: number): FrustumPiece {
   return {
@@ -88,7 +89,7 @@ describe('mass properties and static support analysis', () => {
 
   it('reports an inside projection and the nearest support-boundary reserve', () => {
     const pieces: readonly ScenePiece[] = [support('support-1', -100, 0), support('support-2', 100, 0), mass('upper-mass', 0)]
-    const analysis = analyseStability(pieces, noCore)
+    const analysis = analyseStability(pieces, concreteDensityKgM3, noCore)
 
     expect(analysis.status).toBe('inside')
     expect(analysis.centreOfMassMm?.[0]).toBe(0)
@@ -102,7 +103,7 @@ describe('mass properties and static support analysis', () => {
       support('support-1', -100, 0),
       support('support-2', 100, 0),
       mass('upper-mass', 300),
-    ], noCore)
+    ], concreteDensityKgM3, noCore)
 
     expect(analysis.status).toBe('outside')
     expect(analysis.centreOfMassMm?.[0]).toBeCloseTo(200, 10)
@@ -114,12 +115,12 @@ describe('mass properties and static support analysis', () => {
       support('support-1', 0, 0),
       mass('upper-mass', 100, 200),
     ]
-    const solid = analyseStability(pieces, noCore)
+    const solid = analyseStability(pieces, concreteDensityKgM3, noCore)
     const core: BoxPiece = {
       kind: 'box', id: 'upper-retained-core', label: 'Retained core', role: 'core',
       position: [100, 0, 200], size: [160, 160, 160],
     }
-    const cored = analyseStability(pieces, {
+    const cored = analyseStability(pieces, concreteDensityKgM3, {
       status: 'active', pieces: [core], densityKgM3: 30,
     })
 
@@ -127,8 +128,36 @@ describe('mass properties and static support analysis', () => {
     expect(cored.centreOfMassMm?.[2]).toBeLessThan(solid.centreOfMassMm?.[2] ?? 0)
   })
 
+  it('reweights the mixed-material centre when concrete density changes', () => {
+    const pieces: readonly ScenePiece[] = [
+      support('support-1', 0, 0),
+      mass('upper-mass', 100, 200),
+    ]
+    const core: BoxPiece = {
+      kind: 'box', id: 'upper-retained-core', label: 'Retained core', role: 'core',
+      position: [100, 0, 200], size: [160, 160, 160],
+    }
+    const retainedMaterial = {
+      status: 'active' as const, pieces: [core], densityKgM3: 500,
+    }
+
+    const lightweightConcrete = analyseStability(pieces, 800, retainedMaterial)
+    const heavyweightConcrete = analyseStability(pieces, 4_000, retainedMaterial)
+
+    expect(lightweightConcrete.centreOfMassMm?.[0]).toBeGreaterThan(
+      heavyweightConcrete.centreOfMassMm?.[0] ?? Infinity,
+    )
+    expect(lightweightConcrete.centreOfMassMm?.[2]).toBeGreaterThan(
+      heavyweightConcrete.centreOfMassMm?.[2] ?? Infinity,
+    )
+  })
+
   it('keeps a mass-centre reading but refuses support feedback without grounded legs', () => {
-    const analysis = analyseStability([mass('upper-mass', 0)], noCore)
+    const analysis = analyseStability(
+      [mass('upper-mass', 0)],
+      concreteDensityKgM3,
+      noCore,
+    )
 
     expect(analysis.status).toBe('unavailable')
     expect(analysis.centreOfMassMm).toEqual([0, 0, 200])

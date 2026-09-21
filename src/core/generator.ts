@@ -1,5 +1,9 @@
 import { mulberry32, randomBetween } from './random'
-import { normalizePilotiParameters } from './pilotiParameters'
+import {
+  DEFAULT_CONCRETE_DENSITY_KG_M3,
+  DEFAULT_RETAINED_CORE_DENSITY_KG_M3,
+  normalizePilotiParameters,
+} from './pilotiParameters'
 import { divideUpperMass } from './massDivision'
 import { composePiloti } from './composePiloti'
 import { generateRadialPiloti } from './radialPiloti'
@@ -77,8 +81,10 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   upperMassProfile: 'block',
   upperMassDivision: 'whole',
   massPartOverrides: [],
+  concreteDensityKgM3: DEFAULT_CONCRETE_DENSITY_KG_M3,
   retainedCoreMode: 'none',
   retainedCoreScale: 0.72,
+  retainedCoreDensityKgM3: DEFAULT_RETAINED_CORE_DENSITY_KG_M3,
   upperTopWidthRatio: 0.72,
   upperTopDepthRatio: 0.84,
   upperTopOffsetXMm: 120,

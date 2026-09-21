@@ -17,6 +17,8 @@ import type {
 } from './types'
 
 export const MAX_SEED = 0xffff_ffff
+export const DEFAULT_CONCRETE_DENSITY_KG_M3 = 2_400
+export const DEFAULT_RETAINED_CORE_DENSITY_KG_M3 = 30
 
 interface ParameterRule {
   readonly minimum: number
@@ -128,7 +130,9 @@ export const PILOTI_PARAMETER_RULES = {
   upperTopDepthRatio: { minimum: 0.45, maximum: 1.25 },
   upperTopOffsetXMm: { minimum: -400, maximum: 400 },
   upperTopOffsetYMm: { minimum: -400, maximum: 400 },
+  concreteDensityKgM3: { minimum: 800, maximum: 4_000, integer: true },
   retainedCoreScale: { minimum: 0.35, maximum: 0.85 },
+  retainedCoreDensityKgM3: { minimum: 10, maximum: 500, integer: true },
   asymmetry: { minimum: 0, maximum: 0.5 },
   footOffsetXMm: { minimum: -300, maximum: 300 },
   footOffsetYMm: { minimum: -300, maximum: 300 },
@@ -562,10 +566,18 @@ export function normalizePilotiParameters(
     upperMassProfile: normalizeUpperMassProfile(input.upperMassProfile),
     upperMassDivision: readMassDivision(input.upperMassDivision),
     massPartOverrides: readMassPartOverrides(input.massPartOverrides),
+    concreteDensityKgM3: normalizeValue(
+      input.concreteDensityKgM3,
+      'concreteDensityKgM3',
+    ),
     retainedCoreMode: readRetainedCoreMode(input.retainedCoreMode),
     retainedCoreScale: normalizeValue(
       input.retainedCoreScale,
       'retainedCoreScale',
+    ),
+    retainedCoreDensityKgM3: normalizeValue(
+      input.retainedCoreDensityKgM3,
+      'retainedCoreDensityKgM3',
     ),
     upperTopWidthRatio: normalizeValue(
       input.upperTopWidthRatio,
@@ -1072,8 +1084,13 @@ export function parsePilotiParameters(
     upperMassProfile: readUpperMassProfile(record),
     upperMassDivision: readMassDivision(record.upperMassDivision),
     massPartOverrides: readMassPartOverrides(record.massPartOverrides),
+    concreteDensityKgM3: readParameter(record, 'concreteDensityKgM3'),
     retainedCoreMode: readRetainedCoreMode(record.retainedCoreMode),
     retainedCoreScale: readParameter(record, 'retainedCoreScale'),
+    retainedCoreDensityKgM3: readParameter(
+      record,
+      'retainedCoreDensityKgM3',
+    ),
     upperTopWidthRatio: readParameter(record, 'upperTopWidthRatio'),
     upperTopDepthRatio: readParameter(record, 'upperTopDepthRatio'),
     upperTopOffsetXMm: readParameter(record, 'upperTopOffsetXMm'),

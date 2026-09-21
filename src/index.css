@@ -783,6 +783,24 @@ input:focus-visible {
   margin-bottom: 0;
 }
 
+.material-controls {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.material-controls .control-subsection {
+  margin-inline: 0;
+  padding-inline: 9px;
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.material-controls .range-field.other-controls {
+  color: var(--ink);
+}
+
 .range-field {
   display: grid;
   gap: 7px;

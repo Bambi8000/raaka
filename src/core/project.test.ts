@@ -33,6 +33,8 @@ describe('RAAKA project files', () => {
         upperTopOffsetYMm: -130,
         retainedCoreMode: 'upper-mass',
         retainedCoreScale: 0.78,
+        concreteDensityKgM3: 1_850,
+        retainedCoreDensityKgM3: 42,
         footOffsetXMm: 175,
         footOffsetYMm: -90,
         footOffsetOverrides: [
@@ -389,6 +391,23 @@ describe('RAAKA project files', () => {
     },
   )
 
+  it('migrates recipe version seventeen to the previous material assumptions', () => {
+    const legacy = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    legacy.recipeVersion = 17
+    delete legacy.parameters.concreteDensityKgM3
+    delete legacy.parameters.retainedCoreDensityKgM3
+
+    const migrated = parseProject(JSON.stringify(legacy))
+
+    expect(migrated.parameters.concreteDensityKgM3).toBe(2_400)
+    expect(migrated.parameters.retainedCoreDensityKgM3).toBe(30)
+  })
+
   it('requires an override list in the current recipe version', () => {
     const current = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -496,6 +515,36 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "retainedCoreMode" must be "none" or "upper-mass".',
+    )
+  })
+
+  it.each(['concreteDensityKgM3', 'retainedCoreDensityKgM3'] as const)(
+    'requires %s in the current recipe version',
+    (density) => {
+      const current = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as { parameters: Record<string, unknown> }
+      delete current.parameters[density]
+
+      expect(() => parseProject(JSON.stringify(current))).toThrow(
+        `Parameter "${density}" must be a finite number.`,
+      )
+    },
+  )
+
+  it.each([
+    ['concreteDensityKgM3', 799],
+    ['concreteDensityKgM3', 4_001],
+    ['retainedCoreDensityKgM3', 9],
+    ['retainedCoreDensityKgM3', 501],
+  ] as const)('rejects out-of-range %s value %s', (density, value) => {
+    const current = createProject({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      [density]: value,
+    })
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      `Parameter "${density}" must be between`,
     )
   })
 

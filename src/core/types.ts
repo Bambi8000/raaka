@@ -139,8 +139,10 @@ export interface PilotiParameters {
   readonly upperMassProfile: PilotiUpperMassProfile
   readonly upperMassDivision: PilotiUpperMassDivision
   readonly massPartOverrides: readonly PilotiMassPartOverride[]
+  readonly concreteDensityKgM3: number
   readonly retainedCoreMode: PilotiRetainedCoreMode
   readonly retainedCoreScale: number
+  readonly retainedCoreDensityKgM3: number
   readonly upperTopWidthRatio: number
   readonly upperTopDepthRatio: number
   readonly upperTopOffsetXMm: number
@@ -190,6 +192,7 @@ export interface MassStudy {
   readonly depthMm: number
   readonly heightMm: number
   readonly concreteVolumeMm3: number
+  readonly concreteDensityKgM3: number
   readonly concreteMassKg: number
   readonly retainedCore: {
     readonly status: 'off' | 'active' | 'paused'

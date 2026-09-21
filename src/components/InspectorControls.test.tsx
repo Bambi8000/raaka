@@ -41,4 +41,15 @@ describe('inspector field filtering', () => {
     expect(html).toContain('min="0.4" max="1.1" step="0.01" value="0.72"')
     expect(html).toContain('>%</span>')
   })
+
+  it('allows a global analysis control to explain its non-geometric effect', () => {
+    const html = renderToStaticMarkup(
+      <RangeField label="Density" affected={false} ariaDescription="Changes mass only."
+        value={2_400} minimum={800} maximum={4_000} step={10} suffix=" kg/m³"
+        onChange={() => {}} onInteractionStart={() => {}} onInteractionEnd={() => {}} />,
+    )
+
+    expect(html).toContain('aria-description="Changes mass only."')
+    expect(html).not.toContain('SELECTED')
+  })
 })

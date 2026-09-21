@@ -1,8 +1,6 @@
 import type { FrustumPiece, ScenePiece } from './types'
 import { polygonArea } from './polygonLoft'
 
-export const CONCRETE_DENSITY_KG_M3 = 2_400
-
 /** Volume of a rectangular loft whose width and depth vary linearly. */
 function frustumVolume(piece: FrustumPiece): number {
   const [bottomWidth, bottomDepth] = piece.bottomSize

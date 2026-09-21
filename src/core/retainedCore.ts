@@ -10,7 +10,6 @@ import type {
 } from './types'
 
 export const RETAINED_CORE_ID = 'upper-retained-core'
-export const RETAINED_CORE_DENSITY_KG_M3 = 30
 
 type AnalyticUpperMass = BoxPiece | FrustumPiece | PolygonLoftPiece
 
@@ -132,7 +131,7 @@ export function retainedCoreAnalysis(
     pieces: [],
     volumeMm3: 0,
     massKg: 0,
-    densityKgM3: RETAINED_CORE_DENSITY_KG_M3,
+    densityKgM3: parameters.retainedCoreDensityKgM3,
     minimumCoverMm: 0,
     message,
   })
@@ -167,8 +166,8 @@ export function retainedCoreAnalysis(
     status: 'active',
     pieces: [core.piece],
     volumeMm3,
-    massKg: volumeMm3 / 1_000_000_000 * RETAINED_CORE_DENSITY_KG_M3,
-    densityKgM3: RETAINED_CORE_DENSITY_KG_M3,
+    massKg: volumeMm3 / 1_000_000_000 * parameters.retainedCoreDensityKgM3,
+    densityKgM3: parameters.retainedCoreDensityKgM3,
     minimumCoverMm: core.minimumCoverMm,
     message: 'Closed lightweight foam remains inside the cast and displaces concrete.',
   }

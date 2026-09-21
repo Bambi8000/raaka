@@ -4,7 +4,6 @@ import { scenePieceVolume } from './pieceMetrics'
 import {
   retainedCoreAnalysis,
   retainedCorePiece,
-  RETAINED_CORE_DENSITY_KG_M3,
   RETAINED_CORE_ID,
 } from './retainedCore'
 import type { BoxPiece, FrustumPiece, PolygonLoftPiece } from './types'
@@ -116,15 +115,17 @@ describe('retained upper core', () => {
       kind: 'box', id: 'upper-mass', label: 'Upper mass', role: 'mass',
       position: [0, 0, 500], size: [1_000, 500, 500],
     }
-    const active = retainedCoreAnalysis({
+    const parameters = {
       ...DEFAULT_PILOTI_PARAMETERS,
       retainedCoreMode: 'upper-mass',
       retainedCoreScale: 0.5,
-    }, upper)
+      retainedCoreDensityKgM3: 48,
+    } as const
+    const active = retainedCoreAnalysis(parameters, upper)
 
     expect(active.status).toBe('active')
     expect(active.volumeMm3).toBeCloseTo(31_250_000, 5)
-    expect(active.densityKgM3).toBe(RETAINED_CORE_DENSITY_KG_M3)
-    expect(active.massKg).toBeCloseTo(0.9375, 8)
+    expect(active.densityKgM3).toBe(parameters.retainedCoreDensityKgM3)
+    expect(active.massKg).toBeCloseTo(1.5, 8)
   })
 })

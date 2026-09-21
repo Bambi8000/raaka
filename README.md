@@ -203,6 +203,13 @@ model-millimetre reserve is positive inside the boundary and negative outside.
 The reading follows 1:1, 1:2 and 1:4 model scales and remains explicitly
 advisory: it does not assess connections, loads, reinforcement or anchoring.
 
+Version 0.1.28 makes the material assumptions editable. Concrete density is
+stored from 800–4,000 kg/m³ and retained-core density from 10–500 kg/m³, with
+the previous 2,400/30 kg/m³ values as defaults for every older project. The
+manufacturing panel keeps both controls available because they affect the whole
+study rather than the selected shape. Density changes update material mass and
+mixed-material mass centre without changing geometry, volume or STL output.
+
 ## Run locally
 
 Requirements:
@@ -246,12 +253,12 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.27 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.28 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.
-Mould output, other recipes, drawings, removable/open void workflows and
-editable material density are planned. The current mass, core, ground-contact
+Mould output, other recipes, drawings and removable/open void workflows are
+planned. The current mass, core, ground-contact
 and static stability readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
 including seeded variation,

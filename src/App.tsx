@@ -2119,6 +2119,38 @@ export default function App() {
             <span>04</span>
             <h2>Manufacturing estimate</h2>
           </div>
+          <div className="material-controls" aria-label="Material assumptions">
+            <div className="control-subsection">
+              <span>MATERIAL ASSUMPTIONS</span>
+              <small>Densities change mass and mass-centre analysis only. Geometry, volume and STL remain unchanged.</small>
+            </div>
+            <RangeField
+              label="Concrete density"
+              affected={false}
+              value={parameters.concreteDensityKgM3}
+              minimum={PILOTI_PARAMETER_RULES.concreteDensityKgM3.minimum}
+              maximum={PILOTI_PARAMETER_RULES.concreteDensityKgM3.maximum}
+              step={1}
+              suffix=" kg/m³"
+              ariaDescription="Changes concrete mass and stability analysis without changing geometry."
+              onInteractionStart={beginGesture}
+              onInteractionEnd={endGesture}
+              onChange={(value) => update('concreteDensityKgM3', value)}
+            />
+            <RangeField
+              label="Retained core density"
+              affected={false}
+              value={parameters.retainedCoreDensityKgM3}
+              minimum={PILOTI_PARAMETER_RULES.retainedCoreDensityKgM3.minimum}
+              maximum={PILOTI_PARAMETER_RULES.retainedCoreDensityKgM3.maximum}
+              step={1}
+              suffix=" kg/m³"
+              ariaDescription="Changes retained-core mass and stability analysis without changing core geometry."
+              onInteractionStart={beginGesture}
+              onInteractionEnd={endGesture}
+              onChange={(value) => update('retainedCoreDensityKgM3', value)}
+            />
+          </div>
           <dl className="metrics-grid">
             <div>
               <dt>Design envelope</dt>
@@ -2413,7 +2445,8 @@ export default function App() {
             {parameters.fuseGroups.length > 0 && fuseRenderStatus === 'ready'
               ? 'Fused groups use finished-union volume; remaining pieces are summed.'
               : 'Manufactured nominal material estimate.'}{' '}
-            Concrete uses 2,400 kg/m³; retained foam uses 30 kg/m³.{' '}
+            Concrete uses {formatNumber(parameters.concreteDensityKgM3)} kg/m³;
+            retained foam uses {formatNumber(parameters.retainedCoreDensityKgM3)} kg/m³.{' '}
             Structural approval, reinforcement and anchoring are outside this
             study.
           </p>
@@ -2431,7 +2464,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.27 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.28 / LOCAL</span>
       </footer>
     </main>
   )

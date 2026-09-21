@@ -1,4 +1,6 @@
 import {
+  DEFAULT_CONCRETE_DENSITY_KG_M3,
+  DEFAULT_RETAINED_CORE_DENSITY_KG_M3,
   parsePilotiParameters,
   ProjectValidationError,
 } from './pilotiParameters'
@@ -7,7 +9,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 17
+export const PILOTI_RECIPE_VERSION = 18
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -112,6 +114,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 14 &&
     input.recipeVersion !== 15 &&
     input.recipeVersion !== 16 &&
+    input.recipeVersion !== 17 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -249,6 +252,10 @@ export function parseProject(serialized: string): RaakaProject {
       ...(input.recipeVersion < 17 ? {
         retainedCoreMode: 'none',
         retainedCoreScale: 0.72,
+      } : {}),
+      ...(input.recipeVersion < 18 ? {
+        concreteDensityKgM3: DEFAULT_CONCRETE_DENSITY_KG_M3,
+        retainedCoreDensityKgM3: DEFAULT_RETAINED_CORE_DENSITY_KG_M3,
       } : {}),
     }),
     modelScale,

@@ -1315,7 +1315,9 @@ export default function App() {
                   ] as const).filter(([key]) => !radial || key !== 'topDepthRatio').map(([key, label, step, suffix]) => (
                     <RangeField key={key} label={radial && key === 'topWidthRatio' ? 'Part top scale' : label} affected={true} value={activeMassProfile[key]}
                       minimum={MASS_PART_RULES[key].minimum} maximum={MASS_PART_RULES[key].maximum}
-                      step={step} suffix={suffix} onInteractionStart={beginGesture} onInteractionEnd={endGesture}
+                      step={step} suffix={suffix}
+                      display={key === 'topWidthRatio' || key === 'topDepthRatio' ? 'percent' : 'raw'}
+                      onInteractionStart={beginGesture} onInteractionEnd={endGesture}
                       onChange={(value) => updateMassPart({ [key]: value })} />
                   ))}
                   <p className="selection-help">Negative / positive drift leans the top towards −X / +X or −Y / +Y. Use opposite signs on neighbouring parts.</p>
@@ -1398,7 +1400,7 @@ export default function App() {
             value={parameters.heightMm}
             minimum={1_000}
             maximum={2_000}
-            step={10}
+            step={1}
             suffix=" mm"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
@@ -1477,6 +1479,7 @@ export default function App() {
             minimum={0.4}
             maximum={1.1}
             step={0.01}
+            display="percent"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('upperWidthRatio', value)}
@@ -1492,12 +1495,14 @@ export default function App() {
             minimum={0.2}
             maximum={0.65}
             step={0.01}
+            display="percent"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('upperDepthRatio', value)}
           /> : <>
             <RangeField label="Radial spread" affected={affectedControls.has('radialSpreadRatio')}
               value={parameters.radialSpreadRatio} minimum={0.55} maximum={1.45} step={0.01}
+              display="percent"
               onInteractionStart={beginGesture} onInteractionEnd={endGesture}
               onChange={(value) => update('radialSpreadRatio', value)} />
             <p className="selection-help">Diameter share × design height gives the corner-to-corner base diameter. Radial spread scales the leg ring; Linked also scales the upper footprint. Top scale stays uniform to keep all polygon side faces planar.</p>
@@ -1573,6 +1578,7 @@ export default function App() {
                 minimum={0.45}
                 maximum={1.25}
                 step={0.01}
+                display="percent"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
                 onChange={(value) => update('upperTopWidthRatio', value)}
@@ -1584,6 +1590,7 @@ export default function App() {
                 minimum={0.45}
                 maximum={1.25}
                 step={0.01}
+                display="percent"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
                 onChange={(value) => update('upperTopDepthRatio', value)}
@@ -1594,7 +1601,7 @@ export default function App() {
                 value={parameters.upperTopOffsetXMm}
                 minimum={-400}
                 maximum={400}
-                step={10}
+                step={1}
                 suffix=" mm"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
@@ -1606,7 +1613,7 @@ export default function App() {
                 value={parameters.upperTopOffsetYMm}
                 minimum={-400}
                 maximum={400}
-                step={10}
+                step={1}
                 suffix=" mm"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
@@ -1644,7 +1651,7 @@ export default function App() {
             value={parameters.rowSpacingMm}
             minimum={100}
             maximum={800}
-            step={10}
+            step={1}
             suffix=" mm"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
@@ -1658,6 +1665,7 @@ export default function App() {
             minimum={0.25}
             maximum={0.92}
             step={0.01}
+            display="percent"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('supportDepthRatio', value)}
@@ -1669,6 +1677,7 @@ export default function App() {
             minimum={0.25}
             maximum={0.58}
             step={0.01}
+            display="percent"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('supportHeightRatio', value)}
@@ -1680,6 +1689,7 @@ export default function App() {
             minimum={0.2}
             maximum={0.8}
             step={0.01}
+            display="percent"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('shoulderRatio', value)}
@@ -1720,6 +1730,7 @@ export default function App() {
             minimum={0.18}
             maximum={0.7}
             step={0.01}
+            display="percent"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('neckWidthRatio', value)}
@@ -1731,6 +1742,7 @@ export default function App() {
             minimum={0}
             maximum={0.5}
             step={0.01}
+            display="percent"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
             onChange={(value) => update('asymmetry', value)}
@@ -1835,7 +1847,7 @@ export default function App() {
                 value={activeFootOffsetX}
                 minimum={-300}
                 maximum={300}
-                step={5}
+                step={1}
                 suffix=" mm"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
@@ -1859,7 +1871,7 @@ export default function App() {
                 value={activeFootOffsetY}
                 minimum={-300}
                 maximum={300}
-                step={5}
+                step={1}
                 suffix=" mm"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
@@ -1916,6 +1928,7 @@ export default function App() {
                     minimum={0.55}
                     maximum={1.45}
                     step={0.01}
+                    display="percent"
                     onInteractionStart={beginGesture}
                     onInteractionEnd={endGesture}
                     onChange={(value) =>
@@ -1929,6 +1942,7 @@ export default function App() {
                     minimum={0.55}
                     maximum={1.45}
                     step={0.01}
+                    display="percent"
                     onInteractionStart={beginGesture}
                     onInteractionEnd={endGesture}
                     onChange={(value) =>
@@ -2241,7 +2255,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.23 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.24 / LOCAL</span>
       </footer>
     </main>
   )

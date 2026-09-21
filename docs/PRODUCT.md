@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.23, the
+This document describes the product direction. In version 0.1.24, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -293,8 +293,12 @@ the available axes; foot lean remains a separate inspector operation.
 Each physical handle step maps back to one design millimetre at 1:1, 1:2 and
 1:4. A full drag creates one Undo step, Escape restores the exact starting
 study, and orbit is suspended only while dragging. Fuses remain immutable until
-Unfuse. The existing range controls retain keyboard access and precise readouts;
-numeric entry beside them is still planned.
+Unfuse. The existing range controls retain keyboard access. Version 0.1.24
+replaces their passive readouts with direct numeric entry. Millimetres and counts
+are entered as whole values; normalized proportions are displayed and entered as
+whole percentages. Enter commits the value as one Undo step, Escape cancels the
+draft, and invalid or out-of-range input never reaches geometry. Leaving an
+invalid field restores its current value and keeps the reason visible.
 
 ### Planned high-rise articulation module
 

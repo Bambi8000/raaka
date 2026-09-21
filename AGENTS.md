@@ -62,6 +62,7 @@ come from explicit invariants, not screenshots.
   contract.
 - Keep dependencies few, mature and pinned through `pnpm-lock.yaml`.
 - Never commit secrets, `.env` files, Terraform state or generated build output.
-- The local development server stays on `127.0.0.1`. A future shared deployment
-  requires a separate security and hosting decision.
+- The local development server stays on `127.0.0.1`. Verified `main` builds are
+  published as a static GitHub Pages application; any stateful or authenticated
+  shared deployment requires a separate security and hosting decision.
 - Make one logical change per commit and use descriptive English commit messages.

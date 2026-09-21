@@ -36,6 +36,7 @@ upper-mass sectors are implemented in 0.1.20.
 Global and centered foot offset spaces for polygon Piloti are implemented in 0.1.21.
 The selection-focused inspector with Show all is implemented in 0.1.22.
 Scoped translation gizmos are implemented in 0.1.23.
+Exact numeric parameter entry is implemented in 0.1.24.
 
 ## 0.1 — foundation
 
@@ -67,6 +68,7 @@ Version 0.1.16 adds a default dark workspace and persistent Light/Dark switch.
 Version 0.1.17 corrects linked bearing placement, removes distance fog and
 serialises feature-branch verification through pull requests.
 Version 0.1.23 adds direct translation handles for existing placement fields.
+Version 0.1.24 adds validated numeric entry beside every visible slider.
 
 ## 0.1.1 — correct the baseline
 
@@ -100,7 +102,7 @@ runs after the bot rebased PR #6.
 - [x] local recovery with explicit saved/recovered state
 - [x] undo/redo, reset and direct seed entry; one undo step per slider gesture
 - [ ] camera view presets: front, side, top and axonometric
-- [ ] numeric inputs alongside sliders; explicit mm and percentage readouts
+- [x] numeric inputs alongside sliders; explicit mm and percentage readouts
 - [x] separate composition controls from selected-object information
 - [ ] compact drawers/tabs that retain recipe, object and seed actions
 - [ ] expose selection to assistive technology and preserve keyboard access
@@ -410,7 +412,8 @@ emphasis to match its actual parameter dependencies.
 
 ### Proposed interface follow-ups
 
-- [ ] editable numeric values beside sliders, with explicit mm and percentages
+- [x] editable numeric values beside sliders, with explicit mm and percentages
+  (0.1.24)
 - [ ] group each stem and shoulder under one expandable leg in the object list
   while retaining separate face/part selection for Fuse
 - [ ] a Selected / Composition inspector split, with selected overrides first
@@ -421,7 +424,7 @@ emphasis to match its actual parameter dependencies.
 
 Unchecked items remain proposals. The owner-requested dynamic inspector is now
 implemented; fuller selected-first ordering and copy-source navigation remain
-open. Translation gizmos are implemented in 0.1.23. Next: numeric entry and the
+open. Translation gizmos and exact numeric entry are implemented. Next: the
 first STL handoff. Keep the existing manufacturing and weight/core gates below
 in scope.
 
@@ -570,6 +573,30 @@ and redo preservation are pinned by the history regression.
 Delivery: verified `main` commits are published as a public static application
 at `https://bambi8000.github.io/raaka/`. Pull requests do not deploy, and the
 local development origin remains available for isolated work.
+
+## 0.1.24 — exact numeric parameter entry
+
+- [x] replace passive slider readouts with direct number fields without removing
+  range or keyboard editing
+- [x] expose design millimetres directly, normalized proportions as percentages
+  and discrete counts as integers
+- [x] validate finite values, supported ranges and discrete steps before they
+  reach study state; explain rejected input and restore it on blur
+- [x] make Enter one Undo step and Escape a history-neutral cancellation
+- [x] preserve focused drafts across unrelated renders and synchronize fields
+  after external changes when they are not being edited
+- [x] align millimetre sliders to the one-millimetre numeric precision so their
+  displayed and stored values cannot disagree
+- [x] retain recipe version 16, project files, recovery, geometry and model-scale
+  behavior unchanged
+
+Done when a slider value can be entered precisely without changing representation
+in the project model, invalid values never alter geometry, and one committed
+entry is one reversible history action.
+
+Verification: 363 tests plus lint, strict TypeScript and production build.
+Browser checks cover millimetre and percentage commits, one-step Undo, invalid
+range feedback, Escape cancellation and a clean console.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

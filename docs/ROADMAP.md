@@ -567,6 +567,10 @@ one-step Undo; automatic selected-leg override creation; 1 mm agreement between
 the handle and sliders; Fuse suppression; and a clean console. Escape recovery
 and redo preservation are pinned by the history regression.
 
+Delivery: verified `main` commits are published as a public static application
+at `https://bambi8000.github.io/raaka/`. Pull requests do not deploy, and the
+local development origin remains available for isolated work.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls

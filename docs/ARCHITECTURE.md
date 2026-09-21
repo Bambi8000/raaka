@@ -2,13 +2,20 @@
 
 ## Current mode
 
-RAAKA is a personal, laptop-only browser application. Vite binds to
-`127.0.0.1`; there is no backend, authentication, database or cloud
-infrastructure. Publishing the source repository does not expose the running
-application.
+RAAKA is a browser application with a local development mode and a public static
+GitHub Pages build. Vite binds local development to `127.0.0.1`; the public app
+is served from `https://bambi8000.github.io/raaka/`. Neither mode has a backend,
+authentication, database, analytics or server-side storage. Project recovery
+remains in that browser origin, and portable studies still require Save project.
 
-If the application is later shared as a hosted service, hosting, authentication,
-data and security must be designed as a separate change.
+`vite.config.ts` reads `RAAKA_BASE_PATH` only during the Pages build so local
+development retains `/` while GitHub assets resolve below `/raaka/`. The Verify
+workflow deploys only a `main` push after both quality and secret-scanning jobs
+succeed. Pull requests never deploy. GitHub's short-lived Pages identity token
+is scoped to the deploy job; RAAKA has no application secret.
+
+If the application later gains shared data, accounts or another hosted service,
+hosting, authentication, privacy and security require a separate design.
 
 ## Stack
 

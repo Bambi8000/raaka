@@ -1,5 +1,7 @@
 # RAAKA
 
+[Open the public RAAKA studio](https://bambi8000.github.io/raaka/)
+
 RAAKA is a deterministic brutalist massing studio for physical sculpture. It is
 not a general-purpose 3D modeller. The project deliberately concentrates on
 planar masses, explicit voids and repeatable recipes that can become real
@@ -179,8 +181,9 @@ pnpm dev
 
 The local server binds to `127.0.0.1:5174` only.
 While it is running, open [RAAKA locally](http://127.0.0.1:5174/).
-This address works on the computer running the server; the public GitHub
-repository is not a hosted application.
+This address works on the computer running the server. Verified `main` builds
+are also published as the public static
+[GitHub Pages application](https://bambi8000.github.io/raaka/).
 
 ## Quality gate
 

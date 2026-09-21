@@ -3,6 +3,7 @@ import type {
   ManifoldToplevel,
 } from 'manifold-3d'
 import type { Bounds3, FrustumPiece, ScenePiece } from './types'
+import { polygonLoftMesh } from './polygonLoft'
 
 const FRUSTUM_TRIANGLES = new Uint32Array([
   0, 2, 1,
@@ -96,9 +97,10 @@ function manifoldForPiece(
     }
   }
 
-  if (piece.kind === 'mesh') {
-    const positions = new Float32Array(piece.positions)
-    for (let index = 0; index < positions.length; index += 3) {
+  if (piece.kind === 'mesh' || piece.kind === 'polygon-loft') {
+    const mesh = piece.kind === 'mesh' ? piece : polygonLoftMesh(piece, true)
+    const positions = new Float32Array(mesh.positions)
+    for (let index = 0; piece.kind === 'mesh' && index < positions.length; index += 3) {
       positions[index] += piece.position[0]
       positions[index + 1] += piece.position[1]
       positions[index + 2] += piece.position[2]
@@ -107,7 +109,7 @@ function manifoldForPiece(
       new kernel.Mesh({
         numProp: 3,
         vertProperties: positions,
-        triVerts: new Uint32Array(piece.triangles),
+        triVerts: new Uint32Array(mesh.triangles),
       }),
     )
   }

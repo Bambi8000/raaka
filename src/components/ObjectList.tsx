@@ -54,7 +54,7 @@ export function ObjectList({
       {parameters.removedPartIds.length > 0 ? (
         <details className="removed-parts" open>
           <summary>REMOVED PARTS ({parameters.removedPartIds.length})</summary>
-          <p>Grid spacing and source shapes are retained.</p>
+          <p>Other part positions and source shapes are retained.</p>
           {parameters.removedPartIds.map((partId) => (
             <div key={partId}>
               <span>{partLabel(partId)}{partInGrid(partId, parameters) ? '' : ' · inactive layout'}</span>

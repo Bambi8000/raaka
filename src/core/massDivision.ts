@@ -1,5 +1,5 @@
 import type {
-  BoxPiece, FrustumPiece, PilotiMassPartOverride, PilotiUpperMassDivision,
+  BoxPiece, FrustumPiece, PolygonLoftPiece, PilotiMassPartOverride, PilotiUpperMassDivision,
 } from './types'
 
 export const MASS_DIVISIONS = [
@@ -17,12 +17,14 @@ export const MASS_PART_RULES = {
 } as const
 
 export function massPartAddress(id: string): {
-  division: Exclude<PilotiUpperMassDivision, 'whole'>
+  division: Exclude<PilotiUpperMassDivision, 'whole'> | 'hex6' | 'oct8'
   index: number
 } | undefined {
-  const match = /^upper-mass-(x2|y2|xy4)-([1-4])$/.exec(id)
-  if (!match || (match[1] !== 'xy4' && Number(match[2]) > 2)) return undefined
-  return { division: match[1] as Exclude<PilotiUpperMassDivision, 'whole'>, index: Number(match[2]) }
+  const match = /^upper-mass-(x2|y2|xy4|hex6|oct8)-([1-8])$/.exec(id)
+  if (!match) return undefined
+  const division = match[1] as Exclude<PilotiUpperMassDivision, 'whole'> | 'hex6' | 'oct8'
+  const limit = { x2: 2, y2: 2, xy4: 4, hex6: 6, oct8: 8 }[division]
+  return Number(match[2]) <= limit ? { division, index: Number(match[2]) } : undefined
 }
 
 /** Divide both end faces in matching proportions: the untouched loft is exact. */
@@ -69,7 +71,15 @@ export function divideUpperMass(
 }
 
 /** Capture the current face before the first independent edit, without a jump. */
-export function massPartProfile(piece: BoxPiece | FrustumPiece, partId = piece.id): PilotiMassPartOverride {
+export function massPartProfile(piece: BoxPiece | FrustumPiece | PolygonLoftPiece, partId = piece.id): PilotiMassPartOverride {
+  if (piece.kind === 'polygon-loft') {
+    const ratio = Math.max(0.45, Math.min(1.25, piece.topScale / piece.bottomScale))
+    const centre = [0, 1].map((axis) => piece.footprint.reduce((sum, p) => sum + p[axis], 0) / piece.footprint.length)
+    return { partId, profile: ratio === 1 && piece.topOffset.every((v) => v === 0) ? 'block' : 'tapered',
+      topWidthRatio: ratio, topDepthRatio: ratio,
+      topOffsetXMm: piece.topOffset[0] + (piece.topScale - piece.bottomScale) * centre[0],
+      topOffsetYMm: piece.topOffset[1] + (piece.topScale - piece.bottomScale) * centre[1] }
+  }
   return {
     partId,
     profile: piece.kind === 'box' ? 'block' : 'tapered',

@@ -8,6 +8,8 @@ export type PilotiControlKey =
   | 'upperMassProfile'
   | 'upperMassDivision'
   | 'shoulderMode'
+  | 'planShape'
+  | 'polygonMassDivision'
 
 function geometryValues(piece: ScenePiece): readonly number[] {
   if (piece.kind === 'box') return [...piece.position, ...piece.size]
@@ -17,6 +19,10 @@ function geometryValues(piece: ScenePiece): readonly number[] {
       ...piece.bottomOffset, ...piece.topOffset,
     ]
   }
+  if (piece.kind === 'polygon-loft') return [
+    ...piece.position, piece.height, ...piece.footprint.flat(), piece.bottomScale, piece.topScale,
+    ...piece.bottomOffset, ...piece.topOffset,
+  ]
   return [...piece.position, ...piece.positions]
 }
 
@@ -61,6 +67,8 @@ export function affectedPilotiControls(
     )) affected.add(key)
   }
   const choices = {
+    planShape: parameters.planShape === 'rectangle' ? 'hexagon' : 'rectangle',
+    polygonMassDivision: parameters.polygonMassDivision === 'whole' ? 'sectors' : 'whole',
     shoulderMode: parameters.shoulderMode === 'shared' ? 'divided' : 'shared',
     upperFootprintMode: parameters.upperFootprintMode === 'linked' ? 'detached' : 'linked',
     upperMassProfile: parameters.upperMassProfile === 'block' ? 'tapered' : 'block',

@@ -31,6 +31,8 @@ Individual part removal, restoration and selection-aware controls are
 implemented in 0.1.18.
 Two- and four-part upper-mass division with independent tapered tops is
 implemented in 0.1.19.
+Hexagonal/octagonal Piloti plans, radial support rings and matching six/eight
+upper-mass sectors are implemented in 0.1.20.
 
 ## 0.1 — foundation
 
@@ -447,6 +449,35 @@ drift, copying a cell, removal with a surviving copy, Restore, Fuse, inactive
 division recovery, 1:4 scale, reload recovery, re-linking and Undo/Redo. No
 browser errors were observed. The existing bundle-size warning remains open.
 
+## 0.1.20 — polygon Piloti and radial mass sectors
+
+- [x] Rectangle / Hexagon / Octagon plan shapes, with one radial leg per polygon side
+- [x] whole polygon mass or matching six/eight centre-to-edge sectors
+- [x] preserve the parent block/taper and every intermediate section on first division
+- [x] independent uniform sector top scale and signed X/Y drift with planar side faces
+- [x] radial spread links ring and upper X/Y only; Detached keeps the upper size independent
+- [x] shared shoulder ring and divided shoulders with coincident neck interfaces
+- [x] shape-specific support and sector IDs retaining inactive edits and operations
+- [x] support existing selected-leg overrides, removal, Restore, copies and Fuse
+- [x] polygon-edge overhang and true shoulder intersection-area feedback
+- [x] preserve Rectangle settings; hide irrelevant grid/depth controls for polygon plans
+- [x] recipe version 15, save/recovery/history and all three physical scale presets;
+  migrate versions 1–14 without changing geometry
+- [x] regression tests for planar closed lofts, Float32 seam agreement, connected
+  tapered-sector union, intermediate sections, metrics, migration and validation
+
+Done when hexagonal and octagonal forms have matching selectable upper sectors
+that can taper independently, fuse back into a connected solid and retain their
+edits after switching layouts. Polygon top scale is intentionally uniform;
+arbitrary unequal/radial cuts and partial-bearing assessment remain follow-ups.
+
+Verification: 282 unit tests plus lint, strict TypeScript and production build.
+Browser checks cover shape switching, six/eight-sector selection, opposite
+sector drifts, connected Fuse/Unfuse, radial leg removal/Restore, 1:4 scale,
+Undo/Redo and retained independent sector edits after switching shapes. Complete
+divided/shared polygon studies also form one connected union in kernel tests.
+The existing bundle-size warning remains open.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -571,7 +602,7 @@ drawings.
 | --- | --- | --- |
 | Box | Implemented as a semantic piece | Upper mass, plinth, bridge |
 | Rectangular loft/frustum | Implemented as a semantic piece | Stem, shoulder, tapered upper mass |
-| Faceted prism and taper | Planned | Silo tank and hopper |
+| Faceted prism and taper | Polygon Piloti implemented; silo composition planned | Silo tank and hopper |
 | Place, align, repeat, mirror, group | Selected semantic parts can be translated and repeated; align, mirror and grouping remain planned | Shared composition tools |
 | Union, subtract, plane-cut, chamfer | Selected-part Union/Fuse is implemented; subtract, plane-cut and chamfer remain planned | Finished solids and voids |
 | Step, stagger, lean and vary | Shared and selected Piloti foot lean plus seeded variation implemented | Support grids and Ziggurat |

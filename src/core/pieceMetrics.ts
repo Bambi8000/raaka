@@ -1,4 +1,5 @@
 import type { FrustumPiece, ScenePiece } from './types'
+import { polygonArea } from './polygonLoft'
 
 export const CONCRETE_DENSITY_KG_M3 = 2_400
 
@@ -18,6 +19,11 @@ function frustumVolume(piece: FrustumPiece): number {
 }
 
 export function scenePieceVolume(piece: ScenePiece): number {
+  if (piece.kind === 'polygon-loft') {
+    const b = piece.bottomScale
+    const t = piece.topScale
+    return polygonArea(piece.footprint) * piece.height * (b * b + b * t + t * t) / 3
+  }
   if (piece.kind === 'box') {
     return piece.size[0] * piece.size[1] * piece.size[2]
   }
@@ -25,6 +31,10 @@ export function scenePieceVolume(piece: ScenePiece): number {
 }
 
 export function scenePieceGroundContact(piece: ScenePiece): number {
+  if (piece.kind === 'polygon-loft') {
+    return piece.role === 'support' && Math.abs(piece.position[2] - piece.height / 2) < 1e-9
+      ? polygonArea(piece.footprint) * piece.bottomScale ** 2 : 0
+  }
   if (piece.kind === 'mesh') return piece.groundContactMm2
   if (piece.kind === 'box') return 0
   return piece.id.startsWith('support-') &&

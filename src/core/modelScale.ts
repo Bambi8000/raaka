@@ -22,6 +22,11 @@ function scaleSize2(value: Size2, scale: ModelScale): Size2 {
 }
 
 function scalePiece(piece: ScenePiece, scale: ModelScale): ScenePiece {
+  if (piece.kind === 'polygon-loft') {
+    return { ...piece, position: scaleVec3(piece.position, scale), height: piece.height * scale,
+      footprint: piece.footprint.map((point) => scaleSize2(point, scale)),
+      bottomOffset: scaleSize2(piece.bottomOffset, scale), topOffset: scaleSize2(piece.topOffset, scale) }
+  }
   if (piece.kind === 'box') {
     return {
       ...piece,
@@ -76,6 +81,11 @@ export function scaleMassStudy(
     concreteVolumeMm3: masterStudy.concreteVolumeMm3 * volumeScale,
     estimatedMassKg: masterStudy.estimatedMassKg * volumeScale,
     groundContactMm2: masterStudy.groundContactMm2 * areaScale,
+    radialLayout: masterStudy.radialLayout ? {
+      ...masterStudy.radialLayout,
+      bearingOverhangMm: masterStudy.radialLayout.bearingOverhangMm * modelScale,
+      shoulderOverlapMm2: masterStudy.radialLayout.shoulderOverlapMm2 * areaScale,
+    } : undefined,
     supportLayout: masterStudy.supportLayout
       ? {
           ...masterStudy.supportLayout,

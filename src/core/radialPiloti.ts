@@ -2,10 +2,21 @@ import { composePiloti } from './composePiloti'
 import { polygonFace, polygonIntersectionArea, polygonOverhang, regularPolygon } from './polygonLoft'
 import { mulberry32, randomBetween } from './random'
 import { polygonSupportFamily } from './supportFamily'
+import { divideUpperMassLevels, isUpperMassLevelDivision } from './upperMassLevels'
 import type { MassStudy, PilotiParameters, PolygonLoftPiece, ScenePiece, Vec2 } from './types'
 
 export function dividePolygonMass(parent: PolygonLoftPiece, parameters: PilotiParameters): readonly PolygonLoftPiece[] {
   if (parameters.polygonMassDivision === 'whole') return [parent]
+  if (isUpperMassLevelDivision(parameters.polygonMassDivision)) {
+    return divideUpperMassLevels(
+      parent,
+      parameters.planShape,
+      parameters.polygonMassDivision,
+      parameters.upperStepScaleRatio,
+      [parameters.upperStepOffsetXMm, parameters.upperStepOffsetYMm],
+      parameters.massPartOverrides,
+    ) as readonly PolygonLoftPiece[]
+  }
   const code = parameters.planShape === 'hexagon' ? 'hex6' : 'oct8'
   return parent.footprint.map((a, index) => {
     const b = parent.footprint[(index + 1) % parent.footprint.length]

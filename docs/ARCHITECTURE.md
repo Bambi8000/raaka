@@ -102,6 +102,22 @@ multiplies the topology's 0.92 divided or 1.00 shared bearing factor. Both
 default to 1, so extraction alone changes no geometry. Layout-specific code
 continues to own placement, lean, linked offsets and selected size overrides.
 
+Version 0.1.30 adds `upperMassLevels.ts` as the shared vertical partition for
+rectangular and polygon upper masses. It interpolates the parent loft at equal
+Z intervals, then applies one cumulative planar scale and X/Y offset to each
+higher interval. Analytic boxes, rectangular frustums and polygon lofts remain
+the source of truth; Three.js only renders the resulting semantic pieces. The
+lowest bearing face and parent Z range are invariant. Neutral scale/offset
+reconstruct the parent exactly, including tapered endpoint interpolation.
+
+Shape-qualified IDs (`rect-level`, `hex-level`, `oct-level`) prevent dormant
+edits from crossing between layouts. Ordinal IDs remain stable as level count
+grows. A local mass-part override replaces only one level's top face relative
+to that level's inherited bottom face; this requires profile capture to use
+top-minus-bottom drift rather than treating every bottom offset as zero. Large
+steps are allowed as authored form, but the existing Manifold boundary reports
+multiple components and Fuse/STL refuse disconnected results.
+
 Version 0.1.4 stores selected-leg overrides as a deterministic array keyed by
 the current semantic support ID. An override contains absolute design-mm X/Y
 values and replaces, rather than adds to, the shared offset. Both a stem and
@@ -404,18 +420,23 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 19 stores every
+version and a separate recipe version. Piloti recipe version 20 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
 override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
 division, mass-part overrides, plan shape, polygon division, radial spread,
 foot offset space, retained-core mode and retained-core scale, concrete density
-and retained-core density, foot flare and bearing scale, plus one of the
-supported `modelScale` presets.
+and retained-core density, foot flare, bearing scale and upper-level scale/X/Y
+step, plus one of the supported `modelScale` presets.
 Recipe version 19 deliberately requires both support-family fields. There is no
 version 18 fallback because RAAKA has no user project archive during this
 pre-release phase; an incomplete older project file is rejected before state
 replacement.
+Recipe version 20 deliberately requires the upper-level scale and X/Y step.
+There is likewise no version 19 fallback; the owner confirmed that no existing
+project archive needs preservation during this pre-release phase. Versions
+1–17 receive latent neutral-compatible defaults only as part of their existing
+legacy migration chain.
 Recipe versions 1–17 receive the former 2,400 kg/m³ concrete and 30 kg/m³ core
 defaults, preserving geometry and previous mass readings. Recipe versions 1–16 receive disabled retained
 core intent and its latent 72% default, preserving their exact solid geometry.
@@ -441,11 +462,11 @@ scale is read as 1 for compatibility; any unsupported format, recipe, scale or
 parameter is rejected before current state is replaced. The same canonical
 serializer feeds file downloads, dirty-state comparison and local recovery.
 
-The browser keeps a recovery copy under `raaka.recovery.v2` after every edit,
+The browser keeps a recovery copy under `raaka.recovery.v3` after every edit,
 undo and redo. Recovery is not a substitute for a project file: it belongs to
 one browser profile, while Save creates the portable artifact the owner can
-archive. Version 0.1.29 starts the new recovery namespace instead of reading the
-pre-support-family `v1` copy. Opening a project starts a new history; invalid
+archive. Version 0.1.30 starts the new recovery namespace instead of reading the
+pre-level `v2` copy. Opening a project starts a new history; invalid
 input preserves the current study and reports the reason.
 
 Undo/redo stores immutable Piloti study snapshots—master parameters plus model
@@ -474,6 +495,15 @@ the inactive whole parent remain dormant. The existing bearing analysis covers
 the parent outline, not partial support after cell removal; the UI states this
 limitation rather than claiming structural safety. Shared-profile highlighting
 is derived from the generator and stays neutral for independently overridden tops.
+
+The same division choice can instead select two, three or four Z levels.
+`upperMassLevels.ts` serves both `generator.ts` and `radialPiloti.ts`, preserving
+shape-specific analytic output and IDs. Step scale and X/Y offset are cumulative
+from the lowest level. The object list, selection-focused controls, removal,
+copies and Fuse all consume those IDs through the existing generic paths.
+Plan division and Z division are intentionally mutually exclusive in this
+release; an XYZ cell lattice, unequal level heights and per-level translation
+remain separate future operations rather than hidden complexity in one control.
 
 `src/core/generator.ts` creates the editable Piloti sources as boxes and
 rectangular frustums, or delegates polygon plans to `radialPiloti.ts` for convex

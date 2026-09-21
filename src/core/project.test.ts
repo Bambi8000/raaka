@@ -12,14 +12,18 @@ import {
 } from './project'
 
 describe('RAAKA project files', () => {
-  it('uses the support-family recovery namespace', () => {
-    expect(RECOVERY_STORAGE_KEY).toBe('raaka.recovery.v2')
+  it('uses the stepped-upper recovery namespace', () => {
+    expect(RECOVERY_STORAGE_KEY).toBe('raaka.recovery.v3')
   })
 
   it('round-trips every Piloti parameter and version field', () => {
     const project = createProject(
       {
         ...DEFAULT_PILOTI_PARAMETERS,
+        planShape: 'hexagon',
+        polygonMassDivision: 'z3',
+        radialSpreadRatio: 1.18,
+        footOffsetSpace: 'centered',
         seed: 319,
         heightMm: 2_000,
         supportCount: 6,
@@ -33,6 +37,10 @@ describe('RAAKA project files', () => {
         upperOffsetXMm: 240,
         upperOffsetYMm: -170,
         upperMassProfile: 'tapered',
+        upperMassDivision: 'z4',
+        upperStepScaleRatio: 0.73,
+        upperStepOffsetXMm: -125,
+        upperStepOffsetYMm: 85,
         upperTopWidthRatio: 0.61,
         upperTopDepthRatio: 0.83,
         upperTopOffsetXMm: 210,
@@ -552,6 +560,24 @@ describe('RAAKA project files', () => {
     },
   )
 
+  it.each([
+    'upperStepScaleRatio',
+    'upperStepOffsetXMm',
+    'upperStepOffsetYMm',
+  ] as const)(
+    'requires %s in the current recipe version',
+    (stepParameter) => {
+      const current = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as { parameters: Record<string, unknown> }
+      delete current.parameters[stepParameter]
+
+      expect(() => parseProject(JSON.stringify(current))).toThrow(
+        `Parameter "${stepParameter}" must be a finite number.`,
+      )
+    },
+  )
+
   it('does not migrate pre-release recipe version eighteen support profiles', () => {
     const previous = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -568,19 +594,40 @@ describe('RAAKA project files', () => {
     )
   })
 
+  it('does not migrate pre-release recipe version nineteen upper steps', () => {
+    const previous = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as {
+      recipeVersion: number
+      parameters: Record<string, unknown>
+    }
+    previous.recipeVersion = 19
+    delete previous.parameters.upperStepScaleRatio
+    delete previous.parameters.upperStepOffsetXMm
+    delete previous.parameters.upperStepOffsetYMm
+
+    expect(() => parseProject(JSON.stringify(previous))).toThrow(
+      'Parameter "upperStepScaleRatio" must be a finite number.',
+    )
+  })
+
   it.each([
     ['concreteDensityKgM3', 799],
     ['concreteDensityKgM3', 4_001],
     ['retainedCoreDensityKgM3', 9],
     ['retainedCoreDensityKgM3', 501],
-  ] as const)('rejects out-of-range %s value %s', (density, value) => {
+    ['upperStepScaleRatio', 0.64],
+    ['upperStepScaleRatio', 1.16],
+    ['upperStepOffsetXMm', -301],
+    ['upperStepOffsetYMm', 301],
+  ] as const)('rejects out-of-range %s value %s', (parameter, value) => {
     const current = createProject({
       ...DEFAULT_PILOTI_PARAMETERS,
-      [density]: value,
+      [parameter]: value,
     })
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
-      `Parameter "${density}" must be between`,
+      `Parameter "${parameter}" must be between`,
     )
   })
 

@@ -16,7 +16,17 @@ export type Size2 = readonly [width: number, depth: number]
 export type ModelScale = 1 | 0.5 | 0.25
 export type PilotiShoulderMode = 'divided' | 'shared'
 export type PilotiUpperMassProfile = 'block' | 'tapered'
-export type PilotiUpperMassDivision = 'whole' | 'x2' | 'y2' | 'xy4'
+export type PilotiUpperMassLevelDivision = 'z2' | 'z3' | 'z4'
+export type PilotiUpperMassDivision =
+  | 'whole'
+  | 'x2'
+  | 'y2'
+  | 'xy4'
+  | PilotiUpperMassLevelDivision
+export type PilotiPolygonMassDivision =
+  | 'whole'
+  | 'sectors'
+  | PilotiUpperMassLevelDivision
 export type PilotiUpperFootprintMode = 'linked' | 'detached'
 export type PilotiRetainedCoreMode = 'none' | 'upper-mass'
 
@@ -119,7 +129,7 @@ export interface PilotiMassPartOverride {
 
 export interface PilotiParameters {
   readonly planShape: PilotiPlanShape
-  readonly polygonMassDivision: 'whole' | 'sectors'
+  readonly polygonMassDivision: PilotiPolygonMassDivision
   readonly radialSpreadRatio: number
   readonly seed: number
   readonly heightMm: number
@@ -140,6 +150,9 @@ export interface PilotiParameters {
   readonly upperOffsetYMm: number
   readonly upperMassProfile: PilotiUpperMassProfile
   readonly upperMassDivision: PilotiUpperMassDivision
+  readonly upperStepScaleRatio: number
+  readonly upperStepOffsetXMm: number
+  readonly upperStepOffsetYMm: number
   readonly massPartOverrides: readonly PilotiMassPartOverride[]
   readonly concreteDensityKgM3: number
   readonly retainedCoreMode: PilotiRetainedCoreMode

@@ -1,12 +1,19 @@
 import type {
   BoxPiece, FrustumPiece, PolygonLoftPiece, PilotiMassPartOverride, PilotiUpperMassDivision,
+  Vec2,
 } from './types'
+import {
+  divideUpperMassLevels,
+  isUpperMassLevelDivision,
+  UPPER_MASS_LEVEL_DIVISIONS,
+} from './upperMassLevels'
 
 export const MASS_DIVISIONS = [
   { value: 'whole', label: 'WHOLE', description: 'ONE MASS' },
   { value: 'x2', label: '2 · X', description: 'SIDE BY SIDE' },
   { value: 'y2', label: '2 · Y', description: 'FRONT / BACK' },
   { value: 'xy4', label: '4 · XY', description: 'TWO BY TWO' },
+  ...UPPER_MASS_LEVEL_DIVISIONS,
 ] as const
 
 export const MASS_PART_RULES = {
@@ -17,14 +24,31 @@ export const MASS_PART_RULES = {
 } as const
 
 export function massPartAddress(id: string): {
-  division: Exclude<PilotiUpperMassDivision, 'whole'> | 'hex6' | 'oct8'
+  division:
+    | 'x2'
+    | 'y2'
+    | 'xy4'
+    | 'hex6'
+    | 'oct8'
+    | 'rect-level'
+    | 'hex-level'
+    | 'oct-level'
   index: number
 } | undefined {
-  const match = /^upper-mass-(x2|y2|xy4|hex6|oct8)-([1-8])$/.exec(id)
-  if (!match) return undefined
-  const division = match[1] as Exclude<PilotiUpperMassDivision, 'whole'> | 'hex6' | 'oct8'
-  const limit = { x2: 2, y2: 2, xy4: 4, hex6: 6, oct8: 8 }[division]
-  return Number(match[2]) <= limit ? { division, index: Number(match[2]) } : undefined
+  const divided = /^upper-mass-(x2|y2|xy4|hex6|oct8)-([1-8])$/.exec(id)
+  if (divided) {
+    const division = divided[1] as 'x2' | 'y2' | 'xy4' | 'hex6' | 'oct8'
+    const limit = { x2: 2, y2: 2, xy4: 4, hex6: 6, oct8: 8 }[division]
+    return Number(divided[2]) <= limit
+      ? { division, index: Number(divided[2]) }
+      : undefined
+  }
+  const level = /^upper-mass-(rect-level|hex-level|oct-level)-([1-4])$/.exec(id)
+  if (!level) return undefined
+  return {
+    division: level[1] as 'rect-level' | 'hex-level' | 'oct-level',
+    index: Number(level[2]),
+  }
 }
 
 /** Divide both end faces in matching proportions: the untouched loft is exact. */
@@ -32,8 +56,20 @@ export function divideUpperMass(
   parent: BoxPiece | FrustumPiece,
   division: PilotiUpperMassDivision,
   overrides: readonly PilotiMassPartOverride[],
+  stepScaleRatio = 1,
+  stepOffset: Vec2 = [0, 0],
 ): readonly (BoxPiece | FrustumPiece)[] {
   if (division === 'whole') return [parent]
+  if (isUpperMassLevelDivision(division)) {
+    return divideUpperMassLevels(
+      parent,
+      'rectangle',
+      division,
+      stepScaleRatio,
+      stepOffset,
+      overrides,
+    ) as readonly (BoxPiece | FrustumPiece)[]
+  }
   const columns = division === 'y2' ? 1 : 2
   const rows = division === 'x2' ? 1 : 2
   const bottom = parent.kind === 'box' ? parent.size : parent.bottomSize
@@ -75,17 +111,22 @@ export function massPartProfile(piece: BoxPiece | FrustumPiece | PolygonLoftPiec
   if (piece.kind === 'polygon-loft') {
     const ratio = Math.max(0.45, Math.min(1.25, piece.topScale / piece.bottomScale))
     const centre = [0, 1].map((axis) => piece.footprint.reduce((sum, p) => sum + p[axis], 0) / piece.footprint.length)
-    return { partId, profile: ratio === 1 && piece.topOffset.every((v) => v === 0) ? 'block' : 'tapered',
+    const noDrift = piece.topOffset.every(
+      (value, axis) => value === piece.bottomOffset[axis],
+    )
+    return { partId, profile: ratio === 1 && noDrift ? 'block' : 'tapered',
       topWidthRatio: ratio, topDepthRatio: ratio,
-      topOffsetXMm: piece.topOffset[0] + (piece.topScale - piece.bottomScale) * centre[0],
-      topOffsetYMm: piece.topOffset[1] + (piece.topScale - piece.bottomScale) * centre[1] }
+      topOffsetXMm: piece.topOffset[0] - piece.bottomOffset[0] +
+        (piece.topScale - piece.bottomScale) * centre[0],
+      topOffsetYMm: piece.topOffset[1] - piece.bottomOffset[1] +
+        (piece.topScale - piece.bottomScale) * centre[1] }
   }
   return {
     partId,
     profile: piece.kind === 'box' ? 'block' : 'tapered',
     topWidthRatio: piece.kind === 'box' ? 1 : Math.max(0.45, Math.min(1.25, piece.topSize[0] / piece.bottomSize[0])),
     topDepthRatio: piece.kind === 'box' ? 1 : Math.max(0.45, Math.min(1.25, piece.topSize[1] / piece.bottomSize[1])),
-    topOffsetXMm: piece.kind === 'box' ? 0 : piece.topOffset[0],
-    topOffsetYMm: piece.kind === 'box' ? 0 : piece.topOffset[1],
+    topOffsetXMm: piece.kind === 'box' ? 0 : piece.topOffset[0] - piece.bottomOffset[0],
+    topOffsetYMm: piece.kind === 'box' ? 0 : piece.topOffset[1] - piece.bottomOffset[1],
   }
 }

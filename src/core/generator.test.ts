@@ -1056,14 +1056,20 @@ describe('generatePiloti', () => {
       retainedCoreMode: 'upper-mass',
       removedPartIds: ['upper-mass'],
     })
+    const stepped = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      retainedCoreMode: 'upper-mass',
+      upperMassDivision: 'z3',
+    })
 
-    for (const study of [divided, removed]) {
+    for (const study of [divided, stepped, removed]) {
       expect(study.retainedCore.status).toBe('paused')
       expect(study.retainedCore.pieces).toEqual([])
       expect(study.retainedCore.volumeMm3).toBe(0)
       expect(study.estimatedMassKg).toBe(study.concreteMassKg)
     }
     expect(divided.retainedCore.message).toContain('choose Whole upper mass')
+    expect(stepped.retainedCore.message).toContain('choose Whole upper mass')
     expect(removed.retainedCore.message).toContain('restore Upper mass')
   })
 
@@ -1215,6 +1221,9 @@ describe('generatePiloti', () => {
       radialSpreadRatio: 0.55,
       footOffsetSpace: 'global',
       upperMassDivision: 'whole',
+      upperStepScaleRatio: 0.65,
+      upperStepOffsetXMm: -300,
+      upperStepOffsetYMm: -300,
       massPartOverrides: [],
       concreteDensityKgM3: 800,
       retainedCoreMode: 'none',
@@ -1258,6 +1267,9 @@ describe('generatePiloti', () => {
       radialSpreadRatio: 1.45,
       footOffsetSpace: 'centered',
       upperMassDivision: 'xy4',
+      upperStepScaleRatio: 1.15,
+      upperStepOffsetXMm: 300,
+      upperStepOffsetYMm: 300,
       massPartOverrides: [],
       concreteDensityKgM3: 4_000,
       retainedCoreMode: 'upper-mass',

@@ -83,6 +83,9 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   upperOffsetYMm: 0,
   upperMassProfile: 'block',
   upperMassDivision: 'whole',
+  upperStepScaleRatio: 0.86,
+  upperStepOffsetXMm: 90,
+  upperStepOffsetYMm: 0,
   massPartOverrides: [],
   concreteDensityKgM3: DEFAULT_CONCRETE_DENSITY_KG_M3,
   retainedCoreMode: 'none',
@@ -299,7 +302,13 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
             parameters.upperTopOffsetYMm,
           ],
         }
-  pieces.push(...divideUpperMass(upperMass, parameters.upperMassDivision, parameters.massPartOverrides))
+  pieces.push(...divideUpperMass(
+    upperMass,
+    parameters.upperMassDivision,
+    parameters.massPartOverrides,
+    parameters.upperStepScaleRatio,
+    [parameters.upperStepOffsetXMm, parameters.upperStepOffsetYMm],
+  ))
 
   const study = composePiloti(parameters, pieces, upperMass)
   const intervalOverlap = (

@@ -105,6 +105,46 @@ describe.each(['hexagon', 'octagon'] as const)('%s Piloti', (planShape) => {
     sectors.forEach(expectClosedPlanar)
   })
 
+  it('builds shape-specific stepped levels as connected semantic parts', async () => {
+    const levelId = `upper-mass-${code}-level-2`
+    const parameters: PilotiParameters = {
+      ...base,
+      polygonMassDivision: 'z3',
+      upperMassProfile: 'tapered',
+      upperTopWidthRatio: 0.8,
+    }
+    const study = generatePiloti(parameters)
+    const levels = study.pieces.filter((piece) => piece.role === 'mass').map(polygon)
+
+    expect(levels.map((piece) => piece.id)).toEqual([
+      `upper-mass-${code}-level-1`,
+      levelId,
+      `upper-mass-${code}-level-3`,
+    ])
+    levels.forEach(expectClosedPlanar)
+    expect((await fuseScenePieces(study.pieces)).componentCount).toBe(1)
+    expect(partLabel(levelId)).toBe('Upper level 2')
+    expect(partInGrid(levelId, parameters)).toBe(true)
+    expect(partInGrid(levelId, {
+      ...parameters,
+      planShape: planShape === 'hexagon' ? 'octagon' : 'hexagon',
+    })).toBe(false)
+
+    const copied = generatePiloti({
+      ...parameters,
+      removedPartIds: [levelId],
+      partCopies: [{
+        id: 'copy-1',
+        sourceId: levelId,
+        offsetXMm: 0,
+        offsetYMm: 0,
+        offsetZMm: 200,
+      }],
+    })
+    expect(copied.pieces.some((piece) => piece.id === levelId)).toBe(false)
+    expect(copied.pieces.some((piece) => piece.id === 'upper-mass-copy-1')).toBe(true)
+  })
+
   it('edits and re-links one sector without changing neighbours or supports', () => {
     const parameters: PilotiParameters = { ...base, polygonMassDivision: 'sectors', upperMassProfile: 'tapered' }
     const before = generatePiloti(parameters)

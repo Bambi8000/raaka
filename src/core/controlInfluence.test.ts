@@ -73,4 +73,31 @@ describe('selection control influence', () => {
     expect(core.has('retainedCoreScale')).toBe(true)
     expect(core.has('footOffsetXMm')).toBe(false)
   })
+
+  it('exposes level steps only to active upper levels and their copies', () => {
+    const sourceId = 'upper-mass-rect-level-2'
+    const parameters = {
+      ...DEFAULT_PILOTI_PARAMETERS,
+      upperMassDivision: 'z3' as const,
+      partCopies: [{
+        id: 'copy-1',
+        sourceId,
+        offsetXMm: 0,
+        offsetYMm: 0,
+        offsetZMm: 100,
+      }],
+    }
+
+    for (const id of [sourceId, 'upper-mass-copy-1']) {
+      const controls = affectedPilotiControls(parameters, id)
+      expect(controls.has('upperStepScaleRatio')).toBe(true)
+      expect(controls.has('upperStepOffsetXMm')).toBe(true)
+      expect(controls.has('upperStepOffsetYMm')).toBe(true)
+      expect(controls.has('footFlareRatio')).toBe(false)
+    }
+    expect(
+      affectedPilotiControls(DEFAULT_PILOTI_PARAMETERS, 'upper-mass')
+        .has('upperStepScaleRatio'),
+    ).toBe(false)
+  })
 })

@@ -27,6 +27,7 @@ describe('wired selection inspector', () => {
     expect(html).not.toContain('aria-label="Foot flare"')
     expect(html).not.toContain('aria-label="Bearing scale"')
     expect(html).not.toContain('SUPPORT FAMILY')
+    expect(html).not.toContain('UPPER LEVEL STEP')
     expect(html).toContain('aria-label="Show all controls"')
     expect(html).toContain('UPPER MASS PROFILE')
     expect(html).toContain('RETAINED LIGHTWEIGHT CORE')
@@ -113,6 +114,28 @@ describe('wired selection inspector', () => {
     expect(html).toContain('aria-label="Part top drift X"')
     expect(html).toContain('USE SHARED PROFILE')
     expect(html).not.toContain('SHARED UPPER MASS PROFILE')
+    expect(html).not.toContain('LEG EDIT SCOPE')
+  })
+
+  it.each([
+    ['rectangle', 'upperMassDivision'],
+    ['hexagon', 'polygonMassDivision'],
+  ] as const)('shows focused stepped-level controls for %s', (planShape, divisionKey) => {
+    const html = renderInspector({
+      ...defaults,
+      planShape,
+      [divisionKey]: 'z3',
+      upperStepScaleRatio: 0.74,
+      upperStepOffsetXMm: -120,
+      upperStepOffsetYMm: 65,
+    })
+
+    expect(html).toContain('UPPER LEVEL STEP')
+    expect(html).toContain('3 LEVEL STACK')
+    expect(html).toContain('aria-label="Scale per level"')
+    expect(html).toContain('aria-label="Step offset X"')
+    expect(html).toContain('aria-label="Step offset Y"')
+    expect(html).toContain('value="74"')
     expect(html).not.toContain('LEG EDIT SCOPE')
   })
 

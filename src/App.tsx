@@ -33,6 +33,10 @@ import {
 } from './core/translationGizmo'
 import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress, massPartProfile } from './core/massDivision'
 import {
+  UPPER_MASS_LEVEL_DIVISIONS,
+  upperMassLevelCount,
+} from './core/upperMassLevels'
+import {
   PILOTI_FUSE_GROUP_LIMIT,
   PILOTI_PARAMETER_RULES,
   PILOTI_PART_COPY_LIMIT,
@@ -61,6 +65,7 @@ import type {
   PilotiParameters,
   PilotiPartCopy,
   PilotiMassPartOverride,
+  PilotiPolygonMassDivision,
   PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
 } from './core/types'
@@ -256,9 +261,11 @@ export default function App() {
   const centeredFeet = radial && parameters.footOffsetSpace === 'centered'
   const polygonSides = parameters.planShape === 'hexagon' ? 6 : 8
   const activeDivision = radial ? parameters.polygonMassDivision : parameters.upperMassDivision
+  const activeLevelCount = upperMassLevelCount(activeDivision)
   const divisionChoices = radial ? [
     { value: 'whole' as const, label: 'WHOLE', description: 'ONE POLYGON' },
     { value: 'sectors' as const, label: `${polygonSides} SECTORS`, description: 'RADIAL DIVISION' },
+    ...UPPER_MASS_LEVEL_DIVISIONS,
   ] : MASS_DIVISIONS
   const modelScale = studyState.modelScale
   const modelScaleDenominator = Math.round(1 / modelScale)
@@ -1327,7 +1334,7 @@ export default function App() {
           <ControlGroup visible={canShowControls(radial ? 'polygonMassDivision' : 'upperMassDivision')}>
           <div className="control-subsection">
             <span>UPPER MASS DIVISION</span>
-            <small>New divisions preserve the original envelope. Whole-mass copies stay whole; cell copies pause outside their source division.</small>
+            <small>Plan divisions preserve the envelope. Z levels split its height, then apply one cumulative scale and offset step.</small>
           </div>
           <div className={`offset-scope-switch mass-division-switch ${affectedControls.has(radial ? 'polygonMassDivision' : 'upperMassDivision') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass division">
             {divisionChoices.map((division) => (
@@ -1335,7 +1342,7 @@ export default function App() {
                 className={activeDivision === division.value ? 'is-active' : ''}
                 aria-pressed={activeDivision === division.value}
                 onClick={() => radial
-                  ? update('polygonMassDivision', division.value === 'sectors' ? 'sectors' : 'whole')
+                  ? update('polygonMassDivision', division.value as PilotiPolygonMassDivision)
                   : division.value !== 'sectors' && update('upperMassDivision', division.value)}>
                 <span>{division.label}</span><small>{division.description}</small>
               </button>
@@ -1353,11 +1360,74 @@ export default function App() {
             </>
           ) : null}
           </ControlGroup>
+          {(activeLevelCount !== undefined || allControlsVisible) ? (
+            <ControlGroup visible={canShowControls(
+              'upperStepScaleRatio',
+              'upperStepOffsetXMm',
+              'upperStepOffsetYMm',
+            )}>
+              <div className="control-subsection">
+                <span>UPPER LEVEL STEP</span>
+                <small>
+                  Each higher level applies this scale and X/Y offset again.
+                  The lowest bearing face and total height stay fixed.
+                </small>
+              </div>
+              <RangeField
+                label="Scale per level"
+                affected={affectedControls.has('upperStepScaleRatio')}
+                visible={relevantControls.has('upperStepScaleRatio')}
+                value={parameters.upperStepScaleRatio}
+                minimum={PILOTI_PARAMETER_RULES.upperStepScaleRatio.minimum}
+                maximum={PILOTI_PARAMETER_RULES.upperStepScaleRatio.maximum}
+                step={0.01}
+                display="percent"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperStepScaleRatio', value)}
+              />
+              <RangeField
+                label="Step offset X"
+                affected={affectedControls.has('upperStepOffsetXMm')}
+                visible={relevantControls.has('upperStepOffsetXMm')}
+                value={parameters.upperStepOffsetXMm}
+                minimum={PILOTI_PARAMETER_RULES.upperStepOffsetXMm.minimum}
+                maximum={PILOTI_PARAMETER_RULES.upperStepOffsetXMm.maximum}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperStepOffsetXMm', value)}
+              />
+              <RangeField
+                label="Step offset Y"
+                affected={affectedControls.has('upperStepOffsetYMm')}
+                visible={relevantControls.has('upperStepOffsetYMm')}
+                value={parameters.upperStepOffsetYMm}
+                minimum={PILOTI_PARAMETER_RULES.upperStepOffsetYMm.minimum}
+                maximum={PILOTI_PARAMETER_RULES.upperStepOffsetYMm.maximum}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperStepOffsetYMm', value)}
+              />
+              <div className="shape-readout">
+                <span>{activeLevelCount === undefined ? 'DORMANT LEVEL STEP' : `${activeLevelCount} LEVEL STACK`}</span>
+                <strong>
+                  {formatNumber(parameters.upperStepScaleRatio * 100)}% ·{' '}
+                  {formatNumber(parameters.upperStepOffsetXMm)} ×{' '}
+                  {formatNumber(parameters.upperStepOffsetYMm)} MM
+                </strong>
+                <small>Scale · X step · Y step. Select 2–4 Z levels to apply.</small>
+              </div>
+            </ControlGroup>
+          ) : null}
           {activeMassProfile ? (
             <div className="mass-part-editor">
               <div className="control-subsection">
                 <span>{partLabel(activeMassProfile.partId).toUpperCase()} · {selectedMassOverride ? 'INDEPENDENT TOP' : 'SHARED PROFILE'}</span>
-                <small>Only this part and its live copies change. The bottom face stays linked; dimensions are design millimetres.</small>
+                <small>Only this part and its live copies change. The bottom face remains driven by the current division; dimensions are design millimetres.</small>
               </div>
               <div className="offset-scope-switch affects-selection" aria-label="Selected mass part profile">
                 {(['block', 'tapered'] as const).map((profile) => (
@@ -2325,7 +2395,7 @@ export default function App() {
             </div>
           ) : null}
           {activeDivision !== 'whole' ? (
-            <p className="notice">Divided masses remain separate until fused. Independent tapers may create gaps or overlaps; overlapping volumes are counted twice outside a Fuse. Bearing checks use the outer footprint only, not gaps left by removed mass parts.</p>
+            <p className="notice">Plan cells and Z levels remain separate until fused. Large level steps or independent tapers may create gaps; overlapping plan cells are counted twice outside a Fuse. STL export refuses disconnected islands. Bearing checks use the outer footprint only, not gaps left by removed mass parts.</p>
           ) : null}
           {study.radialLayout ? <div className="layout-advisories">
             <div><strong>RADIAL SUPPORTS</strong><span>{study.radialLayout.totalSupports} / {study.radialLayout.sides} LEGS</span>
@@ -2500,7 +2570,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.29 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.30 / LOCAL</span>
       </footer>
     </main>
   )

@@ -1018,6 +1018,33 @@ describe('generatePiloti', () => {
     )
   })
 
+  it('uses authored material densities without changing generated geometry', () => {
+    const baseline = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      retainedCoreMode: 'upper-mass',
+    })
+    const authored = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      concreteDensityKgM3: 1_650,
+      retainedCoreMode: 'upper-mass',
+      retainedCoreDensityKgM3: 55,
+    })
+
+    expect(authored.pieces).toEqual(baseline.pieces)
+    expect(authored.concreteVolumeMm3).toBe(baseline.concreteVolumeMm3)
+    expect(authored.retainedCore.volumeMm3).toBe(baseline.retainedCore.volumeMm3)
+    expect(authored.concreteDensityKgM3).toBe(1_650)
+    expect(authored.retainedCore.densityKgM3).toBe(55)
+    expect(authored.concreteMassKg).toBeCloseTo(
+      authored.concreteVolumeMm3 / 1_000_000_000 * 1_650,
+      10,
+    )
+    expect(authored.retainedCore.massKg).toBeCloseTo(
+      authored.retainedCore.volumeMm3 / 1_000_000_000 * 55,
+      10,
+    )
+  })
+
   it('retains core intent but pauses subtraction for divided or removed upper masses', () => {
     const divided = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
@@ -1189,8 +1216,10 @@ describe('generatePiloti', () => {
       footOffsetSpace: 'global',
       upperMassDivision: 'whole',
       massPartOverrides: [],
+      concreteDensityKgM3: 800,
       retainedCoreMode: 'none',
       retainedCoreScale: 0.35,
+      retainedCoreDensityKgM3: 10,
       heightMm: 1_000,
       supportCount: 1,
       supportRowCount: 1,
@@ -1228,8 +1257,10 @@ describe('generatePiloti', () => {
       footOffsetSpace: 'centered',
       upperMassDivision: 'xy4',
       massPartOverrides: [],
+      concreteDensityKgM3: 4_000,
       retainedCoreMode: 'upper-mass',
       retainedCoreScale: 0.85,
+      retainedCoreDensityKgM3: 500,
       heightMm: 2_000,
       supportCount: 6,
       supportRowCount: 3,

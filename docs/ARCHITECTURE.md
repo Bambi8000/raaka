@@ -395,13 +395,15 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 17 stores every
+version and a separate recipe version. Piloti recipe version 18 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
 override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
 division, mass-part overrides, plan shape, polygon division, radial spread,
-foot offset space, retained-core mode and retained-core scale, plus one of the
-supported `modelScale` presets. Recipe versions 1–16 receive disabled retained
+foot offset space, retained-core mode and retained-core scale, concrete density
+and retained-core density, plus one of the supported `modelScale` presets.
+Recipe versions 1–17 receive the former 2,400 kg/m³ concrete and 30 kg/m³ core
+defaults, preserving geometry and previous mass readings. Recipe versions 1–16 receive disabled retained
 core intent and its latent 72% default, preserving their exact solid geometry.
 Recipe versions 1–15 receive `global` foot offset space, preserving their current geometry.
 Recipe versions 1–14 receive
@@ -471,16 +473,16 @@ source: box dimensions shrink about the centre; rectangular and polygon lofts
 trim both Z caps, interpolate the outer cross-section and centreline at those
 caps, then shrink the resulting sections. It is therefore contained by the
 convex source for block and tapered profiles. The analysis carries status,
-pieces, physical volume, fixed-density mass and conservative minimum axis
+pieces, physical volume, authored-density mass and conservative minimum axis
 cover separately from `study.pieces` so positive union logic cannot count foam
 as concrete. Division, removal or an unsupported analytic source returns a
 paused status with no subtractor and retains the authored parameters.
 
 `composePiloti.ts` subtracts active core volume from nominal positive volume,
-then reports concrete mass at 2,400 kg/m³ and retained foam at 30 kg/m³.
+then reports concrete and retained-foam mass at the authored recipe densities.
 `studyFuses.ts` preserves the same single deduction after live positive pieces
-are unioned. `modelScale.ts` scales core geometry and cover linearly and both
-material volumes and masses cubically. The object list and viewport append the
+are unioned. `modelScale.ts` preserves density, scales core geometry and cover
+linearly, and scales both material volumes and masses cubically. The object list and viewport append the
 core only for inspection; blue transparent rendering is a semantic projection,
 not an additive scene solid.
 
@@ -491,6 +493,16 @@ centroid; indexed meshes use signed tetrahedral moments about a local reference
 to avoid world-origin cancellation. The manufactured mass centre sums concrete
 moments, subtracts concrete displaced by an active retained core and adds the
 core back at its foam density.
+
+Material density is recipe state, not geometry state. `pilotiParameters.ts`
+normalises concrete to a whole 800–4,000 kg/m³ and retained core to a whole
+10–500 kg/m³. The manufacturing panel writes those fields through the same
+history and recovery path as form parameters but does not mark them as controls
+that reshape the current selection. `MassStudy` carries the effective concrete
+density explicitly so asynchronous Fuse resolution cannot fall back to a stale
+global assumption. Retained-core analysis carries its effective density even
+while paused or disabled. Geometry, bounds, volume and solid export do not read
+either density.
 
 Grounded stem faces and grounded finished meshes contribute contact vertices.
 A deterministic monotonic-chain hull forms the convex support polygon. The

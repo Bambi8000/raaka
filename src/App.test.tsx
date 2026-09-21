@@ -41,6 +41,11 @@ describe('wired selection inspector', () => {
     expect(html).toContain('Support reserve')
     expect(html).toContain('MASS PROJECTION INSIDE')
     expect(html).toContain('static geometry only')
+    expect(html).toContain('MATERIAL ASSUMPTIONS')
+    expect(html).toContain('aria-label="Concrete density"')
+    expect(html).toContain('aria-label="Retained core density"')
+    expect(html).toContain('value="2400"')
+    expect(html).toContain('value="30"')
   })
 
   it('shows an explicit warning when the mass projection leaves the support polygon', () => {
@@ -61,6 +66,8 @@ describe('wired selection inspector', () => {
       ...defaults,
       retainedCoreMode: 'upper-mass',
       retainedCoreScale: 0.76,
+      concreteDensityKgM3: 1_800,
+      retainedCoreDensityKgM3: 45,
     })
 
     expect(html).toContain('aria-label="Core size"')
@@ -71,6 +78,8 @@ describe('wired selection inspector', () => {
     expect(html).toContain('Retained core volume')
     expect(html).toContain('Retained core mass')
     expect(html).toContain('Estimated total mass')
+    expect(html).toContain('Concrete uses 1,800 kg/m³')
+    expect(html).toContain('retained foam uses 45 kg/m³')
   })
 
   it('switches to stem controls when the upper mass has been removed', () => {

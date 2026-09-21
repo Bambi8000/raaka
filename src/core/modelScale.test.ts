@@ -168,13 +168,17 @@ describe('scaleMassStudy', () => {
     const cored = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
       planShape: 'octagon',
+      concreteDensityKgM3: 1_800,
       retainedCoreMode: 'upper-mass',
       retainedCoreScale: 0.68,
+      retainedCoreDensityKgM3: 45,
     })
     const scaled = scaleMassStudy(cored, 0.25)
 
     expect(cored.retainedCore.status).toBe('active')
     expect(scaled.retainedCore.status).toBe('active')
+    expect(scaled.concreteDensityKgM3).toBe(1_800)
+    expect(scaled.retainedCore.densityKgM3).toBe(45)
     expect(scaled.retainedCore.pieces).toHaveLength(1)
     expectPieceScaled(
       cored.retainedCore.pieces[0],
@@ -230,11 +234,12 @@ describe('scaleMassStudy', () => {
       depthMm: 80,
       heightMm: 60,
       concreteVolumeMm3: 80_000,
+      concreteDensityKgM3: 2_400,
       concreteMassKg: 0.192,
       retainedCore,
       estimatedMassKg: 0.192,
       groundContactMm2: 4_000,
-      stability: analyseStability([mesh], retainedCore),
+      stability: analyseStability([mesh], 2_400, retainedCore),
     }
 
     const scaled = scaleMassStudy(fusedStudy, 0.25)

@@ -43,6 +43,7 @@ Retained lightweight upper-core intent, separate material readings and matching
 STL subtraction are implemented in 0.1.26.
 Mass-centre projection and static support-polygon feedback are implemented in
 0.1.27.
+Editable concrete and retained-core densities are implemented in 0.1.28.
 
 ## 0.1 — foundation
 
@@ -79,6 +80,7 @@ Version 0.1.24 adds validated numeric entry beside every visible slider.
 Version 0.1.25 adds a watertight, model-scaled binary STL handoff to Kerros.
 Version 0.1.26 adds retained upper-core intent and subtraction.
 Version 0.1.27 adds material-aware mass-centre and support-polygon feedback.
+Version 0.1.28 makes both material density assumptions editable and saved.
 
 ## 0.1.1 — correct the baseline
 
@@ -694,6 +696,24 @@ Verification: 410 tests plus lint, strict TypeScript and production build.
 Browser inspection covers the retained-core 1:4 study, visible support boundary,
 mass-centre marker, projection line, signed reserve and an authored outside case.
 
+## 0.1.28 — editable material densities
+
+- [x] store concrete and retained-core density in Piloti recipe version 18
+- [x] migrate recipe versions 1–17 to the previous 2,400/30 kg/m³ assumptions
+- [x] validate whole concrete values from 800–4,000 kg/m³ and retained-core
+  values from 10–500 kg/m³
+- [x] keep both controls with the global manufacturing estimate instead of
+  presenting them as selected-shape controls
+- [x] recompute nominal and finished-Fuse mass at the authored densities
+- [x] reweight the mixed-material mass centre and support reserve while leaving
+  geometry, volume, cover and STL unchanged
+- [x] preserve density through 1:1, 1:2 and 1:4 model scale while mass follows
+  `s³`
+
+Done when saved and recovered studies reproduce both density assumptions,
+older files retain their previous readings, and edits immediately update every
+mass path without changing the manufactured solid.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -718,7 +738,7 @@ mass-centre marker, projection line, signed reserve and an authored outside case
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [x] focused solid-kernel spike before committing to a boolean dependency
 - [x] union selected preview pieces and resolve their internal contact faces
-- [ ] editable concrete and retained-core densities
+- [x] editable concrete and retained-core densities
 - [x] centre-of-mass projection and static support-polygon feedback
 - [x] geometric bearing/contact feedback without automatic aesthetic correction
 - [x] retained lightweight core intent, preview and matching solid subtraction

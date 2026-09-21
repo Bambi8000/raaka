@@ -37,11 +37,12 @@ function study(pieces: readonly BoxPiece[]): MassStudy {
     depthMm: 100,
     heightMm: 200,
     concreteVolumeMm3: pieces.length * 1_000_000,
+    concreteDensityKgM3: 2_400,
     concreteMassKg: pieces.length * 2.4,
     retainedCore,
     estimatedMassKg: pieces.length * 2.4,
     groundContactMm2: 0,
-    stability: analyseStability(pieces, retainedCore),
+    stability: analyseStability(pieces, 2_400, retainedCore),
   }
 }
 
@@ -93,6 +94,26 @@ describe('study fuse resolution', () => {
 
     expect(resolution.study).toBe(original)
     expect(resolution.dormantFuseGroupIds).toEqual(['fuse-2'])
+  })
+
+  it('recomputes a finished union with the authored concrete density', async () => {
+    const authored: MassStudy = {
+      ...study([
+        box('upper-mass', [0, 0, 50]),
+        box('upper-mass-copy-1', [50, 0, 50]),
+      ]),
+      concreteDensityKgM3: 1_600,
+    }
+
+    const resolution = await resolveStudyFuses(authored, [{
+      id: 'fuse-5',
+      pieceIds: ['upper-mass', 'upper-mass-copy-1'],
+    }])
+
+    expect(resolution.study.concreteDensityKgM3).toBe(1_600)
+    expect(resolution.study.concreteVolumeMm3).toBeCloseTo(1_500_000, 5)
+    expect(resolution.study.concreteMassKg).toBeCloseTo(2.4, 10)
+    expect(resolution.study.estimatedMassKg).toBeCloseTo(2.4, 10)
   })
 
   it('keeps one retained core deduction after positive pieces are fused', async () => {

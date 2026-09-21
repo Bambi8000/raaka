@@ -1,4 +1,4 @@
-import { scenePieceGroundContact, scenePieceVolume, CONCRETE_DENSITY_KG_M3 } from './pieceMetrics'
+import { scenePieceGroundContact, scenePieceVolume } from './pieceMetrics'
 import { polygonArea, polygonFace } from './polygonLoft'
 import type { FrustumPiece, ScenePiece, StabilityAnalysis, Vec2, Vec3 } from './types'
 
@@ -197,6 +197,7 @@ export function signedSupportMargin(point: Vec2, polygon: readonly Vec2[]): numb
 /** Static mass projection against the convex hull of actual grounded support faces. */
 export function analyseStability(
   pieces: readonly ScenePiece[],
+  concreteDensityKgM3: number,
   retainedMaterial: RetainedMaterial,
 ): StabilityAnalysis {
   let totalMassKg = 0
@@ -209,10 +210,10 @@ export function analyseStability(
       massMoment[axis] += properties.centroidMm[axis] * massKg
     }
   }
-  for (const piece of pieces) addMaterial(piece, CONCRETE_DENSITY_KG_M3)
+  for (const piece of pieces) addMaterial(piece, concreteDensityKgM3)
   if (retainedMaterial.status === 'active') {
     for (const piece of retainedMaterial.pieces) {
-      addMaterial(piece, retainedMaterial.densityKgM3 - CONCRETE_DENSITY_KG_M3)
+      addMaterial(piece, retainedMaterial.densityKgM3 - concreteDensityKgM3)
     }
   }
 

@@ -1,9 +1,5 @@
 import { boundsSize, sceneBounds } from './bounds'
-import {
-  CONCRETE_DENSITY_KG_M3,
-  scenePieceGroundContact,
-  scenePieceVolume,
-} from './pieceMetrics'
+import { scenePieceGroundContact, scenePieceVolume } from './pieceMetrics'
 import { fuseScenePieces } from './solidKernel'
 import { analyseStability } from './stability'
 import type {
@@ -125,7 +121,7 @@ export async function resolveStudyFuses(
     solidVolumeMm3 - study.retainedCore.volumeMm3,
   )
   const concreteMassKg =
-    (concreteVolumeMm3 / 1_000_000_000) * CONCRETE_DENSITY_KG_M3
+    (concreteVolumeMm3 / 1_000_000_000) * study.concreteDensityKgM3
   const groundContactMm2 = pieces.reduce(
     (sum, piece) => sum + scenePieceGroundContact(piece),
     0,
@@ -143,7 +139,11 @@ export async function resolveStudyFuses(
       concreteMassKg,
       estimatedMassKg: concreteMassKg + study.retainedCore.massKg,
       groundContactMm2,
-      stability: analyseStability(pieces, study.retainedCore),
+      stability: analyseStability(
+        pieces,
+        study.concreteDensityKgM3,
+        study.retainedCore,
+      ),
     },
     dormantFuseGroupIds,
   }

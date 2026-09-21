@@ -38,6 +38,7 @@ interface RangeFieldProps {
   readonly affected: boolean
   /** Keep a contextual field visible without claiming that it reshapes the selection. */
   readonly visible?: boolean
+  readonly ariaDescription?: string
   readonly onChange: (value: number) => void
   readonly onInteractionStart: () => void
   readonly onInteractionEnd: () => void
@@ -59,6 +60,7 @@ export function RangeField({
 
 function VisibleRangeField({
   label, value, minimum, maximum, step, suffix = '', display = 'raw', affected,
+  ariaDescription,
   onChange, onInteractionStart, onInteractionEnd,
 }: RangeFieldProps) {
   const rangeId = useId()
@@ -161,9 +163,9 @@ function VisibleRangeField({
         </span>
       </span>
       <input id={rangeId} type="range" aria-label={label}
-        aria-description={affected
+        aria-description={ariaDescription ?? (affected
           ? 'Affects the selected part or its live Fuse sources.'
-          : 'Does not affect the selected part in the current study.'}
+          : 'Does not affect the selected part in the current study.')}
         min={minimum} max={maximum} step={inputStep} value={value}
         onPointerDown={onInteractionStart} onPointerUp={onInteractionEnd}
         onPointerCancel={onInteractionEnd} onKeyDown={beginKeyboardGesture}

@@ -39,6 +39,8 @@ Scoped translation gizmos are implemented in 0.1.23.
 Exact numeric parameter entry is implemented in 0.1.24.
 Watertight binary STL export and a measured Kerros round trip are implemented
 in 0.1.25.
+Retained lightweight upper-core intent, separate material readings and matching
+STL subtraction are implemented in 0.1.26.
 
 ## 0.1 — foundation
 
@@ -51,9 +53,9 @@ in 0.1.25.
 - [x] summed piece volume, approximate mass and ground contact readings
 - [x] baseline code, geometry, browser and CI review recorded
 
-The baseline is a working study prototype. Positive-solid STL export is
-implemented; cores, mould output and five of the six recipe families are not
-yet implemented. Version 0.1.1 closes the
+The baseline is a working study prototype. Finished-solid STL export and the
+first retained upper-core workflow are implemented; open/removable voids, mould
+output and five of the six recipe families are not yet implemented. Version 0.1.1 closes the
 measured geometry and viewport defects; version 0.1.2 begins durable study
 work with project files, recovery and history; version 0.1.3 adds authored
 shared leg lean; version 0.1.4 adds per-leg overrides; version 0.1.5 adds
@@ -73,6 +75,7 @@ serialises feature-branch verification through pull requests.
 Version 0.1.23 adds direct translation handles for existing placement fields.
 Version 0.1.24 adds validated numeric entry beside every visible slider.
 Version 0.1.25 adds a watertight, model-scaled binary STL handoff to Kerros.
+Version 0.1.26 adds retained upper-core intent and subtraction.
 
 ## 0.1.1 — correct the baseline
 
@@ -429,8 +432,9 @@ emphasis to match its actual parameter dependencies.
 Unchecked items remain proposals. The owner-requested dynamic inspector is now
 implemented; fuller selected-first ordering and copy-source navigation remain
 open. Translation gizmos, exact numeric entry and the first STL handoff are
-implemented. Next: retained lightweight-core intent and concrete/core mass
-separation. Keep the existing manufacturing gates below in scope.
+implemented. The first retained lightweight core is also implemented. Next:
+centre-of-mass projection and support-polygon feedback, while keeping the
+existing manufacturing gates below in scope.
 
 ## 0.1.19 — divided upper masses and opposing tapers
 
@@ -629,6 +633,38 @@ build. The cross-repository fixture writes a 150-triangle, six-leg 1:4 STL;
 Kerros reads it as 361.4 × 275.0 × 500.0 mm with zero warnings and zero open
 edges. Browser verification covers the actual download path and a clean console.
 
+## 0.1.26 — retained lightweight upper core
+
+- [x] add disabled-by-default retained-core intent to Piloti recipe version 17;
+  migrate versions 1–16 to byte-for-byte solid geometry
+- [x] derive a centred contained core for whole block, tapered, hexagonal and
+  octagonal upper masses without converting preview geometry to voxels
+- [x] show the core as blue selectable secondary material and expose its size
+  only in the relevant inspector context
+- [x] pause divided or removed upper masses with an actionable reason while
+  retaining the authored core settings; keep copies solid in the first scope
+- [x] separate concrete volume/mass from core volume/mass using explicit
+  2,400 kg/m³ concrete and 30 kg/m³ foam assumptions
+- [x] scale core geometry and cover by `s`, and both material readings by `s³`
+- [x] union positive pieces, subtract the retained core and export one
+  watertight STL with unchanged outer bounds and a sealed internal cavity
+- [x] retain disconnected-positive refusal without mistaking an inner cavity
+  surface for a second loose object
+- [x] cover generation, migration, inspector filtering, Fuse resolution,
+  scaling, kernel subtraction and binary STL topology in regressions
+
+Done when one saved whole upper mass can carry a visible, measurable retained
+core through preview, 1:1/1:2/1:4 scaling and a watertight Kerros-readable STL.
+Open voids, removable cores, per-cell cores, copy cores and mould construction
+remain separate future workflows rather than ambiguous extensions of this mode.
+
+Verification: 400 tests plus lint, strict TypeScript and production build.
+Browser checks cover exact core-size entry, blue core selection, cubic 1:4
+scaling, divided-mass pause/Whole recovery, browser recovery, STL download and a
+clean console. The actual 96-triangle 1:4 download is 270.0 × 127.5 × 375.0 mm
+and 5.34 L; Kerros's production importer reports binary STL, zero open edges,
+positive signed volume and no warnings.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -655,8 +691,8 @@ edges. Browser verification covers the actual download path and a clean console.
 - [x] union selected preview pieces and resolve their internal contact faces
 - [ ] editable density, centre-of-mass projection and support-polygon feedback
 - [x] geometric bearing/contact feedback without automatic aesthetic correction
-- [ ] retained lightweight core intent, preview and matching solid subtraction
-- [ ] separate concrete/core volume and mass, with explicit material assumptions
+- [x] retained lightweight core intent, preview and matching solid subtraction
+- [x] separate concrete/core volume and mass, with explicit material assumptions
 - [x] STL export from the finished watertight solid
 - [x] a measured millimetre round trip into Kerros
 - [ ] update selection materials without rebuilding geometry; complete unmount
@@ -755,7 +791,7 @@ drawings.
 | Rectangular loft/frustum | Implemented as a semantic piece | Stem, shoulder, tapered upper mass |
 | Faceted prism and taper | Polygon Piloti implemented; silo composition planned | Silo tank and hopper |
 | Place, align, repeat, mirror, group | Selected semantic parts can be translated and repeated; align, mirror and grouping remain planned | Shared composition tools |
-| Union, subtract, plane-cut, chamfer | Selected-part Union/Fuse is implemented; subtract, plane-cut and chamfer remain planned | Finished solids and voids |
+| Union, subtract, plane-cut, chamfer | Selected-part Union/Fuse and bounded retained-core subtraction are implemented; general subtract, plane-cut and chamfer remain planned | Finished solids and voids |
 | Step, stagger, lean and vary | Shared and selected Piloti foot lean plus seeded variation implemented | Support grids and Ziggurat |
 | Lock and branch | Planned; requires persistence and stable identity | Repeatable variants |
 
@@ -766,7 +802,7 @@ constrained massing workflow rather than accumulating general modelling tools.
 
 - manufacturing package with face and core semantics
 - cast direction and advisory undercut analysis
-- open void, removable core and retained core workflows
+- open void, removable core and expanded retained-core workflows
 - Kerros mould partitioning and sheet output
 - miniature-model moulds as printable STL part sets
 - layered foam core and hot-wire profile studies

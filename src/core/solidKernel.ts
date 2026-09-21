@@ -138,7 +138,11 @@ function copyPositions(
 
 async function withSceneManifold<Result>(
   pieces: readonly ScenePiece[],
-  readResult: (result: ManifoldSolid) => Result,
+  readResult: (
+    result: ManifoldSolid,
+    positiveComponentCount?: number,
+  ) => Result,
+  subtractors: readonly ScenePiece[] = [],
 ): Promise<Result> {
   if (pieces.length === 0) {
     throw new RangeError('A solid operation requires at least one scene piece.')
@@ -146,26 +150,55 @@ async function withSceneManifold<Result>(
 
   const kernel = await loadSolidKernel()
   const operands: ManifoldSolid[] = []
+  const subtractorOperands: ManifoldSolid[] = []
+  let positive: ManifoldSolid | undefined
+  let negative: ManifoldSolid | undefined
   let result: ManifoldSolid | undefined
+  let positiveComponentCount: number | undefined
   try {
     for (const piece of pieces) operands.push(manifoldForPiece(kernel, piece))
-    result = operands.length === 1
+    positive = operands.length === 1
       ? operands.pop()
       : kernel.Manifold.union(operands)
-    if (!result) throw new Error('The solid kernel returned no result.')
+    if (!positive) throw new Error('The solid kernel returned no positive result.')
+    if (subtractors.length > 0) {
+      const positiveComponents = positive.decompose()
+      try {
+        positiveComponentCount = positiveComponents.length
+      } finally {
+        for (const component of positiveComponents) component.delete()
+      }
+      for (const piece of subtractors) {
+        subtractorOperands.push(manifoldForPiece(kernel, piece))
+      }
+      negative = subtractorOperands.length === 1
+        ? subtractorOperands.pop()
+        : kernel.Manifold.union(subtractorOperands)
+      if (!negative) throw new Error('The solid kernel returned no subtractor result.')
+      result = kernel.Manifold.difference(positive, negative)
+    } else {
+      result = positive
+      positive = undefined
+    }
     const status = result.status()
     if (status !== 'NoError') {
-      throw new Error(`Solid-kernel union failed with status ${status}.`)
+      throw new Error(`Solid-kernel operation failed with status ${status}.`)
     }
 
-    return readResult(result)
+    return readResult(result, positiveComponentCount)
   } finally {
     result?.delete()
+    positive?.delete()
+    negative?.delete()
     for (const operand of operands) operand.delete()
+    for (const operand of subtractorOperands) operand.delete()
   }
 }
 
-function readSolidKernelMesh(result: ManifoldSolid): SolidKernelMesh {
+function readSolidKernelMesh(
+  result: ManifoldSolid,
+  positiveComponentCount?: number,
+): SolidKernelMesh {
   const mesh = result.getMesh()
   const components = result.decompose()
   try {
@@ -186,7 +219,7 @@ function readSolidKernelMesh(result: ManifoldSolid): SolidKernelMesh {
         max: [...kernelBounds.max],
       },
       volumeMm3: result.volume(),
-      componentCount: components.length,
+      componentCount: positiveComponentCount ?? components.length,
       groundContactMm2,
     }
   } finally {
@@ -197,8 +230,9 @@ function readSolidKernelMesh(result: ManifoldSolid): SolidKernelMesh {
 /** Resolve one or more semantic pieces into one finished indexed kernel mesh. */
 export async function finishScenePieces(
   pieces: readonly ScenePiece[],
+  subtractors: readonly ScenePiece[] = [],
 ): Promise<SolidKernelMesh> {
-  return withSceneManifold(pieces, readSolidKernelMesh)
+  return withSceneManifold(pieces, readSolidKernelMesh, subtractors)
 }
 
 export async function fuseScenePieces(

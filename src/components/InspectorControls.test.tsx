@@ -10,6 +10,9 @@ describe('inspector field filtering', () => {
           label={affected ? 'Relevant' : 'Unrelated'} affected={affected}
           value={40} minimum={-300} maximum={300} step={5} suffix=" mm"
           onChange={() => {}} onInteractionStart={() => {}} onInteractionEnd={() => {}} />)}
+        <RangeField label="Contextual" affected={false} visible={true}
+          value={50} minimum={0} maximum={100} step={1}
+          onChange={() => {}} onInteractionStart={() => {}} onInteractionEnd={() => {}} />
         <ControlGroup visible={showAll}><button>Unrelated choice</button></ControlGroup>
       </InspectorControls>,
     )
@@ -20,6 +23,7 @@ describe('inspector field filtering', () => {
     expect(html).toContain('value="40"')
     expect(html.includes('aria-label="Unrelated"')).toBe(showAll)
     expect(html.includes('aria-label="Unrelated numeric value"')).toBe(showAll)
+    expect(html).toContain('aria-label="Contextual"')
     expect(html.includes('Unrelated choice')).toBe(showAll)
     expect(html).not.toMatch(/\shidden(?:=|\s|>)/)
   })

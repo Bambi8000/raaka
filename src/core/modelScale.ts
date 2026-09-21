@@ -79,6 +79,16 @@ export function scaleMassStudy(
     depthMm,
     heightMm,
     concreteVolumeMm3: masterStudy.concreteVolumeMm3 * volumeScale,
+    concreteMassKg: masterStudy.concreteMassKg * volumeScale,
+    retainedCore: {
+      ...masterStudy.retainedCore,
+      pieces: masterStudy.retainedCore.pieces.map((piece) =>
+        scalePiece(piece, modelScale),
+      ),
+      volumeMm3: masterStudy.retainedCore.volumeMm3 * volumeScale,
+      massKg: masterStudy.retainedCore.massKg * volumeScale,
+      minimumCoverMm: masterStudy.retainedCore.minimumCoverMm * modelScale,
+    },
     estimatedMassKg: masterStudy.estimatedMassKg * volumeScale,
     groundContactMm2: masterStudy.groundContactMm2 * areaScale,
     radialLayout: masterStudy.radialLayout ? {

@@ -14,14 +14,15 @@ interface ObjectListProps {
 export function ObjectList({
   study, parameters, selectedPieceId, fuseSelectionPieceIds, isResolving, onSelect, onRestore,
 }: ObjectListProps) {
+  const visiblePieces = [...study.pieces, ...study.retainedCore.pieces]
   return (
     <section className="panel-section object-section">
       <div className="section-heading"><span>02</span><h2>Objects</h2></div>
       <div className="object-list">
-        {study.pieces.length === 0 ? (
+        {visiblePieces.length === 0 ? (
           <p className="empty-study">No parts remain. Restore a removed part or use Undo.</p>
         ) : null}
-        {study.pieces.map((piece) => (
+        {visiblePieces.map((piece) => (
           <button
             type="button"
             key={piece.id}

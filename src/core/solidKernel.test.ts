@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  finishScenePieces,
   fuseScenePieces,
   sectionScenePiecesAtZ,
   type SolidKernelMesh,
@@ -108,6 +109,21 @@ describe('solid-kernel gate', () => {
     expect(fused.volumeMm3).toBeCloseTo(1_000_000, 5)
     expect(fused.componentCount).toBe(1)
     expectClosed(fused)
+  })
+
+  it('subtracts one enclosed retained core as a closed concrete shell', async () => {
+    const outer = box('outer', [0, 0, 50])
+    const core = box('core', [0, 0, 50], [60, 60, 60])
+    const finished = await finishScenePieces([outer], [core])
+
+    expect(finished.volumeMm3).toBeCloseTo(1_000_000 - 216_000, 5)
+    expect(finished.bounds).toEqual({
+      min: [-50, -50, 0],
+      max: [50, 50, 100],
+    })
+    expect(finished.componentCount).toBe(1)
+    expect(finished.groundContactMm2).toBeCloseTo(10_000, 5)
+    expectClosed(finished)
   })
 
   it('reports disconnected output components for a future UI refusal', async () => {

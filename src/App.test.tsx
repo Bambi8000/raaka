@@ -26,6 +26,8 @@ describe('wired selection inspector', () => {
     }
     expect(html).toContain('aria-label="Show all controls"')
     expect(html).toContain('UPPER MASS PROFILE')
+    expect(html).toContain('RETAINED LIGHTWEIGHT CORE')
+    expect(html).toContain('UPPER CORE')
     expect(html).toContain('MODEL SCALE')
     expect(html).toContain('MOVE XY')
     expect(html).toContain('UPPER MASS · SHARED XY')
@@ -35,6 +37,23 @@ describe('wired selection inspector', () => {
     expect(html).toContain('min="40" max="110" step="1" value="72"')
     expect(html).toContain('Export finished solid as binary STL in millimetres')
     expect(html).toContain('STL · MM')
+  })
+
+  it('shows active retained-core controls and separate material readings', () => {
+    const html = renderInspector({
+      ...defaults,
+      retainedCoreMode: 'upper-mass',
+      retainedCoreScale: 0.76,
+    })
+
+    expect(html).toContain('aria-label="Core size"')
+    expect(html).toContain('BLUE CORE · RETAINED')
+    expect(html).toContain('RETAINED CORE ACTIVE')
+    expect(html).toContain('Concrete volume')
+    expect(html).toContain('Concrete mass')
+    expect(html).toContain('Retained core volume')
+    expect(html).toContain('Retained core mass')
+    expect(html).toContain('Estimated total mass')
   })
 
   it('switches to stem controls when the upper mass has been removed', () => {

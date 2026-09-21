@@ -31,6 +31,8 @@ describe('RAAKA project files', () => {
         upperTopDepthRatio: 0.83,
         upperTopOffsetXMm: 210,
         upperTopOffsetYMm: -130,
+        retainedCoreMode: 'upper-mass',
+        retainedCoreScale: 0.78,
         footOffsetXMm: 175,
         footOffsetYMm: -90,
         footOffsetOverrides: [
@@ -366,6 +368,27 @@ describe('RAAKA project files', () => {
     },
   )
 
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])(
+    'migrates recipe version %i files to a solid upper mass',
+    (recipeVersion) => {
+      const legacy = JSON.parse(
+        serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+      ) as {
+        recipeVersion: number
+        parameters: Record<string, unknown>
+      }
+      legacy.recipeVersion = recipeVersion
+      delete legacy.parameters.retainedCoreMode
+      delete legacy.parameters.retainedCoreScale
+
+      const migrated = parseProject(JSON.stringify(legacy))
+
+      expect(migrated.recipeVersion).toBe(PILOTI_RECIPE_VERSION)
+      expect(migrated.parameters.retainedCoreMode).toBe('none')
+      expect(migrated.parameters.retainedCoreScale).toBe(0.72)
+    },
+  )
+
   it('requires an override list in the current recipe version', () => {
     const current = JSON.parse(
       serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
@@ -462,6 +485,17 @@ describe('RAAKA project files', () => {
 
     expect(() => parseProject(JSON.stringify(current))).toThrow(
       'Parameter "upperFootprintMode" must be "linked" or "detached".',
+    )
+  })
+
+  it('requires a retained-core mode in the current recipe version', () => {
+    const current = JSON.parse(
+      serializeProject(createProject(DEFAULT_PILOTI_PARAMETERS)),
+    ) as { parameters: Record<string, unknown> }
+    delete current.parameters.retainedCoreMode
+
+    expect(() => parseProject(JSON.stringify(current))).toThrow(
+      'Parameter "retainedCoreMode" must be "none" or "upper-mass".',
     )
   })
 
@@ -601,6 +635,26 @@ describe('RAAKA project files', () => {
         parameters: {
           ...DEFAULT_PILOTI_PARAMETERS,
           upperMassProfile: 'wedge',
+        },
+      }),
+    ],
+    [
+      'unsupported retained-core mode',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          retainedCoreMode: 'open-void',
+        },
+      }),
+    ],
+    [
+      'out-of-range retained-core scale',
+      JSON.stringify({
+        ...createProject(DEFAULT_PILOTI_PARAMETERS),
+        parameters: {
+          ...DEFAULT_PILOTI_PARAMETERS,
+          retainedCoreScale: 0.9,
         },
       }),
     ],

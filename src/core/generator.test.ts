@@ -19,7 +19,11 @@ function expectFiniteStudy(parameters: PilotiParameters): void {
     study.depthMm,
     study.heightMm,
     study.concreteVolumeMm3,
+    study.concreteMassKg,
     study.estimatedMassKg,
+    study.retainedCore.volumeMm3,
+    study.retainedCore.massKg,
+    study.retainedCore.minimumCoverMm,
     study.groundContactMm2,
     ...(study.supportLayout
       ? [
@@ -973,6 +977,65 @@ describe('generatePiloti', () => {
     expect(tapered.bounds.max[1]).toBeGreaterThanOrEqual(taperedBounds.max[1])
   })
 
+  it('subtracts an active retained core from concrete and reports both materials', () => {
+    const solid = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      upperMassProfile: 'tapered',
+      upperTopOffsetXMm: 140,
+      upperTopOffsetYMm: -70,
+    })
+    const cored = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      upperMassProfile: 'tapered',
+      upperTopOffsetXMm: 140,
+      upperTopOffsetYMm: -70,
+      retainedCoreMode: 'upper-mass',
+      retainedCoreScale: 0.7,
+    })
+
+    expect(cored.retainedCore.status).toBe('active')
+    expect(cored.retainedCore.pieces).toHaveLength(1)
+    expect(cored.retainedCore.pieces[0]).toMatchObject({
+      id: 'upper-retained-core',
+      role: 'core',
+      kind: 'frustum',
+    })
+    expect(cored.concreteVolumeMm3).toBeCloseTo(
+      solid.concreteVolumeMm3 - cored.retainedCore.volumeMm3,
+      5,
+    )
+    expect(cored.concreteMassKg).toBeCloseTo(
+      cored.concreteVolumeMm3 / 1_000_000_000 * 2_400,
+      10,
+    )
+    expect(cored.estimatedMassKg).toBeCloseTo(
+      cored.concreteMassKg + cored.retainedCore.massKg,
+      10,
+    )
+  })
+
+  it('retains core intent but pauses subtraction for divided or removed upper masses', () => {
+    const divided = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      retainedCoreMode: 'upper-mass',
+      upperMassDivision: 'x2',
+    })
+    const removed = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      retainedCoreMode: 'upper-mass',
+      removedPartIds: ['upper-mass'],
+    })
+
+    for (const study of [divided, removed]) {
+      expect(study.retainedCore.status).toBe('paused')
+      expect(study.retainedCore.pieces).toEqual([])
+      expect(study.retainedCore.volumeMm3).toBe(0)
+      expect(study.estimatedMassKg).toBe(study.concreteMassKg)
+    }
+    expect(divided.retainedCore.message).toContain('choose Whole upper mass')
+    expect(removed.retainedCore.message).toContain('restore Upper mass')
+  })
+
   it('reports gaps and overlaps when a shared shoulder is moved', () => {
     const study = generatePiloti({
       ...DEFAULT_PILOTI_PARAMETERS,
@@ -1122,6 +1185,8 @@ describe('generatePiloti', () => {
       footOffsetSpace: 'global',
       upperMassDivision: 'whole',
       massPartOverrides: [],
+      retainedCoreMode: 'none',
+      retainedCoreScale: 0.35,
       heightMm: 1_000,
       supportCount: 1,
       supportRowCount: 1,
@@ -1159,6 +1224,8 @@ describe('generatePiloti', () => {
       footOffsetSpace: 'centered',
       upperMassDivision: 'xy4',
       massPartOverrides: [],
+      retainedCoreMode: 'upper-mass',
+      retainedCoreScale: 0.85,
       heightMm: 2_000,
       supportCount: 6,
       supportRowCount: 3,

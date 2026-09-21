@@ -34,6 +34,7 @@ import {
 import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress, massPartProfile } from './core/massDivision'
 import {
   PILOTI_FUSE_GROUP_LIMIT,
+  PILOTI_PARAMETER_RULES,
   PILOTI_PART_COPY_LIMIT,
   PILOTI_PART_COPY_OFFSET_MM,
   pilotiSupportAddress,
@@ -149,7 +150,8 @@ function formatNumber(value: number, maximumFractionDigits = 0): string {
 }
 
 function selectablePieceIds(parameters: PilotiParameters): readonly string[] {
-  const pieces = generatePiloti(parameters).pieces
+  const study = generatePiloti(parameters)
+  const pieces = study.pieces
   const available = new Set(pieces.map((piece) => piece.id))
   const activeGroups = parameters.fuseGroups.filter((group) =>
     group.pieceIds.every((id) => available.has(id)),
@@ -158,6 +160,7 @@ function selectablePieceIds(parameters: PilotiParameters): readonly string[] {
   return [
     ...activeGroups.map((group) => group.id),
     ...pieces.filter((piece) => !fusedIds.has(piece.id)).map((piece) => piece.id),
+    ...study.retainedCore.pieces.map((piece) => piece.id),
   ]
 }
 
@@ -319,6 +322,10 @@ export default function App() {
     () => scaleMassStudy(masterStudy, modelScale),
     [masterStudy, modelScale],
   )
+  const visiblePieces = useMemo(
+    () => [...study.pieces, ...study.retainedCore.pieces],
+    [study],
+  )
   const selectedSupportId = supportIdForPiece(selectedPieceId)
   const selectedFuseGroup = parameters.fuseGroups.find(
     (group) => group.id === selectedPieceId,
@@ -383,7 +390,7 @@ export default function App() {
           Math.PI +
           360) %
         360
-  const selectedPiece = study.pieces.find(
+  const selectedPiece = visiblePieces.find(
     (piece) => piece.id === selectedPieceId,
   )
   const translationGizmo = useMemo(
@@ -396,8 +403,13 @@ export default function App() {
     [parameters, selectedPieceId],
   )
   const relevantControls = useMemo(
-    () => relevantPilotiControls(parameters, selectedPieceId, unfusedMasterStudy.pieces, affectedControls),
-    [parameters, selectedPieceId, unfusedMasterStudy.pieces, affectedControls],
+    () => relevantPilotiControls(
+      parameters,
+      selectedPieceId,
+      [...unfusedMasterStudy.pieces, ...unfusedMasterStudy.retainedCore.pieces],
+      affectedControls,
+    ),
+    [parameters, selectedPieceId, unfusedMasterStudy, affectedControls],
   )
   const allControlsVisible = showAllControls || relevantControls.size === 0
   const canShowControls = (...keys: PilotiControlKey[]) =>
@@ -754,6 +766,7 @@ export default function App() {
       const exported = await createManufacturingStl(
         study.pieces,
         `PILOTI ${parameters.seed} SCALE 1:${modelScaleDenominator}`,
+        study.retainedCore.pieces,
       )
       const blob = new Blob([new Uint8Array(exported.bytes)], { type: 'model/stl' })
       const url = URL.createObjectURL(blob)
@@ -1157,7 +1170,7 @@ export default function App() {
 
       <aside className="right-panel panel">
         <details className="compact-objects">
-          <summary>OBJECTS · {study.pieces.length} VISIBLE · {parameters.removedPartIds.length} REMOVED</summary>
+          <summary>OBJECTS · {visiblePieces.length} VISIBLE · {parameters.removedPartIds.length} REMOVED</summary>
           {objectList}
         </details>
         <section className="inspector-lead" aria-live="polite">
@@ -1671,6 +1684,61 @@ export default function App() {
             </>
           ) : null}
           </ControlGroup>
+          <ControlGroup visible={canShowControls('retainedCoreMode', 'retainedCoreScale')}>
+          <div className="control-subsection retained-core-heading">
+            <span>RETAINED LIGHTWEIGHT CORE</span>
+            <small>Closed foam stays inside the cast. Blue is retained material; STL subtracts its space from concrete.</small>
+          </div>
+          <div
+            className={`offset-scope-switch retained-core-switch ${affectedControls.has('retainedCoreMode') ? 'affects-selection' : 'other-controls'}`}
+            aria-label="Retained core mode"
+          >
+            <button
+              type="button"
+              className={parameters.retainedCoreMode === 'none' ? 'is-active' : ''}
+              aria-pressed={parameters.retainedCoreMode === 'none'}
+              onClick={() => update('retainedCoreMode', 'none')}
+            >
+              <span>SOLID</span>
+              <small>CONCRETE ONLY</small>
+            </button>
+            <button
+              type="button"
+              className={parameters.retainedCoreMode === 'upper-mass' ? 'is-active' : ''}
+              aria-pressed={parameters.retainedCoreMode === 'upper-mass'}
+              onClick={() => update('retainedCoreMode', 'upper-mass')}
+            >
+              <span>UPPER CORE</span>
+              <small>RETAINED FOAM</small>
+            </button>
+          </div>
+          {parameters.retainedCoreMode === 'upper-mass' ? (
+            <>
+              <RangeField
+                label="Core size"
+                affected={affectedControls.has('retainedCoreScale')}
+                visible={relevantControls.has('retainedCoreScale')}
+                value={parameters.retainedCoreScale}
+                minimum={PILOTI_PARAMETER_RULES.retainedCoreScale.minimum}
+                maximum={PILOTI_PARAMETER_RULES.retainedCoreScale.maximum}
+                step={0.01}
+                display="percent"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('retainedCoreScale', value)}
+              />
+              <div className={`shape-readout retained-core-readout is-${study.retainedCore.status}`}>
+                <span>{study.retainedCore.status === 'active' ? 'BLUE CORE · RETAINED' : 'CORE PAUSED'}</span>
+                <strong>
+                  {study.retainedCore.status === 'active'
+                    ? `${formatNumber(study.retainedCore.volumeMm3 / 1_000_000, 1)} L · ${formatNumber(study.retainedCore.minimumCoverMm, 1)} MM MIN AXIS COVER`
+                    : 'NO CORE GEOMETRY'}
+                </strong>
+                <small>{study.retainedCore.message}</small>
+              </div>
+            </>
+          ) : null}
+          </ControlGroup>
           {!radial ? <>
           <RangeField
             label="Columns (X)"
@@ -2068,13 +2136,29 @@ export default function App() {
               </dd>
             </div>
             <div>
-              <dt>Solid volume</dt>
+              <dt>Concrete volume</dt>
               <dd>
                 {formatNumber(study.concreteVolumeMm3 / 1_000_000_000, 3)} m³
               </dd>
             </div>
+            <div>
+              <dt>Concrete mass</dt>
+              <dd>{formatNumber(study.concreteMassKg)} kg</dd>
+            </div>
+            {parameters.retainedCoreMode === 'upper-mass' ? (
+              <>
+                <div>
+                  <dt>Retained core volume</dt>
+                  <dd>{formatNumber(study.retainedCore.volumeMm3 / 1_000_000, 1)} L</dd>
+                </div>
+                <div>
+                  <dt>Retained core mass</dt>
+                  <dd>{formatNumber(study.retainedCore.massKg, 1)} kg</dd>
+                </div>
+              </>
+            ) : null}
             <div className="metric-alert">
-              <dt>Solid mass</dt>
+              <dt>Estimated total mass</dt>
               <dd>{formatNumber(study.estimatedMassKg)} kg</dd>
             </div>
             <div>
@@ -2082,6 +2166,17 @@ export default function App() {
               <dd>{formatNumber(study.groundContactMm2 / 1_000_000, 3)} m²</dd>
             </div>
           </dl>
+          {parameters.retainedCoreMode === 'upper-mass' ? (
+            <div className="layout-advisories" aria-live="polite">
+              <div className={study.retainedCore.status === 'paused' ? 'is-error' : 'is-core'}>
+                <strong>{study.retainedCore.status === 'active' ? 'RETAINED CORE ACTIVE' : 'RETAINED CORE PAUSED'}</strong>
+                <span>{study.retainedCore.status === 'active'
+                  ? `${formatNumber(study.retainedCore.minimumCoverMm, 1)} MM MIN AXIS COVER · ${formatNumber(study.retainedCore.densityKgM3)} KG/M³`
+                  : 'SAVED INTENT · NO SUBTRACTION'}</span>
+                <small>{study.retainedCore.message} Original upper mass only; copies remain solid.</small>
+              </div>
+            </div>
+          ) : null}
           {parameters.fuseGroups.length > 0 ? (
             <div className="layout-advisories" aria-live="polite">
               <div className={fuseRenderStatus === 'error' ? 'is-error' : ''}>
@@ -2286,7 +2381,8 @@ export default function App() {
           <p className="notice">
             {parameters.fuseGroups.length > 0 && fuseRenderStatus === 'ready'
               ? 'Fused groups use finished-union volume; remaining pieces are summed.'
-              : 'Manufactured nominal solid estimate at 2,400 kg/m³.'}{' '}
+              : 'Manufactured nominal material estimate.'}{' '}
+            Concrete uses 2,400 kg/m³; retained foam uses 30 kg/m³.{' '}
             Structural approval, reinforcement and anchoring are outside this
             study.
           </p>
@@ -2303,8 +2399,8 @@ export default function App() {
           {radial ? `${polygonSides}-SIDE RING` : `${parameters.supportCount} × ${parameters.supportRowCount} GRID`}
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
-        <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.25 / LOCAL</span>
+        <span>{visiblePieces.length} OBJECTS</span>
+        <span className="statusbar-end">RAAKA 0.1.26 / LOCAL</span>
       </footer>
     </main>
   )

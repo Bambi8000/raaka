@@ -184,6 +184,16 @@ disk and read by Kerros's real importer with identical bounds and zero open
 edges. This is the positive sculpture; mould construction still belongs to
 Kerros.
 
+Version 0.1.26 adds the first retained lightweight core. Select the original,
+undivided upper mass and choose **Upper core** to place a centred homothetic
+foam volume inside block, tapered, hexagonal or octagonal forms. The core is
+shown in blue, scales with 1:1, 1:2 and 1:4 models, and reports its volume,
+estimated 30 kg/m³ mass and minimum axis cover separately from 2,400 kg/m³
+concrete. STL export unions the positive sculpture and subtracts the closed
+core, producing one watertight shell with a sealed internal cavity. Dividing or
+removing the upper mass pauses the saved core intent with an explicit reason;
+upper-mass copies remain solid in this first bounded workflow.
+
 ## Run locally
 
 Requirements:
@@ -227,11 +237,12 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.25 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.26 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
-versioned project file. Its finished positive solid can be exported as a
-watertight millimetre STL for Kerros. Mould output, other recipes, drawings,
-cores and stability feedback are planned. The current mass and ground-contact
+versioned project file. Its finished solid, including the first retained upper
+core subtraction, can be exported as a watertight millimetre STL for Kerros.
+Mould output, other recipes, drawings, removable/open void workflows and
+stability feedback are planned. The current mass, core and ground-contact
 readings are estimates, not structural engineering approval. The displayed
 envelope is derived from every generated piece, including seeded variation,
 support rows, explicit foot offsets and authored upper-mass placement, plus any

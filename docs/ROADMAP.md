@@ -362,6 +362,8 @@ mode, and switching themes never marks or mutates the current study.
 - [x] preserve selected-support size and placement overrides as local authored
   exceptions that may still overhang
 - [x] remove viewport distance fog so zoomed-out geometry and grids stay crisp
+- [x] run feature verification only through pull requests and reserve push
+  verification for `main`, eliminating delayed scans of deleted PR branches
 
 Done when the linked screenshot case with a tapered mass, X/Y placement and
 unaltered supports reports zero ordinary bearing overhang, while the equivalent

@@ -130,7 +130,9 @@ pnpm verify
 ```
 
 This runs ESLint with type-aware async rules, strict TypeScript checks, unit
-tests and the production build. CI runs the same gate and secret scanning.
+tests and the production build. CI runs the same gate and secret scanning once
+for feature branches through their pull request and again when the finished
+change reaches `main`.
 
 ## Product boundaries
 

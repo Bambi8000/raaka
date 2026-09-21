@@ -19,6 +19,14 @@ data and security must be designed as a separate change.
 - ESLint with type-aware async rules
 - pnpm with a committed lockfile
 
+The Verify workflow runs quality and secret-scanning jobs for pull requests and
+for pushes to `main`. It deliberately does not run a second push workflow for a
+feature branch: that duplicate previously let a green push check appear before
+the actual pull-request check, after which squash-merge branch deletion could
+leave the delayed scanner without its source commit. Pull requests now have one
+authoritative pre-merge run; the merged commit receives the separate `main`
+run.
+
 Manifold 3.5.3 is the accepted solid kernel for boolean geometry,
 cross-sections and watertight mesh output. Version 0.1.14 adds it as a pinned
 dependency after a focused gate covering deterministic booleans, planar face

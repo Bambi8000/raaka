@@ -77,6 +77,8 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   upperMassProfile: 'block',
   upperMassDivision: 'whole',
   massPartOverrides: [],
+  retainedCoreMode: 'none',
+  retainedCoreScale: 0.72,
   upperTopWidthRatio: 0.72,
   upperTopDepthRatio: 0.84,
   upperTopOffsetXMm: 120,

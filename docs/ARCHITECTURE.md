@@ -43,7 +43,8 @@ remains a renderer only and is not an input to the kernel.
 `src/core/solidKernel.ts` initializes the WASM module once, converts semantic
 boxes, rectangular lofts and convex polygon lofts directly, copies finished mesh data back into
 owned JavaScript arrays and explicitly deletes every Manifold and CrossSection
-object. Its current union boundary returns bounds, finished-solid volume,
+object. Its finishing boundary unions positive pieces, optionally subtracts
+closed retained-core pieces, and returns bounds, finished-solid volume,
 component count and a closed indexed mesh. Horizontal sections are simplified
 before their polygons leave the kernel. A disconnected union is valid kernel
 output with more than one component; the Fuse UI refuses it clearly instead of
@@ -374,14 +375,18 @@ Recipe parameters + stable seed
        Pure master generator
               |
               v
+  positive pieces + retained-core intent
+              |
+              v
        Semantic Fuse groups
               |
               v
       Explicit model scale
               |
-              +--> physical analytic and mesh pieces --> Three.js preview
-              +--> physical analysis
-              +--> future mesh / sections / drawings
+              +--> physical positive + core pieces --> Three.js preview
+              +--> separate concrete/core analysis
+              +--> final union - retained core --> watertight STL
+              +--> future sections / drawings / manufacturing package
 ```
 
 React owns interaction state. The generator owns form truth. Three.js receives
@@ -390,13 +395,15 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 16 stores every
+version and a separate recipe version. Piloti recipe version 17 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
 override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
 division, mass-part overrides, plan shape, polygon division, radial spread,
-foot offset space and one of the supported `modelScale` presets. Recipe versions
-1–15 receive `global` foot offset space, preserving their current geometry.
+foot offset space, retained-core mode and retained-core scale, plus one of the
+supported `modelScale` presets. Recipe versions 1–16 receive disabled retained
+core intent and its latent 72% default, preserving their exact solid geometry.
+Recipe versions 1–15 receive `global` foot offset space, preserving their current geometry.
 Recipe versions 1–14 receive
 `rectangle`, `whole` polygon division and radial spread 1 without changing their
 existing geometry.
@@ -458,6 +465,25 @@ with derived closed meshes. The same result drives the object list, viewport
 and physical readings. Three.js adapters convert analytic lofts and display
 kernel meshes without owning either form.
 
+`src/core/retainedCore.ts` derives the first non-positive semantic piece from
+the original whole upper mass. The core is homothetic and centred in the
+source: box dimensions shrink about the centre; rectangular and polygon lofts
+trim both Z caps, interpolate the outer cross-section and centreline at those
+caps, then shrink the resulting sections. It is therefore contained by the
+convex source for block and tapered profiles. The analysis carries status,
+pieces, physical volume, fixed-density mass and conservative minimum axis
+cover separately from `study.pieces` so positive union logic cannot count foam
+as concrete. Division, removal or an unsupported analytic source returns a
+paused status with no subtractor and retains the authored parameters.
+
+`composePiloti.ts` subtracts active core volume from nominal positive volume,
+then reports concrete mass at 2,400 kg/m³ and retained foam at 30 kg/m³.
+`studyFuses.ts` preserves the same single deduction after live positive pieces
+are unioned. `modelScale.ts` scales core geometry and cover linearly and both
+material volumes and masses cubically. The object list and viewport append the
+core only for inspection; blue transparent rendering is a semantic projection,
+not an additive scene solid.
+
 The volume equation integrates the product of linearly changing width and
 depth. The one-row default and non-overlapping grids can sum preview-piece
 volumes directly. An authored grid, selected size, selected placement or
@@ -466,8 +492,10 @@ remaining sums nominal and warns about double-counting. Active Fuse groups use
 the kernel's finished-union volume and remove internal contact faces.
 
 Pieces outside a Fuse remain separate closed preview meshes during editing.
-The STL boundary resolves all visible pieces into a final union and refuses
-multiple connected components. The study envelope is
+The STL boundary resolves all visible positive pieces into a final union,
+subtracts any active retained core, and refuses multiple positive connected
+components. A closed inner cavity adds a boundary shell but does not become a
+second loose object. The study envelope is
 computed from every analytic endpoint and finished mesh vertex. It is the
 common source for physical dimensions, explicit camera framing and
 directional-shadow fitting. The baseline defects and their 0.1.1 resolution are
@@ -513,10 +541,11 @@ controls. Fuse visibility is the union of its live sources, not a mesh probe.
 field; irrelevant sliders are omitted from the DOM in relevant mode, not merely
 dimmed or hidden with CSS. Conditional groups also omit unrelated headings,
 switches and lean readouts. Local selected-leg/cell/copy fields keep explicit
-scope. An empty influence/enablement set falls back to the full inspector with
+scope. A contextual core-size field can remain visible without falsely claiming
+yellow influence over the selected outer surface. An empty influence/enablement set falls back to the full inspector with
 an explanation. Model scale and manufacturing readings remain available.
 The Show all flag is transient UI state, outside files, recovery and history;
-recipe version 16 and every geometry parameter remain unchanged. Server-rendered
+recipe version 17 and every geometry parameter remain unchanged. Server-rendered
 App tests check actual wiring as well as pure relevance and field visibility.
 
 The object list is shared by the desktop sidebar and the compact Objects
@@ -597,6 +626,22 @@ A written six-leg, two-row 1:4 file is also loaded through Kerros's real
 `meshImport.ts`: it is detected as binary STL, retains its 361.4 × 275.0 ×
 500.0 mm envelope and returns zero open edges. Mould construction and stock
 compensation remain Kerros responsibilities.
+
+Version 0.1.26 extends the same boundary with explicit subtractors. The caller
+passes physical positive pieces and physical retained-core pieces separately.
+The kernel measures positive connected components before subtraction, then
+returns the difference mesh; this accepts a connected sculpture with a sealed
+internal cavity while still refusing a composition that began as loose positive
+islands. Export volume must equal the reported concrete volume for non-overlap
+fixtures. Regression tests cover box subtraction, outward/inner winding, zero
+open edges, unchanged outer bounds, model scale and cleanup.
+
+The browser release fixture uses a 1:4 Piloti with an 80% retained box core.
+The actual downloaded file contains 96 triangles and reports 5.34 L of finished
+concrete. Kerros's production `meshImport.ts` recognises it as binary STL with a
+270.0 × 127.5 × 375.0 mm envelope, zero open edges, no warnings and positive
+5,342,765.66 mm³ signed volume. This verifies the sealed inner shell across the
+real handoff; it does not validate foam placement or casting in material.
 
 ## Interface themes
 

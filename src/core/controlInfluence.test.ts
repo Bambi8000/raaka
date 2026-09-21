@@ -56,4 +56,17 @@ describe('selection control influence', () => {
     expect(fused.has('upperTopWidthRatio')).toBe(false)
     expect(affectedPilotiControls({ ...parameters, removedPartIds: ['upper-mass'] }, 'upper-mass').size).toBe(0)
   })
+
+  it('keeps retained-core size neutral for the outer mass and active for the core', () => {
+    const parameters = {
+      ...DEFAULT_PILOTI_PARAMETERS,
+      retainedCoreMode: 'upper-mass' as const,
+    }
+
+    expect(affectedPilotiControls(parameters, 'upper-mass').has('retainedCoreScale')).toBe(false)
+    const core = affectedPilotiControls(parameters, 'upper-retained-core')
+    expect(core.has('retainedCoreMode')).toBe(true)
+    expect(core.has('retainedCoreScale')).toBe(true)
+    expect(core.has('footOffsetXMm')).toBe(false)
+  })
 })

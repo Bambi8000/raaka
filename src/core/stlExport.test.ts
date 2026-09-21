@@ -181,6 +181,28 @@ describe('manufacturing STL export', () => {
     ], 'DISCONNECTED')).rejects.toThrow('2 disconnected solids')
   })
 
+  it('exports retained core space as a closed internal subtraction', async () => {
+    const outer = box('outer', 0)
+    const core: BoxPiece = {
+      ...box('core', 0),
+      role: 'core',
+      size: [60, 40, 60],
+    }
+    const exported = await createManufacturingStl([outer], 'CORE TEST', [core])
+    const parsed = parseBinaryStl(exported.bytes)
+
+    expectRelativeClose(
+      exported.volumeMm3,
+      100 * 80 * 100 - 60 * 40 * 60,
+    )
+    expectRelativeClose(signedVolume(parsed.positions), exported.volumeMm3)
+    expect(openEdgeCount(parsed.positions)).toBe(0)
+    expectBoundsClose(parsed.bounds, {
+      min: [-50, -40, 0],
+      max: [50, 40, 100],
+    })
+  })
+
   it('names the physical solid with its seed and model scale', () => {
     expect(manufacturingStlFilename(318, 4)).toBe(
       'raaka-piloti-0318-1to4-solid.stl',

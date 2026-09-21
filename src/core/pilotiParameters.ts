@@ -13,6 +13,7 @@ import type {
   PilotiSupportSizeOverride,
   PilotiUpperMassProfile,
   PilotiPlanShape,
+  PilotiRetainedCoreMode,
 } from './types'
 
 export const MAX_SEED = 0xffff_ffff
@@ -32,6 +33,7 @@ type NumericPilotiParameter = Exclude<
   | 'upperMassProfile'
   | 'upperMassDivision'
   | 'massPartOverrides'
+  | 'retainedCoreMode'
   | 'footOffsetOverrides'
   | 'footOffsetSpace'
   | 'supportSizeOverrides'
@@ -126,10 +128,26 @@ export const PILOTI_PARAMETER_RULES = {
   upperTopDepthRatio: { minimum: 0.45, maximum: 1.25 },
   upperTopOffsetXMm: { minimum: -400, maximum: 400 },
   upperTopOffsetYMm: { minimum: -400, maximum: 400 },
+  retainedCoreScale: { minimum: 0.35, maximum: 0.85 },
   asymmetry: { minimum: 0, maximum: 0.5 },
   footOffsetXMm: { minimum: -300, maximum: 300 },
   footOffsetYMm: { minimum: -300, maximum: 300 },
 } satisfies Readonly<Record<NumericPilotiParameter, ParameterRule>>
+
+export function isPilotiRetainedCoreMode(
+  value: unknown,
+): value is PilotiRetainedCoreMode {
+  return value === 'none' || value === 'upper-mass'
+}
+
+function readRetainedCoreMode(value: unknown): PilotiRetainedCoreMode {
+  if (!isPilotiRetainedCoreMode(value)) {
+    throw new ProjectValidationError(
+      'Parameter "retainedCoreMode" must be "none" or "upper-mass".',
+    )
+  }
+  return value
+}
 
 function normalizeValue(
   value: number,
@@ -544,6 +562,11 @@ export function normalizePilotiParameters(
     upperMassProfile: normalizeUpperMassProfile(input.upperMassProfile),
     upperMassDivision: readMassDivision(input.upperMassDivision),
     massPartOverrides: readMassPartOverrides(input.massPartOverrides),
+    retainedCoreMode: readRetainedCoreMode(input.retainedCoreMode),
+    retainedCoreScale: normalizeValue(
+      input.retainedCoreScale,
+      'retainedCoreScale',
+    ),
     upperTopWidthRatio: normalizeValue(
       input.upperTopWidthRatio,
       'upperTopWidthRatio',
@@ -1049,6 +1072,8 @@ export function parsePilotiParameters(
     upperMassProfile: readUpperMassProfile(record),
     upperMassDivision: readMassDivision(record.upperMassDivision),
     massPartOverrides: readMassPartOverrides(record.massPartOverrides),
+    retainedCoreMode: readRetainedCoreMode(record.retainedCoreMode),
+    retainedCoreScale: readParameter(record, 'retainedCoreScale'),
     upperTopWidthRatio: readParameter(record, 'upperTopWidthRatio'),
     upperTopDepthRatio: readParameter(record, 'upperTopDepthRatio'),
     upperTopOffsetXMm: readParameter(record, 'upperTopOffsetXMm'),

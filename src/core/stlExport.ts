@@ -118,13 +118,14 @@ export function encodeBinaryStl(
 export async function createManufacturingStl(
   pieces: readonly ScenePiece[],
   label: string,
+  retainedCorePieces: readonly ScenePiece[] = [],
 ): Promise<ManufacturingStl> {
   if (pieces.length === 0) {
     throw new StlExportError(
       'STL export needs at least one visible part. Restore a part and try again.',
     )
   }
-  const solid = await finishScenePieces(pieces)
+  const solid = await finishScenePieces(pieces, retainedCorePieces)
   if (solid.componentCount !== 1) {
     throw new StlExportError(
       `STL export needs one connected solid; this study contains ${solid.componentCount} disconnected solids. Move parts until they touch or export them as separate studies.`,

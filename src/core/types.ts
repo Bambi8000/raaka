@@ -18,6 +18,7 @@ export type PilotiShoulderMode = 'divided' | 'shared'
 export type PilotiUpperMassProfile = 'block' | 'tapered'
 export type PilotiUpperMassDivision = 'whole' | 'x2' | 'y2' | 'xy4'
 export type PilotiUpperFootprintMode = 'linked' | 'detached'
+export type PilotiRetainedCoreMode = 'none' | 'upper-mass'
 
 export interface Bounds3 {
   readonly min: Vec3
@@ -138,6 +139,8 @@ export interface PilotiParameters {
   readonly upperMassProfile: PilotiUpperMassProfile
   readonly upperMassDivision: PilotiUpperMassDivision
   readonly massPartOverrides: readonly PilotiMassPartOverride[]
+  readonly retainedCoreMode: PilotiRetainedCoreMode
+  readonly retainedCoreScale: number
   readonly upperTopWidthRatio: number
   readonly upperTopDepthRatio: number
   readonly upperTopOffsetXMm: number
@@ -177,6 +180,16 @@ export interface MassStudy {
   readonly depthMm: number
   readonly heightMm: number
   readonly concreteVolumeMm3: number
+  readonly concreteMassKg: number
+  readonly retainedCore: {
+    readonly status: 'off' | 'active' | 'paused'
+    readonly pieces: readonly ScenePiece[]
+    readonly volumeMm3: number
+    readonly massKg: number
+    readonly densityKgM3: number
+    readonly minimumCoverMm: number
+    readonly message: string
+  }
   readonly estimatedMassKg: number
   readonly groundContactMm2: number
   readonly supportLayout?: SupportLayoutAnalysis

@@ -36,6 +36,8 @@ interface RangeFieldProps {
   readonly suffix?: string
   readonly display?: 'raw' | 'percent'
   readonly affected: boolean
+  /** Keep a contextual field visible without claiming that it reshapes the selection. */
+  readonly visible?: boolean
   readonly onChange: (value: number) => void
   readonly onInteractionStart: () => void
   readonly onInteractionEnd: () => void
@@ -47,10 +49,11 @@ const RANGE_KEYS = new Set([
 
 export function RangeField({
   affected,
+  visible = affected,
   ...props
 }: RangeFieldProps) {
   const showAll = useContext(ShowAllControls)
-  if (!showAll && !affected) return null
+  if (!showAll && !visible) return null
   return <VisibleRangeField affected={affected} {...props} />
 }
 

@@ -2,6 +2,7 @@ import { boundsSize, sceneBounds } from './bounds'
 import { partIdForPiece } from './partSelection'
 import { massPartAddress } from './massDivision'
 import { CONCRETE_DENSITY_KG_M3, scenePieceGroundContact, scenePieceVolume } from './pieceMetrics'
+import { retainedCoreAnalysis } from './retainedCore'
 import type { MassStudy, PilotiParameters, PilotiPartCopy, ScenePiece } from './types'
 
 function copyPiece(piece: ScenePiece, id: string, label: string, copy: PilotiPartCopy): ScenePiece {
@@ -35,8 +36,12 @@ export function composePiloti(parameters: PilotiParameters, base: readonly Scene
     !(massPartAddress(piece.id) && removed.has('upper-mass')))
   const bounds = sceneBounds(pieces)
   const [widthMm, depthMm, heightMm] = boundsSize(bounds)
-  const concreteVolumeMm3 = pieces.reduce((sum, piece) => sum + scenePieceVolume(piece), 0)
+  const retainedCore = retainedCoreAnalysis(parameters, upperMass)
+  const solidVolumeMm3 = pieces.reduce((sum, piece) => sum + scenePieceVolume(piece), 0)
+  const concreteVolumeMm3 = Math.max(0, solidVolumeMm3 - retainedCore.volumeMm3)
+  const concreteMassKg = concreteVolumeMm3 / 1e9 * CONCRETE_DENSITY_KG_M3
   return { recipe: 'piloti', seed: parameters.seed, pieces, bounds, widthMm, depthMm, heightMm,
-    concreteVolumeMm3, estimatedMassKg: concreteVolumeMm3 / 1e9 * CONCRETE_DENSITY_KG_M3,
+    concreteVolumeMm3, concreteMassKg, retainedCore,
+    estimatedMassKg: concreteMassKg + retainedCore.massKg,
     groundContactMm2: pieces.reduce((sum, piece) => sum + scenePieceGroundContact(piece), 0) }
 }

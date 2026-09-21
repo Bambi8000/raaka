@@ -27,6 +27,16 @@ function study(pieces: readonly BoxPiece[]): MassStudy {
     depthMm: 100,
     heightMm: 200,
     concreteVolumeMm3: pieces.length * 1_000_000,
+    concreteMassKg: pieces.length * 2.4,
+    retainedCore: {
+      status: 'off',
+      pieces: [],
+      volumeMm3: 0,
+      massKg: 0,
+      densityKgM3: 30,
+      minimumCoverMm: 0,
+      message: 'Retained core is disabled.',
+    },
     estimatedMassKg: pieces.length * 2.4,
     groundContactMm2: 0,
   }
@@ -77,6 +87,36 @@ describe('study fuse resolution', () => {
 
     expect(resolution.study).toBe(original)
     expect(resolution.dormantFuseGroupIds).toEqual(['fuse-2'])
+  })
+
+  it('keeps one retained core deduction after positive pieces are fused', async () => {
+    const original = study([
+      box('upper-mass', [0, 0, 50]),
+      box('upper-mass-copy-1', [50, 0, 50]),
+    ])
+    const core = box('upper-retained-core', [0, 0, 50], [50, 50, 50])
+    const cored: MassStudy = {
+      ...original,
+      retainedCore: {
+        status: 'active',
+        pieces: [{ ...core, role: 'core' }],
+        volumeMm3: 125_000,
+        massKg: 0.00375,
+        densityKgM3: 30,
+        minimumCoverMm: 25,
+        message: 'Closed lightweight foam remains inside the cast.',
+      },
+    }
+
+    const resolution = await resolveStudyFuses(cored, [{
+      id: 'fuse-3',
+      pieceIds: ['upper-mass', 'upper-mass-copy-1'],
+    }])
+
+    expect(resolution.study.concreteVolumeMm3).toBeCloseTo(1_375_000, 5)
+    expect(resolution.study.concreteMassKg).toBeCloseTo(3.3, 10)
+    expect(resolution.study.estimatedMassKg).toBeCloseTo(3.30375, 10)
+    expect(resolution.study.retainedCore).toBe(cored.retainedCore)
   })
 
   it('refuses to present disconnected islands as one fused part', async () => {

@@ -115,10 +115,16 @@ export async function resolveStudyFuses(
 
   const bounds = sceneBounds(pieces)
   const [widthMm, depthMm, heightMm] = boundsSize(bounds)
-  const concreteVolumeMm3 = pieces.reduce(
+  const solidVolumeMm3 = pieces.reduce(
     (sum, piece) => sum + scenePieceVolume(piece),
     0,
   )
+  const concreteVolumeMm3 = Math.max(
+    0,
+    solidVolumeMm3 - study.retainedCore.volumeMm3,
+  )
+  const concreteMassKg =
+    (concreteVolumeMm3 / 1_000_000_000) * CONCRETE_DENSITY_KG_M3
   const groundContactMm2 = pieces.reduce(
     (sum, piece) => sum + scenePieceGroundContact(piece),
     0,
@@ -133,8 +139,8 @@ export async function resolveStudyFuses(
       depthMm,
       heightMm,
       concreteVolumeMm3,
-      estimatedMassKg:
-        (concreteVolumeMm3 / 1_000_000_000) * CONCRETE_DENSITY_KG_M3,
+      concreteMassKg,
+      estimatedMassKg: concreteMassKg + study.retainedCore.massKg,
       groundContactMm2,
     },
     dormantFuseGroupIds,

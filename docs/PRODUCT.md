@@ -6,14 +6,15 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.25, the
+This document describes the product direction. In version 0.1.26, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
 multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement, divided/shared shoulder rows and semantic part copies.
-The first watertight STL output is implemented; drawings, cores and the
-remaining recipe families are planned. Authored X/Y
+The first watertight STL output and retained lightweight upper core are
+implemented; drawings, open/removable void workflows and the remaining recipe
+families are planned. Authored X/Y
 upper-mass offsets add a controlled cantilever without replacing seeded
 asymmetry, and the upper mass can be a block or a tapered loft. Piloti supports
 rectangular grids and regular hexagonal/octagonal plans with radial legs and
@@ -311,6 +312,22 @@ not a mould, core or sheet plan. Its filename records the seed and scale, while
 the notice reports triangle count, physical bounds and volume. Project schema
 16 is unchanged because export derives from the current physical study.
 
+Version 0.1.26 adds one bounded retained-core workflow. The original undivided
+upper mass can contain a centred homothetic foam core. It follows block,
+rectangular taper and regular hexagonal/octagonal loft geometry without crossing
+the outer mass. The blue core is selectable and has a 35–85% size control.
+RAAKA reports its physical litres, a fixed 30 kg/m³ foam estimate and minimum
+axis cover separately from the remaining concrete at 2,400 kg/m³. Both material
+masses scale cubically with model scale.
+
+The core remains closed inside the cast. Export unions the positive pieces and
+subtracts the core, so the STL contains a sealed internal cavity rather than a
+second overlapping solid. Dividing or removing the original upper mass pauses
+the saved core settings and explains the required repair. Copies remain solid.
+These constraints keep the first subtraction deterministic while preserving a
+future path for per-part, removable and visible voids. Piloti recipe version 17
+stores the mode and size; versions 1–16 migrate to solid concrete unchanged.
+
 ### Planned high-rise articulation module
 
 The high-rise module is a reusable articulation system rather than a separate
@@ -355,6 +372,10 @@ Negative volume has three different meanings:
 
 RAAKA owns these semantic roles and their visualisation. Kerros later turns
 them into mould plates, layered foam cores or other manufacturing plans.
+
+Version 0.1.26 implements only the third role for one whole original Piloti
+upper mass. Open voids and removable cores remain distinct planned operations;
+the application must never infer one from the retained-core setting.
 
 ## Outputs and ownership
 

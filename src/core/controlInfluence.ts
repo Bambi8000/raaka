@@ -11,6 +11,12 @@ export type PilotiControlKey =
   | 'planShape'
   | 'polygonMassDivision'
   | 'footOffsetSpace'
+  | 'retainedCoreMode'
+
+function generatedPieces(parameters: PilotiParameters): readonly ScenePiece[] {
+  const study = generatePiloti(parameters)
+  return [...study.pieces, ...study.retainedCore.pieces]
+}
 
 function geometryValues(piece: ScenePiece): readonly number[] {
   if (piece.kind === 'box') return [...piece.position, ...piece.size]
@@ -36,7 +42,7 @@ export function affectedPilotiControls(
     (group) => group.id === selectedPieceId,
   )?.pieceIds ?? [selectedPieceId]
   const selectedSet = new Set(selectedIds)
-  const current = generatePiloti(parameters).pieces.filter(
+  const current = generatedPieces(parameters).filter(
     (piece) => selectedSet.has(piece.id),
   )
   if (current.length === 0) return new Set()
@@ -45,7 +51,7 @@ export function affectedPilotiControls(
     { kind: piece.kind, values: geometryValues(piece) },
   ]))
   const affectsSelection = (candidate: PilotiParameters): boolean => {
-    const pieces = generatePiloti(candidate).pieces.filter(
+    const pieces = generatedPieces(candidate).filter(
       (piece) => selectedSet.has(piece.id),
     )
     if (pieces.length !== current.length) return true
@@ -75,6 +81,7 @@ export function affectedPilotiControls(
     upperFootprintMode: parameters.upperFootprintMode === 'linked' ? 'detached' : 'linked',
     upperMassProfile: parameters.upperMassProfile === 'block' ? 'tapered' : 'block',
     upperMassDivision: parameters.upperMassDivision === 'whole' ? 'x2' : 'whole',
+    retainedCoreMode: parameters.retainedCoreMode === 'none' ? 'upper-mass' : 'none',
   } as const
   for (const key of Object.keys(choices) as (keyof typeof choices)[]) {
     if (affectsSelection({ ...parameters, [key]: choices[key] })) affected.add(key)

@@ -5,8 +5,11 @@ import { relevantPilotiControls } from './inspectorControls'
 import type { PilotiParameters } from './types'
 
 function relevant(parameters: PilotiParameters, id: string) {
-  return relevantPilotiControls(parameters, id, generatePiloti(parameters).pieces,
-    affectedPilotiControls(parameters, id))
+  const study = generatePiloti(parameters)
+  return relevantPilotiControls(parameters, id, [
+    ...study.pieces,
+    ...study.retainedCore.pieces,
+  ], affectedPilotiControls(parameters, id))
 }
 
 describe('selection-focused inspector controls', () => {
@@ -18,6 +21,8 @@ describe('selection-focused inspector controls', () => {
     for (const key of ['upperOffsetXMm', 'upperWidthRatio', 'upperFootprintMode', 'upperMassProfile', 'supportCount'] as const) {
       expect(controls.has(key), key).toBe(true)
     }
+    expect(controls.has('retainedCoreMode')).toBe(true)
+    expect(controls.has('retainedCoreScale')).toBe(true)
   })
 
   it('retains neutral enabling choices without falsely highlighting them', () => {
@@ -31,6 +36,23 @@ describe('selection-focused inspector controls', () => {
     const noEffect = new Set(affected)
     noEffect.delete('upperMassProfile')
     expect(relevantPilotiControls(parameters, 'upper-mass', generatePiloti(parameters).pieces, noEffect).has('upperMassProfile')).toBe(true)
+    expect(affected.has('retainedCoreMode')).toBe(false)
+    expect(affected.has('retainedCoreScale')).toBe(false)
+    expect(relevant(parameters, 'upper-mass').has('retainedCoreMode')).toBe(true)
+    expect(relevant(parameters, 'upper-mass').has('retainedCoreScale')).toBe(true)
+  })
+
+  it('exposes the core controls as direct dependencies when the core is selected', () => {
+    const parameters = {
+      ...defaults,
+      retainedCoreMode: 'upper-mass' as const,
+    }
+    const controls = relevant(parameters, 'upper-retained-core')
+
+    expect(controls.has('retainedCoreMode')).toBe(true)
+    expect(controls.has('retainedCoreScale')).toBe(true)
+    expect(affectedPilotiControls(parameters, 'upper-retained-core').has('retainedCoreScale')).toBe(true)
+    expect(controls.has('footOffsetXMm')).toBe(false)
   })
 
   it.each(['hexagon', 'octagon'] as const)('keeps offset space reachable at zero lean in %s', (planShape) => {

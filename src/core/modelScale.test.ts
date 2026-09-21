@@ -147,6 +147,41 @@ describe('scaleMassStudy', () => {
     expect(secondQuarter).toEqual(firstQuarter)
   })
 
+  it('scales retained core geometry, cover and both material masses', () => {
+    const cored = generatePiloti({
+      ...DEFAULT_PILOTI_PARAMETERS,
+      planShape: 'octagon',
+      retainedCoreMode: 'upper-mass',
+      retainedCoreScale: 0.68,
+    })
+    const scaled = scaleMassStudy(cored, 0.25)
+
+    expect(cored.retainedCore.status).toBe('active')
+    expect(scaled.retainedCore.status).toBe('active')
+    expect(scaled.retainedCore.pieces).toHaveLength(1)
+    expectPieceScaled(
+      cored.retainedCore.pieces[0],
+      scaled.retainedCore.pieces[0],
+      0.25,
+    )
+    expect(scaled.retainedCore.volumeMm3).toBeCloseTo(
+      cored.retainedCore.volumeMm3 * 0.25 ** 3,
+      10,
+    )
+    expect(scaled.retainedCore.massKg).toBeCloseTo(
+      cored.retainedCore.massKg * 0.25 ** 3,
+      10,
+    )
+    expect(scaled.retainedCore.minimumCoverMm).toBeCloseTo(
+      cored.retainedCore.minimumCoverMm * 0.25,
+      10,
+    )
+    expect(scaled.concreteMassKg).toBeCloseTo(
+      cored.concreteMassKg * 0.25 ** 3,
+      10,
+    )
+  })
+
   it('scales finished solid meshes without changing their topology', () => {
     const mesh: MeshPiece = {
       kind: 'mesh',
@@ -169,6 +204,16 @@ describe('scaleMassStudy', () => {
       depthMm: 80,
       heightMm: 60,
       concreteVolumeMm3: 80_000,
+      concreteMassKg: 0.192,
+      retainedCore: {
+        status: 'off',
+        pieces: [],
+        volumeMm3: 0,
+        massKg: 0,
+        densityKgM3: 30,
+        minimumCoverMm: 0,
+        message: 'Retained core is disabled.',
+      },
       estimatedMassKg: 0.192,
       groundContactMm2: 4_000,
     }

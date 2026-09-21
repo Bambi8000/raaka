@@ -7,7 +7,7 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 16
+export const PILOTI_RECIPE_VERSION = 17
 export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v1'
 
 export interface RaakaProject {
@@ -111,6 +111,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 13 &&
     input.recipeVersion !== 14 &&
     input.recipeVersion !== 15 &&
+    input.recipeVersion !== 16 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -245,6 +246,10 @@ export function parseProject(serialized: string): RaakaProject {
       ...(input.recipeVersion < 14 ? { upperMassDivision: 'whole', massPartOverrides: [] } : {}),
       ...(input.recipeVersion < 15 ? { planShape: 'rectangle', polygonMassDivision: 'whole', radialSpreadRatio: 1 } : {}),
       ...(input.recipeVersion < 16 ? { footOffsetSpace: 'global' } : {}),
+      ...(input.recipeVersion < 17 ? {
+        retainedCoreMode: 'none',
+        retainedCoreScale: 0.72,
+      } : {}),
     }),
     modelScale,
   )

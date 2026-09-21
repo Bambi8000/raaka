@@ -1071,6 +1071,12 @@ input[type="range"] {
   color: var(--accent-ink);
 }
 
+.retained-core-switch button:nth-child(2).is-active {
+  background: var(--blue);
+  color: var(--accent-on-colour);
+  box-shadow: inset 0 -3px var(--blue);
+}
+
 .offset-scope-switch button:disabled {
   color: var(--muted);
   cursor: not-allowed;
@@ -1180,6 +1186,34 @@ input[type="range"] {
   line-height: 1.45;
 }
 
+.retained-core-heading {
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.retained-core-readout {
+  grid-template-columns: minmax(0, 1fr);
+  border-color: var(--blue);
+  background: var(--fuse-soft);
+  box-shadow: inset 4px 0 0 var(--blue);
+}
+
+.retained-core-readout strong {
+  grid-row: auto;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.retained-core-readout.is-paused {
+  border-color: var(--pink);
+  background: var(--error-alert);
+  box-shadow: inset 4px 0 0 var(--pink);
+}
+
+.retained-core-readout.is-paused strong {
+  color: var(--pink);
+}
+
 .lean-readout strong {
   grid-row: span 4;
   align-self: center;
@@ -1246,6 +1280,11 @@ input[type="range"] {
 .layout-advisories div.is-error {
   background: var(--error-alert);
   box-shadow: inset 5px 0 0 var(--pink);
+}
+
+.layout-advisories div.is-core {
+  background: var(--fuse-soft);
+  box-shadow: inset 5px 0 0 var(--blue);
 }
 
 .layout-advisories strong,

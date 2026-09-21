@@ -98,6 +98,10 @@ function pieceColour(
   return VIEWPORT_PALETTES[theme].pieceColours[piece.role]
 }
 
+function visibleStudyPieces(study: MassStudy): readonly ScenePiece[] {
+  return [...study.pieces, ...study.retainedCore.pieces]
+}
+
 function createGrid(theme: UiTheme): THREE.GridHelper {
   const palette = VIEWPORT_PALETTES[theme]
   const grid = new THREE.GridHelper(
@@ -189,7 +193,7 @@ export function Viewport({
   const selectedPieceIdRef = useRef(selectedPieceId)
   const fuseSelectionPieceIdsRef = useRef(new Set(fuseSelectionPieceIds))
   const studyRef = useRef(study)
-  const wasEmptyRef = useRef(study.pieces.length === 0)
+  const wasEmptyRef = useRef(visibleStudyPieces(study).length === 0)
   const modelScaleRef = useRef(modelScale)
   const uiThemeRef = useRef(uiTheme)
 
@@ -502,8 +506,9 @@ export function Viewport({
     selectableRef.current = []
     pieceIdsRef.current.clear()
 
-    for (const piece of study.pieces) {
+    for (const piece of visibleStudyPieces(study)) {
       const geometry = geometryForPiece(piece)
+      const core = piece.role === 'core'
       const material = new THREE.MeshStandardMaterial({
         color: pieceColour(
           piece,
@@ -514,11 +519,16 @@ export function Viewport({
         metalness: 0,
         roughness: 0.92,
         flatShading: true,
+        transparent: core,
+        opacity: core ? (piece.id === selectedPieceIdRef.current ? 0.34 : 0.2) : 1,
+        depthTest: !core,
+        depthWrite: !core,
       })
       const mesh = new THREE.Mesh(geometry, material)
       mesh.position.set(...piece.position)
-      mesh.castShadow = true
-      mesh.receiveShadow = true
+      mesh.castShadow = !core
+      mesh.receiveShadow = !core
+      mesh.renderOrder = core ? 2 : 0
       root.add(mesh)
       selectableRef.current.push(mesh)
       pieceIdsRef.current.set(mesh, piece.id)
@@ -526,18 +536,26 @@ export function Viewport({
       const edges = new THREE.LineSegments(
         new THREE.EdgesGeometry(geometry, 15),
         new THREE.LineBasicMaterial({
-          color: 0x30302e,
+          color: core ? pieceColour(
+            piece,
+            selectedPieceIdRef.current,
+            fuseSelectionPieceIdsRef.current,
+            uiThemeRef.current,
+          ) : 0x30302e,
           transparent: true,
-          opacity: 0.42,
+          opacity: core ? 0.92 : 0.42,
+          depthTest: !core,
         }),
       )
       edges.position.copy(mesh.position)
+      edges.renderOrder = core ? 3 : 0
       root.add(edges)
     }
     const keyLight = keyLightRef.current
     if (keyLight) fitDirectionalShadow(keyLight, study.bounds)
-    const restoredFromEmpty = wasEmptyRef.current && study.pieces.length > 0
-    wasEmptyRef.current = study.pieces.length === 0
+    const visiblePieces = visibleStudyPieces(study)
+    const restoredFromEmpty = wasEmptyRef.current && visiblePieces.length > 0
+    wasEmptyRef.current = visiblePieces.length === 0
     const camera = cameraRef.current
     const controls = controlsRef.current
     if (restoredFromEmpty && camera && controls) {
@@ -548,7 +566,9 @@ export function Viewport({
   useEffect(() => {
     for (const mesh of selectableRef.current) {
       const pieceId = pieceIdsRef.current.get(mesh)
-      const piece = studyRef.current.pieces.find(({ id }) => id === pieceId)
+      const piece = visibleStudyPieces(studyRef.current).find(
+        ({ id }) => id === pieceId,
+      )
       const material = mesh.material
       if (!piece || !(material instanceof THREE.MeshStandardMaterial)) continue
       material.color.set(
@@ -610,7 +630,7 @@ export function Viewport({
   return (
     <div className="viewport-shell">
       <canvas ref={canvasRef} aria-label="Interactive 3D massing viewport" />
-      {study.pieces.length === 0 ? (
+      {visibleStudyPieces(study).length === 0 ? (
         <div className="viewport-empty" role="status">
           <strong>NO PARTS VISIBLE</strong>
           <span>Restore a part from Objects, or use Undo.</span>

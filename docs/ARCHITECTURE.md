@@ -2,13 +2,20 @@
 
 ## Current mode
 
-RAAKA is a personal, laptop-only browser application. Vite binds to
-`127.0.0.1`; there is no backend, authentication, database or cloud
-infrastructure. Publishing the source repository does not expose the running
-application.
+RAAKA is a browser application with a local development mode and a public static
+GitHub Pages build. Vite binds local development to `127.0.0.1`; the public app
+is served from `https://bambi8000.github.io/raaka/`. Neither mode has a backend,
+authentication, database, analytics or server-side storage. Project recovery
+remains in that browser origin, and portable studies still require Save project.
 
-If the application is later shared as a hosted service, hosting, authentication,
-data and security must be designed as a separate change.
+`vite.config.ts` reads `RAAKA_BASE_PATH` only during the Pages build so local
+development retains `/` while GitHub assets resolve below `/raaka/`. The Verify
+workflow deploys only a `main` push after both quality and secret-scanning jobs
+succeed. Pull requests never deploy. GitHub's short-lived Pages identity token
+is scoped to the deploy job; RAAKA has no application secret.
+
+If the application later gains shared data, accounts or another hosted service,
+hosting, authentication, privacy and security require a separate design.
 
 ## Stack
 
@@ -516,6 +523,32 @@ disclosure, so Restore and inactive-Fuse access do not disappear below the
 sidebar breakpoint. A sticky selection label keeps the target visible while
 scrolling through controls. Yellow field borders and SELECTED labels supplement
 colour, and sliders expose their current influence through accessible text.
+
+### Direct translation
+
+Version 0.1.23 adds `translationGizmo.ts` as the pure boundary between semantic
+selection and viewport interaction. It derives one target from the generated
+physical study: shared upper X/Y placement, complete selected-leg X/Y placement
+or copied-part X/Y/Z placement. Original divided mass cells deliberately resolve
+to the shared upper offsets. Fuse meshes, removed parts and dormant copies have
+no target. Applying a target writes the existing Piloti parameters; Three.js
+never becomes model truth.
+
+The viewport attaches `TransformControls` to an otherwise empty scene object at
+the selected target's measured physical centre. Moving that object is converted
+back through model scale and snapped to one design millimetre before the pure
+parameter update. Unsupported axes are hidden and bounded to the same ranges as
+the inspector. A selected-leg move creates complete foot, size and position
+override entries so its inherited lean and proportions do not change later when
+shared values change.
+
+Pointer-down starts the existing history gesture, continuous object changes
+replace the current study, and pointer-up commits one entry. Escape resets the
+control and dispatches `cancel-gesture`, restoring the exact pre-drag study
+without consuming redo. OrbitControls are disabled only while the transform is
+dragging. The existing sliders remain the keyboard path. Gizmo state, selection
+and its overlay are transient UI projections; recipe version 16, project files
+and recovery format are unchanged.
 
 ## Interface themes
 

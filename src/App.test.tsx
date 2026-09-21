@@ -27,6 +27,9 @@ describe('wired selection inspector', () => {
     expect(html).toContain('aria-label="Show all controls"')
     expect(html).toContain('UPPER MASS PROFILE')
     expect(html).toContain('MODEL SCALE')
+    expect(html).toContain('MOVE XY')
+    expect(html).toContain('UPPER MASS · SHARED XY')
+    expect(html).toContain('1 MM DESIGN SNAP · ESC CANCELS')
   })
 
   it('switches to stem controls when the upper mass has been removed', () => {
@@ -63,6 +66,8 @@ describe('wired selection inspector', () => {
     expect(html).toContain('aria-label="Copy offset Z"')
     expect(html).toContain('UPPER MASS PROFILE')
     expect(html).not.toContain('LEG EDIT SCOPE')
+    expect(html).toContain('MOVE XYZ')
+    expect(html).toContain('COPY · XYZ')
   })
 
   it('leaves composition and Restore reachable in an empty study', () => {
@@ -71,5 +76,14 @@ describe('wired selection inspector', () => {
     expect(html).toContain('All controls')
     expect(html).toContain('aria-label="Foot offset X"')
     expect(html).toContain('RESTORE')
+    expect(html).not.toContain('viewport-gizmo-status')
+  })
+
+  it('requires Unfuse before showing direct-move handles for source parts', () => {
+    const html = renderInspector({ ...defaults, fuseGroups: [{
+      id: 'fuse-1', pieceIds: ['upper-mass', 'shoulder-2'],
+    }] })
+    expect(html).toContain('Unfuse to move individual source parts.')
+    expect(html).not.toContain('viewport-gizmo-status')
   })
 })

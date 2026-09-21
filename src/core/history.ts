@@ -11,6 +11,7 @@ export type HistoryAction<Value> =
   | { readonly type: 'begin-gesture' }
   | { readonly type: 'replace'; readonly value: Value }
   | { readonly type: 'commit-gesture' }
+  | { readonly type: 'cancel-gesture' }
   | { readonly type: 'undo' }
   | { readonly type: 'redo' }
   | { readonly type: 'load'; readonly value: Value }
@@ -54,6 +55,10 @@ export function reduceHistory<Value>(
         future: [],
         gestureStart: null,
       }
+    case 'cancel-gesture':
+      return state.gestureStart === null
+        ? state
+        : { ...state, present: state.gestureStart, gestureStart: null }
     case 'undo': {
       const previous = state.past.at(-1)
       if (previous === undefined) return state

@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.22, the
+This document describes the product direction. In version 0.1.23, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -281,8 +281,20 @@ Relevant enabling choices stay available even when they are neutral at the
 current values: Linked/Detached, a mass's inherited Block/Tapered profile and
 Global/Centered for polygon stems at zero lean. Independent mass tops hide the
 shared profile controls. A shoulder's local position and size remain editable,
-but foot lean belongs to its stem. Gizmos are planned next, not implemented in
-this release; translation handles must not be confused with foot-lean handles.
+but foot lean belongs to its stem.
+
+Version 0.1.23 adds scoped translation gizmos to the 3D view. Original upper
+masses and their divided cells expose one shared X/Y placement handle. A stem
+or shoulder exposes one X/Y handle for the complete leg and creates a complete
+selected override when it first moves. A copied upper mass or copied complete
+leg exposes its saved X/Y/Z copy translation. The overlay names that scope and
+the available axes; foot lean remains a separate inspector operation.
+
+Each physical handle step maps back to one design millimetre at 1:1, 1:2 and
+1:4. A full drag creates one Undo step, Escape restores the exact starting
+study, and orbit is suspended only while dragging. Fuses remain immutable until
+Unfuse. The existing range controls retain keyboard access and precise readouts;
+numeric entry beside them is still planned.
 
 ### Planned high-rise articulation module
 

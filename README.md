@@ -1,5 +1,7 @@
 # RAAKA
 
+[Open the public RAAKA studio](https://bambi8000.github.io/raaka/)
+
 RAAKA is a deterministic brutalist massing studio for physical sculpture. It is
 not a general-purpose 3D modeller. The project deliberately concentrates on
 planar masses, explicit voids and repeatable recipes that can become real
@@ -156,7 +158,14 @@ upper mass hides leg-only faders; selecting a stem or shoulder shows the control
 that affect that part. Shared linked dimensions remain visible. **Show all**
 beside the pinned selection name restores the complete inspector; **Show relevant**
 focuses it again. Filtering does not change geometry, saved files or undo history.
-Translation gizmos are the next planned editing improvement, not yet implemented.
+
+Version 0.1.23 adds translation gizmos in the 3D view. Original upper masses and
+cells move through their shared X/Y placement, a selected stem or shoulder moves
+the complete leg in X/Y, and a copy moves in X/Y/Z. The overlay states the scope
+and available axes. Movement is snapped to one design millimetre at every model
+scale, one drag is one Undo step, and Escape cancels the drag. Orbit is paused
+only while a handle is active. Fuses must be unfused before their sources can be
+moved; the existing inspector sliders remain available for keyboard editing.
 
 ## Run locally
 
@@ -172,8 +181,9 @@ pnpm dev
 
 The local server binds to `127.0.0.1:5174` only.
 While it is running, open [RAAKA locally](http://127.0.0.1:5174/).
-This address works on the computer running the server; the public GitHub
-repository is not a hosted application.
+This address works on the computer running the server. Verified `main` builds
+are also published as the public static
+[GitHub Pages application](https://bambi8000.github.io/raaka/).
 
 ## Quality gate
 
@@ -200,7 +210,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.22 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.23 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

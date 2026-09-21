@@ -24,6 +24,20 @@ describe('history', () => {
     expect(reduceHistory(history, { type: 'undo' }).present).toBe(10)
   })
 
+  it('cancels a gesture without adding history or losing the prior redo branch', () => {
+    let history = createHistory(10)
+    history = reduceHistory(history, { type: 'replace', value: 20 })
+    history = reduceHistory(history, { type: 'undo' })
+    history = reduceHistory(history, { type: 'begin-gesture' })
+    history = reduceHistory(history, { type: 'replace', value: 11 })
+    history = reduceHistory(history, { type: 'replace', value: 12 })
+    history = reduceHistory(history, { type: 'cancel-gesture' })
+
+    expect(history).toEqual({
+      past: [], present: 10, future: [20], gestureStart: null,
+    })
+  })
+
   it('clears redo when a new branch is edited', () => {
     let history = createHistory(1)
     history = reduceHistory(history, { type: 'replace', value: 2 })

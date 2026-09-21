@@ -25,6 +25,11 @@ import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
 import { partIdForPiece, partInGrid, partLabel } from './core/partSelection'
 import { affectedPilotiControls, type PilotiControlKey } from './core/controlInfluence'
 import { relevantPilotiControls } from './core/inspectorControls'
+import {
+  applyTranslationGizmoValue,
+  translationGizmoTarget,
+  type TranslationGizmoTarget,
+} from './core/translationGizmo'
 import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress, massPartProfile } from './core/massDivision'
 import {
   PILOTI_FUSE_GROUP_LIMIT,
@@ -235,6 +240,7 @@ export default function App() {
     FuseRenderState | undefined
   >()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const gizmoGestureStartRef = useRef<PilotiStudyState | undefined>(undefined)
   const studyState = history.present
   const parameters = studyState.parameters
   const radial = parameters.planShape !== 'rectangle'
@@ -373,6 +379,10 @@ export default function App() {
         360
   const selectedPiece = study.pieces.find(
     (piece) => piece.id === selectedPieceId,
+  )
+  const translationGizmo = useMemo(
+    () => translationGizmoTarget(parameters, selectedPieceId, study),
+    [parameters, selectedPieceId, study],
   )
   const selectedPartId = selectedPiece ? partIdForPiece(selectedPieceId) : undefined
   const affectedControls = useMemo(
@@ -896,8 +906,46 @@ export default function App() {
     )
   }
 
+  const applyGizmoTranslation = (
+    target: TranslationGizmoTarget,
+    valueDesignMm: readonly [number, number, number],
+  ) => {
+    replaceStudy({
+      ...studyState,
+      parameters: applyTranslationGizmoValue(parameters, target, valueDesignMm),
+    })
+  }
+
   const beginGesture = () => dispatch({ type: 'begin-gesture' })
   const endGesture = () => dispatch({ type: 'commit-gesture' })
+  const beginGizmoTranslation = (target: TranslationGizmoTarget) => {
+    gizmoGestureStartRef.current = studyState
+    beginGesture()
+    if (target.kind === 'support') setSupportEditScope('selected')
+  }
+  const endGizmoTranslation = (
+    target: TranslationGizmoTarget,
+    changed: boolean,
+  ) => {
+    endGesture()
+    gizmoGestureStartRef.current = undefined
+    if (!changed) return
+    setNotice({
+      kind: 'info',
+      text: `${target.kind === 'upper-mass'
+        ? 'Upper mass'
+        : target.kind === 'support'
+          ? 'Complete leg'
+          : 'Copy'} moved. Undo is available.`,
+    })
+  }
+  const cancelGizmoTranslation = () => {
+    const start = gizmoGestureStartRef.current
+    if (start) persistRecovery(start)
+    dispatch({ type: 'cancel-gesture' })
+    gizmoGestureStartRef.current = undefined
+    setNotice({ kind: 'info', text: 'Move cancelled. The starting position was restored.' })
+  }
   const objectList = (
     <ObjectList
       study={study}
@@ -1049,7 +1097,12 @@ export default function App() {
           uiTheme={uiTheme}
           selectedPieceId={selectedPieceId}
           fuseSelectionPieceIds={validFuseSelectionPieceIds}
+          translationGizmo={translationGizmo}
           onSelect={selectPiece}
+          onTranslationStart={beginGizmoTranslation}
+          onTranslationChange={applyGizmoTranslation}
+          onTranslationEnd={endGizmoTranslation}
+          onTranslationCancel={cancelGizmoTranslation}
         />
       </section>
 
@@ -1122,7 +1175,7 @@ export default function App() {
             ) : null}
           </div>
           {selectedFuseGroup ? (
-            <p className="selection-help">Unfuse to remove individual parts.</p>
+            <p className="selection-help">Unfuse to remove or move individual parts.</p>
           ) : selectedPiece?.role === 'support' ? (
             <p className="selection-help">Remove leg deletes its stem and shoulder together.</p>
           ) : null}
@@ -1132,6 +1185,20 @@ export default function App() {
               ? 'Grey controls remain available for the rest of the study.'
               : 'Only relevant controls are shown. Shared settings may also change linked parts.'}
           </p>
+          {translationGizmo ? (
+            <p className="selection-help gizmo-help">
+              <span>MOVE GIZMO</span>{' '}
+              {translationGizmo.kind === 'upper-mass'
+                ? massPartAddress(selectedPieceId)
+                  ? 'moves the complete original upper mass in shared X/Y.'
+                  : 'moves the upper mass in X/Y.'
+                : translationGizmo.kind === 'support'
+                  ? 'moves the complete leg in X/Y. Foot lean remains separate.'
+                  : 'moves this copy in X/Y/Z.'}
+            </p>
+          ) : selectedFuseGroup ? (
+            <p className="selection-help gizmo-help"><span>MOVE GIZMO</span> Unfuse to move individual source parts.</p>
+          ) : null}
           {validFuseSelectionPieceIds.length > 0 ? (
             <div className="fuse-builder" aria-live="polite">
               <span>FUSE SET</span>
@@ -1278,7 +1345,7 @@ export default function App() {
                 value={selectedPartCopy.offsetXMm}
                 minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
                 maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
-                step={10}
+                step={1}
                 suffix=" mm"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
@@ -1292,7 +1359,7 @@ export default function App() {
                 value={selectedPartCopy.offsetYMm}
                 minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
                 maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
-                step={10}
+                step={1}
                 suffix=" mm"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
@@ -1306,7 +1373,7 @@ export default function App() {
                 value={selectedPartCopy.offsetZMm}
                 minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
                 maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
-                step={10}
+                step={1}
                 suffix=" mm"
                 onInteractionStart={beginGesture}
                 onInteractionEnd={endGesture}
@@ -1451,7 +1518,7 @@ export default function App() {
             value={parameters.upperOffsetXMm}
             minimum={-400}
             maximum={400}
-            step={10}
+            step={1}
             suffix=" mm"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
@@ -1463,7 +1530,7 @@ export default function App() {
             value={parameters.upperOffsetYMm}
             minimum={-400}
             maximum={400}
-            step={10}
+            step={1}
             suffix=" mm"
             onInteractionStart={beginGesture}
             onInteractionEnd={endGesture}
@@ -1810,7 +1877,7 @@ export default function App() {
                     value={activeSupportPositionX}
                     minimum={-300}
                     maximum={300}
-                    step={5}
+                    step={1}
                     suffix=" mm"
                     onInteractionStart={beginGesture}
                     onInteractionEnd={endGesture}
@@ -1824,7 +1891,7 @@ export default function App() {
                     value={activeSupportPositionY}
                     minimum={-300}
                     maximum={300}
-                    step={5}
+                    step={1}
                     suffix=" mm"
                     onInteractionStart={beginGesture}
                     onInteractionEnd={endGesture}
@@ -2174,7 +2241,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.22 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.23 / LOCAL</span>
       </footer>
     </main>
   )

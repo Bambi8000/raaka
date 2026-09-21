@@ -37,6 +37,8 @@ Global and centered foot offset spaces for polygon Piloti are implemented in 0.1
 The selection-focused inspector with Show all is implemented in 0.1.22.
 Scoped translation gizmos are implemented in 0.1.23.
 Exact numeric parameter entry is implemented in 0.1.24.
+Watertight binary STL export and a measured Kerros round trip are implemented
+in 0.1.25.
 
 ## 0.1 — foundation
 
@@ -49,8 +51,9 @@ Exact numeric parameter entry is implemented in 0.1.24.
 - [x] summed piece volume, approximate mass and ground contact readings
 - [x] baseline code, geometry, browser and CI review recorded
 
-The baseline is a working study prototype. Manufacturing export, cores and five
-of the six recipe families are not yet implemented. Version 0.1.1 closes the
+The baseline is a working study prototype. Positive-solid STL export is
+implemented; cores, mould output and five of the six recipe families are not
+yet implemented. Version 0.1.1 closes the
 measured geometry and viewport defects; version 0.1.2 begins durable study
 work with project files, recovery and history; version 0.1.3 adds authored
 shared leg lean; version 0.1.4 adds per-leg overrides; version 0.1.5 adds
@@ -69,6 +72,7 @@ Version 0.1.17 corrects linked bearing placement, removes distance fog and
 serialises feature-branch verification through pull requests.
 Version 0.1.23 adds direct translation handles for existing placement fields.
 Version 0.1.24 adds validated numeric entry beside every visible slider.
+Version 0.1.25 adds a watertight, model-scaled binary STL handoff to Kerros.
 
 ## 0.1.1 — correct the baseline
 
@@ -158,13 +162,13 @@ the distinction.
   mass by `s³`, including asymmetric and selected-leg-leaning studies
 - [x] repeat the scale fixtures when multi-row studies exist
 - [x] preserve view direction and automatically reframe after scale changes
-- [ ] require future mesh/drawing exports to use this same physical geometry,
-  with drawing paper scale and Kerros stock/kerf kept separate
+- [x] require mesh export to use this same physical geometry, with Kerros
+  stock/kerf kept separate; retain the same requirement for future drawings
 
 Done when a saved 2,000 mm study yields faithful 1,000 mm and 500 mm models,
 with unchanged seed/master parameters, correct physical readings and no drift
-when switching scales repeatedly. Export verification follows as the output
-milestones land; this stage does not imply that export already exists.
+when switching scales repeatedly. Version 0.1.25 verifies that the same
+physical result survives the binary STL and Kerros import boundary.
 
 ## 0.1.6 — Piloti support grids
 
@@ -424,9 +428,9 @@ emphasis to match its actual parameter dependencies.
 
 Unchecked items remain proposals. The owner-requested dynamic inspector is now
 implemented; fuller selected-first ordering and copy-source navigation remain
-open. Translation gizmos and exact numeric entry are implemented. Next: the
-first STL handoff. Keep the existing manufacturing and weight/core gates below
-in scope.
+open. Translation gizmos, exact numeric entry and the first STL handoff are
+implemented. Next: retained lightweight-core intent and concrete/core mass
+separation. Keep the existing manufacturing gates below in scope.
 
 ## 0.1.19 — divided upper masses and opposing tapers
 
@@ -560,9 +564,9 @@ Done when the visible handle describes the exact object scope, writes only
 existing design parameters, follows model scale correctly and makes one history
 entry per completed drag. Escape restores the exact pre-drag study. Existing
 range controls remain the keyboard alternative; dedicated numeric fields are
-the following precision-editing step. The next output milestone remains a
-watertight STL and measured millimetre round trip into Kerros; mould construction
-stays there.
+the following precision-editing step. The watertight STL and measured Kerros
+round trip planned here are completed in 0.1.25; mould construction stays
+there.
 
 Verification: 359 tests plus lint, strict TypeScript and production build.
 Browser checks cover upper, complete-leg and copy handle scopes; a 1:4 drag;
@@ -598,6 +602,33 @@ Verification: 363 tests plus lint, strict TypeScript and production build.
 Browser checks cover millimetre and percentage commits, one-step Undo, invalid
 range feedback, Escape cancellation and a clean console.
 
+## 0.1.25 — watertight STL handoff to Kerros
+
+- [x] finish one or more visible semantic pieces through the Manifold kernel
+- [x] require exactly one connected finished solid and explain empty or
+  disconnected refusals
+- [x] encode binary STL with finite millimetre coordinates, Z up, outward unit
+  normals and stable triangle winding
+- [x] export the selected 1:1, 1:2 or 1:4 physical study without changing the
+  project, master parameters or drawing scale
+- [x] name the file with seed and scale; report triangles, physical bounds and
+  finished-solid volume after download
+- [x] verify binary layout, zero open edges, signed volume and cubic scale using
+  a three-column/two-row Piloti with X/Y lean and a selected-leg override
+- [x] write a real 1:4 file and read it through Kerros's production importer
+  with equal bounds, binary format detection and zero open edges
+- [x] retain recipe version 16 and keep mould construction in Kerros
+
+Done when the same generated physical study drives the viewport readings and a
+single watertight STL that Kerros reads at the authored millimetre size. The
+exported object is the positive sculpture, never an implied mould or set of
+independent loose pieces.
+
+Verification: 367 committed tests plus lint, strict TypeScript and production
+build. The cross-repository fixture writes a 150-triangle, six-leg 1:4 STL;
+Kerros reads it as 361.4 × 275.0 × 500.0 mm with zero warnings and zero open
+edges. Browser verification covers the actual download path and a clean console.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -626,8 +657,8 @@ range feedback, Escape cancellation and a clean console.
 - [x] geometric bearing/contact feedback without automatic aesthetic correction
 - [ ] retained lightweight core intent, preview and matching solid subtraction
 - [ ] separate concrete/core volume and mass, with explicit material assumptions
-- [ ] STL export from the finished watertight solid
-- [ ] a measured millimetre round trip into Kerros
+- [x] STL export from the finished watertight solid
+- [x] a measured millimetre round trip into Kerros
 - [ ] update selection materials without rebuilding geometry; complete unmount
   cleanup and provide a visible WebGL failure state
 

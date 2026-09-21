@@ -6,13 +6,14 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.24, the
+This document describes the product direction. In version 0.1.25, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
 multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement, divided/shared shoulder rows and semantic part copies.
-Outputs, cores and the remaining recipe families are planned. Authored X/Y
+The first watertight STL output is implemented; drawings, cores and the
+remaining recipe families are planned. Authored X/Y
 upper-mass offsets add a controlled cantilever without replacing seeded
 asymmetry, and the upper mass can be a block or a tapered loft. Piloti supports
 rectangular grids and regular hexagonal/octagonal plans with radial legs and
@@ -299,6 +300,16 @@ are entered as whole values; normalized proportions are displayed and entered as
 whole percentages. Enter commits the value as one Undo step, Escape cancels the
 draft, and invalid or out-of-range input never reaches geometry. Leaving an
 invalid field restores its current value and keeps the reason visible.
+
+Version 0.1.25 adds the first physical output. **Export** resolves every visible
+piece through the solid kernel and writes one binary STL whose numeric
+coordinates are the selected model-scale millimetres, with Z up and the ground
+at Z = 0. The world X/Y origin is preserved. One visible piece is valid; an
+empty study or a composition that resolves to more than one connected solid is
+refused with a specific reason. The file is the finished positive sculpture,
+not a mould, core or sheet plan. Its filename records the seed and scale, while
+the notice reports triangle count, physical bounds and volume. Project schema
+16 is unchanged because export derives from the current physical study.
 
 ### Planned high-rise articulation module
 

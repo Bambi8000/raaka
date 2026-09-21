@@ -174,6 +174,16 @@ Escape cancels the draft. Invalid and out-of-range values stay out of the study,
 explain the accepted range, and restore the current value when focus leaves.
 The sliders remain available and now share the same displayed precision.
 
+Version 0.1.25 adds the first manufacturing handoff. **Export** resolves every
+visible part through the Manifold solid kernel and downloads one watertight
+binary STL in physical millimetres with Z up. The selected 1:1, 1:2 or 1:4
+model scale is part of the geometry, not file metadata. Empty studies and
+disconnected compositions are refused with a specific reason instead of
+producing an ambiguous file. A six-leg, two-row 1:4 fixture has been written to
+disk and read by Kerros's real importer with identical bounds and zero open
+edges. This is the positive sculpture; mould construction still belongs to
+Kerros.
+
 ## Run locally
 
 Requirements:
@@ -217,11 +227,12 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.24 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.25 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
-versioned project file. Manufacturing export is not implemented yet. Other
-recipes, drawings, cores and stability feedback are planned. The current mass
-and ground-contact readings are estimates, not structural engineering
-approval. The displayed envelope is derived from every generated piece,
-including seeded variation, support rows, explicit foot offsets and authored
-upper-mass placement, plus any translated part copies.
+versioned project file. Its finished positive solid can be exported as a
+watertight millimetre STL for Kerros. Mould output, other recipes, drawings,
+cores and stability feedback are planned. The current mass and ground-contact
+readings are estimates, not structural engineering approval. The displayed
+envelope is derived from every generated piece, including seeded variation,
+support rows, explicit foot offsets and authored upper-mass placement, plus any
+translated part copies.

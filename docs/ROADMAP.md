@@ -25,6 +25,8 @@ The Manifold solid-kernel gate is complete in 0.1.14.
 User-facing multi-selection, Fuse and Unfuse are implemented in 0.1.15.
 Default dark mode and the persistent Light/Dark switch are implemented in
 0.1.16.
+Linked bearing alignment, fog-free viewing and the feature-branch CI correction
+are implemented in 0.1.17.
 
 ## 0.1 — foundation
 
@@ -53,6 +55,8 @@ Version 0.1.13 adds source-linked semantic part copies and X/Y/Z placement.
 Version 0.1.14 validates the solid-kernel boundary before user-facing Fuse.
 Version 0.1.15 adds saved, measured Fuse groups and reversible Unfuse.
 Version 0.1.16 adds a default dark workspace and persistent Light/Dark switch.
+Version 0.1.17 corrects linked bearing placement, removes distance fog and
+serialises feature-branch verification through pull requests.
 
 ## 0.1.1 — correct the baseline
 
@@ -367,7 +371,9 @@ mode, and switching themes never marks or mutates the current study.
 
 Done when the linked screenshot case with a tapered mass, X/Y placement and
 unaltered supports reports zero ordinary bearing overhang, while the equivalent
-Detached study preserves the independent cantilever.
+Detached study preserves the independent cantilever; zooming out remains crisp;
+and every feature change has one authoritative pull-request verification before
+the merged `main` run.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

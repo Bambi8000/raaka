@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.16, the
+This document describes the product direction. In version 0.1.17, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,

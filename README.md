@@ -106,6 +106,13 @@ resetting the study, selection or camera. The preference is retained in the
 local browser profile and remains separate from portable project files and
 undo/redo history.
 
+Version 0.1.17 keeps ordinary divided and shared shoulder bearings under an
+offset upper mass when the footprint is **Linked**. Their tops follow authored
+X/Y placement while stems and feet remain fixed; **Detached** preserves the
+independent cantilever and overhang feedback. The viewport no longer applies
+distance fog when zoomed out. CI also avoids duplicate feature-branch push runs,
+so the pull-request scan cannot start after its source branch has been deleted.
+
 ## Run locally
 
 Requirements:
@@ -148,7 +155,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.16 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.17 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

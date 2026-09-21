@@ -1987,7 +1987,7 @@ export default function App() {
           {parameters.supportCount} × {parameters.supportRowCount} GRID
         </span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.16 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.17 / LOCAL</span>
       </footer>
     </main>
   )

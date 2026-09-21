@@ -338,7 +338,8 @@ the viewing direction but automatically reframes the new physical bounds so a
 quarter-scale model remains inspectable. **Fit** performs the same directional
 reframe on demand; **Home** restores the authored axonometric direction. The
 shadow camera includes the sculpture and a padded ground receiver at every
-supported scale and height.
+supported scale and height. Version 0.1.17 removes distance fog entirely, so
+zooming out never fades geometry or the drawing-like grid into artificial haze.
 
 ## Selection colours
 

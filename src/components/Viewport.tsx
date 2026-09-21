@@ -189,7 +189,6 @@ export function Viewport({
     const palette = VIEWPORT_PALETTES[uiThemeRef.current]
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(palette.background)
-    scene.fog = new THREE.Fog(palette.background, 2_500, 5_500)
     sceneRef.current = scene
 
     const camera = new THREE.PerspectiveCamera(35, 1, 1, 12_000)
@@ -388,9 +387,6 @@ export function Viewport({
     const scene = sceneRef.current
     if (scene) {
       scene.background = new THREE.Color(palette.background)
-      if (scene.fog instanceof THREE.Fog) {
-        scene.fog.color.set(palette.background)
-      }
     }
 
     const hemisphereLight = hemisphereLightRef.current

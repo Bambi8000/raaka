@@ -361,6 +361,7 @@ mode, and switching themes never marks or mutates the current study.
 - [x] retain independent mass placement and overhang feedback in Detached mode
 - [x] preserve selected-support size and placement overrides as local authored
   exceptions that may still overhang
+- [x] remove viewport distance fog so zoomed-out geometry and grids stay crisp
 
 Done when the linked screenshot case with a tapered mass, X/Y placement and
 unaltered supports reports zero ordinary bearing overhang, while the equivalent

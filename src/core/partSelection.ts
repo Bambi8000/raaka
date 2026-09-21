@@ -1,5 +1,6 @@
 import { isPilotiPartCopySourceId, pilotiSupportAddress } from './pilotiParameters'
 import type { PilotiParameters } from './types'
+import { massPartAddress } from './massDivision'
 
 /** Stems and shoulders share one removable leg; copies keep their own identity. */
 export function partIdForPiece(pieceId: string): string | undefined {
@@ -12,6 +13,8 @@ export function partIdForPiece(pieceId: string): string | undefined {
 }
 
 export function partLabel(partId: string): string {
+  const massPart = massPartAddress(partId)
+  if (massPart) return `Mass ${massPart.division.toUpperCase()} · ${massPart.index}`
   if (partId === 'upper-mass') return 'Upper mass'
   if (partId.startsWith('copy-')) return `Copy ${partId.slice(5)}`
   const address = pilotiSupportAddress(partId)
@@ -23,6 +26,8 @@ export function partInGrid(partId: string, parameters: PilotiParameters): boolea
     (copy) => copy.id === partId,
   )?.sourceId ?? partId
   if (sourceId === 'upper-mass') return true
+  const massPart = massPartAddress(sourceId)
+  if (massPart) return massPart.division === parameters.upperMassDivision
   const address = pilotiSupportAddress(sourceId)
   return (
     address !== undefined &&

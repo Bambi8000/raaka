@@ -57,7 +57,7 @@ export function ObjectList({
           <p>Grid spacing and source shapes are retained.</p>
           {parameters.removedPartIds.map((partId) => (
             <div key={partId}>
-              <span>{partLabel(partId)}{partInGrid(partId, parameters) ? '' : ' · outside grid'}</span>
+              <span>{partLabel(partId)}{partInGrid(partId, parameters) ? '' : ' · inactive layout'}</span>
               <button type="button" onClick={() => onRestore(partId)} aria-label={`Restore ${partLabel(partId)}`}>
                 RESTORE
               </button>

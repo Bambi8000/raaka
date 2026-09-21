@@ -1115,6 +1115,8 @@ describe('generatePiloti', () => {
   it('keeps geometry finite at both ends of every supported range', () => {
     expectFiniteStudy({
       seed: 0,
+      upperMassDivision: 'whole',
+      massPartOverrides: [],
       heightMm: 1_000,
       supportCount: 1,
       supportRowCount: 1,
@@ -1146,6 +1148,8 @@ describe('generatePiloti', () => {
     })
     expectFiniteStudy({
       seed: MAX_SEED,
+      upperMassDivision: 'xy4',
+      massPartOverrides: [],
       heightMm: 2_000,
       supportCount: 6,
       supportRowCount: 3,

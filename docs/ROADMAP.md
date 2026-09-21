@@ -29,6 +29,8 @@ Linked bearing alignment, fog-free viewing and the feature-branch CI correction
 are implemented in 0.1.17.
 Individual part removal, restoration and selection-aware controls are
 implemented in 0.1.18.
+Two- and four-part upper-mass division with independent tapered tops is
+implemented in 0.1.19.
 
 ## 0.1 — foundation
 
@@ -413,6 +415,37 @@ emphasis to match its actual parameter dependencies.
 
 These are proposals, not implemented controls. Prioritize numeric entry and the
 Selected / Composition split after visual feedback on 0.1.18.
+
+## 0.1.19 — divided upper masses and opposing tapers
+
+- [x] divide the original upper mass into two X halves, two Y halves or four XY
+  cells while preserving the initial block or tapered envelope
+- [x] select a cell and edit its block/tapered profile, top ratios and signed
+  X/Y drift without changing neighbours or bottom bearing faces
+- [x] distinguish independent tops from the shared profile and allow re-linking
+- [x] retain cell edits per division; Whole restores the shared mass, not a union
+- [x] support cell removal, restoration, source-linked copies and Fuse groups
+- [x] keep pre-existing whole-mass copies whole; pause cell copies and Fuses
+  when their source division is inactive
+- [x] persist recipe version 14, recovery, undo/redo and uniform model scales;
+  migrate recipe versions 1–13 without changing geometry
+- [x] test envelope, nominal and union volume, intermediate sections, independent
+  edits, copies, removal, validation and migration
+- [x] state nominal-volume and partial-bearing limitations in the interface
+
+Done when two or four selectable cells can lean in different directions, retain
+their exact settings after reopening and re-link to the shared profile. This
+does not introduce arbitrary plane cuts or manufacturing slicing.
+
+Follow-ups: divide arbitrary copied masses, author unequal split proportions,
+inspect partial bearing coverage and add optional seam/exploded previews. These
+remain planned; the first implementation divides only the original upper mass.
+
+Verification: 223 unit tests plus lint, strict TypeScript and production build.
+Browser checks cover opposing X drifts, four-cell selection, independent Y
+drift, copying a cell, removal with a surviving copy, Restore, Fuse, inactive
+division recovery, 1:4 scale, reload recovery, re-linking and Undo/Redo. No
+browser errors were observed. The existing bundle-size warning remains open.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

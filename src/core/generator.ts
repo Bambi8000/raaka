@@ -2,6 +2,7 @@ import { mulberry32, randomBetween } from './random'
 import { boundsSize, sceneBounds } from './bounds'
 import { normalizePilotiParameters } from './pilotiParameters'
 import { partIdForPiece } from './partSelection'
+import { divideUpperMass, massPartAddress } from './massDivision'
 import {
   CONCRETE_DENSITY_KG_M3,
   scenePieceGroundContact,
@@ -9,6 +10,8 @@ import {
 } from './pieceMetrics'
 import type {
   MassStudy,
+  BoxPiece,
+  FrustumPiece,
   PilotiPartCopy,
   PilotiParameters,
   RecipeSummary,
@@ -75,6 +78,8 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   upperOffsetXMm: 0,
   upperOffsetYMm: 0,
   upperMassProfile: 'block',
+  upperMassDivision: 'whole',
+  massPartOverrides: [],
   upperTopWidthRatio: 0.72,
   upperTopDepthRatio: 0.84,
   upperTopOffsetXMm: 120,
@@ -269,7 +274,7 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
     }
   }
 
-  pieces.push(
+  const upperMass: BoxPiece | FrustumPiece =
     parameters.upperMassProfile === 'block'
       ? {
           kind: 'box',
@@ -304,20 +309,22 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
             parameters.upperTopOffsetXMm,
             parameters.upperTopOffsetYMm,
           ],
-        },
-  )
+        }
+  pieces.push(...divideUpperMass(upperMass, parameters.upperMassDivision, parameters.massPartOverrides))
 
   const sourcePieces = new Map(pieces.map((piece) => [piece.id, piece]))
+  // Whole-mass copies retain their existing source; part copies follow one cell.
+  sourcePieces.set('upper-mass', upperMass)
   for (const copy of parameters.partCopies) {
     const copyNumber = copy.id.slice('copy-'.length)
-    if (copy.sourceId === 'upper-mass') {
-      const source = sourcePieces.get('upper-mass')
+    if (copy.sourceId === 'upper-mass' || massPartAddress(copy.sourceId)) {
+      const source = sourcePieces.get(copy.sourceId)
       if (source) {
         pieces.push(
           copyPiece(
             source,
             `upper-mass-${copy.id}`,
-            `Upper mass copy ${copyNumber}`,
+            `${source.label} copy ${copyNumber}`,
             copy,
           ),
         )
@@ -347,7 +354,10 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
 
   // Resolve copies before omissions: deleting an original keeps its copies alive.
   // Every grid slot still consumes its seeded choices, even when removed.
-  pieces = pieces.filter((piece) => !removedPartIds.has(partIdForPiece(piece.id) ?? ''))
+  pieces = pieces.filter((piece) =>
+    !removedPartIds.has(partIdForPiece(piece.id) ?? '') &&
+    !(massPartAddress(piece.id) && removedPartIds.has('upper-mass')),
+  )
   const concreteVolumeMm3 = pieces.reduce(
     (sum, piece) => sum + scenePieceVolume(piece),
     0,

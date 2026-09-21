@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.20, the
+This document describes the product direction. In version 0.1.21, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -247,6 +247,26 @@ Hexagon and Octagon, but their local sector edits are separate. Save, recovery,
 Undo/Redo and 1:1, 1:2 and 1:4 scales preserve all three layouts. Existing projects
 open as Rectangle without changing their geometry. Partial-bearing assessment,
 manufacturing slicing and structural approval remain outside this feature.
+
+Version 0.1.21 adds **Global / Centered** foot offset space for polygon Piloti.
+Global retains the shared world X/Y compass. Centered maps the authored X value
+to each leg's outward radial direction and Y to the counter-clockwise tangent
+when viewed from above. Positive radial values spread feet; negative values
+draw them inward. Tangential offset zero gives purely radial lean. The inspector
+labels these controls explicitly and reports centered direction relative to
+outward, not as a shared world compass heading.
+
+The centre is the fixed support-ring origin, independent of upper-mass placement.
+Direction follows each actual neck, including seeded variation and selected
+position; a neck placed exactly at the centre falls back to its original bay
+direction. Moving a selected leg therefore realigns its centered lean. A copied
+leg keeps its source's direction and translates as a complete pair. Only foot
+offsets use the new frame: support placement, size, copy translation and mass
+drift remain in world X/Y. Shared and selected offset values use the same mode.
+Switching mode reinterprets existing values without converting or erasing them.
+The setting is dormant in Rectangle and survives project files, recovery,
+Undo/Redo and model scales. Existing projects migrate to Global without a shape
+change. Ground faces remain horizontal and neck interfaces stay joined.
 
 ### Planned high-rise articulation module
 

@@ -69,11 +69,23 @@ export function generateRadialPiloti(parameters: PilotiParameters): MassStudy {
       randomBetween(random, -1, 1) * ringRadius * parameters.asymmetry * 0.08]
     const x = bearingCentre[0] + jitter[0] + (placement?.positionXMm ?? 0)
     const y = bearingCentre[1] + jitter[1] + (placement?.positionYMm ?? 0)
+    const offsetX = lean?.footOffsetXMm ?? parameters.footOffsetXMm
+    const offsetY = lean?.footOffsetYMm ?? parameters.footOffsetYMm
+    let bottomOffset: Vec2 = [offsetX, offsetY]
+    if (parameters.footOffsetSpace === 'centered') {
+      // Use the actual neck relative to the fixed ring centre, never the upper
+      // mass or already-offset foot. At the centre, retain the source bay axis.
+      const distance = Math.hypot(x, y)
+      const bayDistance = Math.hypot(...bearingCentre)
+      const ux = distance > 1e-9 ? x / distance : bearingCentre[0] / bayDistance
+      const uy = distance > 1e-9 ? y / distance : bearingCentre[1] / bayDistance
+      bottomOffset = [offsetX * ux - offsetY * uy, offsetX * uy + offsetY * ux]
+    }
     const stem: PolygonLoftPiece = {
       kind: 'polygon-loft', id: supportId, label: `${label} support ${index + 1}`, role: 'support',
       position: [x, y, stemHeight / 2], height: stemHeight, footprint,
       bottomScale: parameters.neckWidthRatio * 1.18, topScale: parameters.neckWidthRatio,
-      bottomOffset: [lean?.footOffsetXMm ?? parameters.footOffsetXMm, lean?.footOffsetYMm ?? parameters.footOffsetYMm],
+      bottomOffset,
       topOffset: [0, 0],
     }
     const shoulder: PolygonLoftPiece = {

@@ -3,6 +3,7 @@ import type {
   PilotiMassPartOverride,
   PilotiUpperMassDivision,
   PilotiFootOffsetOverride,
+  PilotiFootOffsetSpace,
   PilotiFuseGroup,
   PilotiPartCopy,
   PilotiUpperFootprintMode,
@@ -32,6 +33,7 @@ type NumericPilotiParameter = Exclude<
   | 'upperMassDivision'
   | 'massPartOverrides'
   | 'footOffsetOverrides'
+  | 'footOffsetSpace'
   | 'supportSizeOverrides'
   | 'supportPositionOverrides'
   | 'partCopies'
@@ -512,6 +514,7 @@ export function normalizePilotiParameters(
   const partCopies = normalizePartCopies(input.partCopies)
   return {
     planShape: readPlanShape(input.planShape),
+    footOffsetSpace: readFootOffsetSpace(input.footOffsetSpace),
     polygonMassDivision: readPolygonDivision(input.polygonMassDivision),
     radialSpreadRatio: normalizeValue(input.radialSpreadRatio, 'radialSpreadRatio'),
     seed: normalizeValue(input.seed, 'seed'),
@@ -973,6 +976,13 @@ function readPlanShape(value: unknown): PilotiPlanShape {
   return value
 }
 
+function readFootOffsetSpace(value: unknown): PilotiFootOffsetSpace {
+  if (value !== 'global' && value !== 'centered') {
+    throw new ProjectValidationError('Foot offset space must be global or centered.')
+  }
+  return value
+}
+
 function readPolygonDivision(value: unknown): 'whole' | 'sectors' {
   if (value !== 'whole' && value !== 'sectors') {
     throw new ProjectValidationError('Polygon mass division must be whole or sectors.')
@@ -1018,6 +1028,7 @@ export function parsePilotiParameters(
   const partCopies = readPartCopies(record)
   return {
     planShape: readPlanShape(record.planShape),
+    footOffsetSpace: readFootOffsetSpace(record.footOffsetSpace),
     polygonMassDivision: readPolygonDivision(record.polygonMassDivision),
     radialSpreadRatio: readParameter(record, 'radialSpreadRatio'),
     seed: readParameter(record, 'seed'),

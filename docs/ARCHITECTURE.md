@@ -266,6 +266,34 @@ areas, never in authored geometry. Readings exclude removed original supports;
 copies and remaining unfused intersections retain the nominal-volume warning.
 The outer parent footprint is not a partial-bearing or structural assessment.
 
+### Polygon foot offset space
+
+Version 0.1.21 adds recipe-level `footOffsetSpace` (`global` or `centered`).
+Only polygon Piloti reads it for geometry; Rectangle retains the field as dormant
+intent. Resolve shared or selected authored offsets first, then transform them
+once before writing the stem's `bottomOffset`. Global is the identity transform.
+For Centered, normalize the actual neck's XY position relative to the fixed ring
+origin to obtain `u = (ux, uy)`, then map `(radial, tangent)` to
+`(radial*ux - tangent*uy, radial*uy + tangent*ux)`. Positive tangent is
+counter-clockwise from above. At radius at most `1e-9` mm, use the source bay's
+radial axis, so a neck at the origin never produces NaN or an arbitrary jump.
+
+Do not derive this basis from upper-mass placement, the displaced foot, camera
+coordinates or the current set of visible legs. Selected neck placement and
+seeded neck jitter do affect the actual outward direction. Copies inherit their
+source geometry before translation, preserving the source's lean direction.
+Mode switching reinterprets the stored values without modifying shared or
+selected arrays. Neck/shoulder interfaces, face dimensions, heights, volumes and
+ground areas are unchanged; complete bounds and Fuse meshes use the moved feet.
+Existing model scaling follows this operation exactly once.
+
+The inspector distinguishes `Global / World X/Y` from `Centered / Outward /
+Tangent`, relabels both shared and selected offset sliders, and measures centered
+direction from outward rather than asserting one world heading for the ring.
+Control influence probes the new enum against actual generated geometry,
+including copied and fused sources; unchanged shoulders and zero-offset legs
+are not falsely highlighted.
+
 ### Semantic part copies
 
 Version 0.1.13 stores up to 24 source-linked part copies. A copy has a stable
@@ -355,12 +383,14 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 15 stores every
+version and a separate recipe version. Piloti recipe version 16 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
 override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
-division, mass-part overrides, plan shape, polygon division, radial spread and
-one of the supported `modelScale` presets. Recipe versions 1–14 receive
+division, mass-part overrides, plan shape, polygon division, radial spread,
+foot offset space and one of the supported `modelScale` presets. Recipe versions
+1–15 receive `global` foot offset space, preserving their current geometry.
+Recipe versions 1–14 receive
 `rectangle`, `whole` polygon division and radial spread 1 without changing their
 existing geometry.
 Recipe versions 1–13 receive `whole` division and no mass-part overrides.

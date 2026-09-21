@@ -33,6 +33,7 @@ Two- and four-part upper-mass division with independent tapered tops is
 implemented in 0.1.19.
 Hexagonal/octagonal Piloti plans, radial support rings and matching six/eight
 upper-mass sectors are implemented in 0.1.20.
+Global and centered foot offset spaces for polygon Piloti are implemented in 0.1.21.
 
 ## 0.1 — foundation
 
@@ -477,6 +478,32 @@ sector drifts, connected Fuse/Unfuse, radial leg removal/Restore, 1:4 scale,
 Undo/Redo and retained independent sector edits after switching shapes. Complete
 divided/shared polygon studies also form one connected union in kernel tests.
 The existing bundle-size warning remains open.
+
+## 0.1.21 — global and centered polygon leg lean
+
+- [x] explicit Global / Centered foot offset space for Hexagon and Octagon
+- [x] Global retains world X/Y; Centered uses radial outward/inward and tangential
+  counter-clockwise/clockwise directions around the support-ring centre
+- [x] resolve shared and selected offsets in the same space without changing their values
+- [x] derive outward direction from the actual neck, with a stable bay-axis fallback at the centre
+- [x] leave upper placement independent and keep copies aligned with their source direction
+- [x] preserve horizontal grounded feet, planar faces, joined necks and physical metrics
+- [x] relabel shared/selected controls and centered angle readout; highlight actual dependencies
+- [x] retain dormant space in Rectangle without changing rectangular geometry
+- [x] recipe version 16, recovery, Undo/Redo and 1:1 / 1:2 / 1:4 scale support;
+  migrate versions 1–15 to Global without changing saved geometry
+- [x] regression tests for global/radial/tangential direction, local overrides,
+  copied and removed legs, origin fallback, connected Fuse, persistence and validation
+
+Done when one positive radial value spreads all polygon feet away from the centre,
+switching back restores the global compass, and the saved study reproduces both
+modes without moving necks or shoulders.
+
+Verification: 332 unit tests plus lint, strict TypeScript and production build.
+Browser checks cover Global/Centered geometry, Hexagon and Octagon, shared and
+selected radial/tangential values, Undo/Redo, reload recovery, 1:4 scale and
+retained mode after switching through Rectangle. The existing bundle-size
+warning remains tracked separately.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

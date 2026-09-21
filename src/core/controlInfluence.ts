@@ -6,6 +6,7 @@ export type PilotiControlKey =
   | keyof typeof PILOTI_PARAMETER_RULES
   | 'upperFootprintMode'
   | 'upperMassProfile'
+  | 'upperMassDivision'
   | 'shoulderMode'
 
 function geometryValues(piece: ScenePiece): readonly number[] {
@@ -63,6 +64,7 @@ export function affectedPilotiControls(
     shoulderMode: parameters.shoulderMode === 'shared' ? 'divided' : 'shared',
     upperFootprintMode: parameters.upperFootprintMode === 'linked' ? 'detached' : 'linked',
     upperMassProfile: parameters.upperMassProfile === 'block' ? 'tapered' : 'block',
+    upperMassDivision: parameters.upperMassDivision === 'whole' ? 'x2' : 'whole',
   } as const
   for (const key of Object.keys(choices) as (keyof typeof choices)[]) {
     if (affectsSelection({ ...parameters, [key]: choices[key] })) affected.add(key)

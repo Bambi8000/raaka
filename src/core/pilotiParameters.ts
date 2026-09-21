@@ -1,4 +1,7 @@
+import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress } from './massDivision'
 import type {
+  PilotiMassPartOverride,
+  PilotiUpperMassDivision,
   PilotiFootOffsetOverride,
   PilotiFuseGroup,
   PilotiPartCopy,
@@ -23,6 +26,8 @@ type NumericPilotiParameter = Exclude<
   | 'shoulderMode'
   | 'upperFootprintMode'
   | 'upperMassProfile'
+  | 'upperMassDivision'
+  | 'massPartOverrides'
   | 'footOffsetOverrides'
   | 'supportSizeOverrides'
   | 'supportPositionOverrides'
@@ -194,7 +199,7 @@ export function isPilotiPartCopyId(value: string): boolean {
 }
 
 export function isPilotiPartCopySourceId(value: string): boolean {
-  return value === 'upper-mass' || isPilotiSupportId(value)
+  return value === 'upper-mass' || massPartAddress(value) !== undefined || isPilotiSupportId(value)
 }
 
 function readRemovedPartIds(
@@ -235,7 +240,7 @@ export function isPilotiFuseGroupId(value: string): boolean {
 }
 
 export function isPilotiFusePieceId(value: string): boolean {
-  if (value === 'upper-mass' || isPilotiSupportId(value)) return true
+  if (isPilotiPartCopySourceId(value)) return true
   if (
     value.startsWith('shoulder-') &&
     isPilotiSupportId(`support-${value.slice('shoulder-'.length)}`)
@@ -519,6 +524,8 @@ export function normalizePilotiParameters(
     upperOffsetXMm: normalizeValue(input.upperOffsetXMm, 'upperOffsetXMm'),
     upperOffsetYMm: normalizeValue(input.upperOffsetYMm, 'upperOffsetYMm'),
     upperMassProfile: normalizeUpperMassProfile(input.upperMassProfile),
+    upperMassDivision: readMassDivision(input.upperMassDivision),
+    massPartOverrides: readMassPartOverrides(input.massPartOverrides),
     upperTopWidthRatio: normalizeValue(
       input.upperTopWidthRatio,
       'upperTopWidthRatio',
@@ -938,6 +945,39 @@ export class ProjectValidationError extends Error {
   }
 }
 
+function readMassDivision(value: unknown): PilotiUpperMassDivision {
+  const choice = MASS_DIVISIONS.find((division) => division.value === value)
+  if (!choice) throw new ProjectValidationError('Upper mass division must be whole, x2, y2 or xy4.')
+  return choice.value
+}
+
+function readMassPartOverrides(value: unknown): readonly PilotiMassPartOverride[] {
+  if (!Array.isArray(value)) throw new ProjectValidationError('Mass part overrides must be an array.')
+  const seen = new Set<string>()
+  return value.map((candidate: unknown) => {
+    if (typeof candidate !== 'object' || candidate === null || Array.isArray(candidate)) {
+      throw new ProjectValidationError('Every mass part override must be an object.')
+    }
+    const entry = candidate as Record<string, unknown>
+    if (typeof entry.partId !== 'string' || !massPartAddress(entry.partId) || seen.has(entry.partId)) {
+      throw new ProjectValidationError('Mass part overrides need unique, supported part IDs.')
+    }
+    seen.add(entry.partId)
+    if (!isPilotiUpperMassProfile(entry.profile)) throw new ProjectValidationError('Invalid mass part profile.')
+    const read = (key: keyof typeof MASS_PART_RULES): number => {
+      const number = entry[key]
+      const rule = MASS_PART_RULES[key]
+      if (typeof number !== 'number' || !Number.isFinite(number) || number < rule.minimum || number > rule.maximum) {
+        throw new ProjectValidationError(`Mass part ${key} must be between ${rule.minimum} and ${rule.maximum}.`)
+      }
+      return number
+    }
+    return { partId: entry.partId, profile: entry.profile,
+      topWidthRatio: read('topWidthRatio'), topDepthRatio: read('topDepthRatio'),
+      topOffsetXMm: read('topOffsetXMm'), topOffsetYMm: read('topOffsetYMm') }
+  })
+}
+
 export function parsePilotiParameters(
   input: unknown,
   missingDefaults: Partial<PilotiParameters> = {},
@@ -964,6 +1004,8 @@ export function parsePilotiParameters(
     upperOffsetXMm: readParameter(record, 'upperOffsetXMm'),
     upperOffsetYMm: readParameter(record, 'upperOffsetYMm'),
     upperMassProfile: readUpperMassProfile(record),
+    upperMassDivision: readMassDivision(record.upperMassDivision),
+    massPartOverrides: readMassPartOverrides(record.massPartOverrides),
     upperTopWidthRatio: readParameter(record, 'upperTopWidthRatio'),
     upperTopDepthRatio: readParameter(record, 'upperTopDepthRatio'),
     upperTopOffsetXMm: readParameter(record, 'upperTopOffsetXMm'),

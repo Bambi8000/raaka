@@ -305,11 +305,13 @@ scene pieces and must remain replaceable; renderer state is never project data.
 ## Project persistence and history
 
 The portable project file is human-readable JSON with an explicit RAAKA format
-version and a separate recipe version. Piloti recipe version 13 stores every
+version and a separate recipe version. Piloti recipe version 14 stores every
 generator parameter, authored upper-mass placement, footprint relationship and
 profile, shoulder topology, shared X/Y foot offsets, the three selected-leg
-override arrays, semantic part copies, Fuse groups, removed part IDs and one of
-the supported `modelScale` presets. Recipe versions 1–12 receive an empty removed
+override arrays, semantic part copies, Fuse groups, removed part IDs, upper-mass
+division, mass-part overrides and one of the supported `modelScale` presets.
+Recipe versions 1–13 receive `whole` division and no mass-part overrides.
+Recipe versions 1–12 receive an empty removed
 part list; versions 1–11 receive an empty Fuse-group list;
 recipe versions 1–10 receive an empty part-copy list; versions 1–8
 receive the block upper-mass profile and latent tapered defaults; recipe
@@ -339,6 +341,25 @@ its starting snapshot. Renderer selection and active scope are intentionally
 outside project history; scale and override edits are undoable project data.
 
 ## Current vertical slice
+
+`massDivision.ts` splits matching proportions of the upper mass's bottom and
+top rectangles. At every height the untouched cells tile the parent section
+exactly, even with unequal taper and signed drift. Cells are closed analytic
+boxes or rectangular lofts, with IDs `upper-mass-x2-N`, `upper-mass-y2-N` or
+`upper-mass-xy4-N`; changing topology cannot attach an edit to a different cell.
+An independent override snapshots the current local profile on first edit,
+then stores top ratios and design-millimetre drift. The bottom footprint and
+height remain driven by shared dimensions; no new renderer-owned geometry exists.
+
+Inactive division overrides, removals and source-linked copies retain intent.
+Whole-mass copies still use the unpartitioned parent; cell copies use one live
+cell with the existing `upper-mass-copy-N` piece identity. Copies resolve before
+omissions, so removing an original cell does not remove its copies. Removing
+`upper-mass` omits all original cells too. Fuses containing inactive cells or
+the inactive whole parent remain dormant. The existing bearing analysis covers
+the parent outline, not partial support after cell removal; the UI states this
+limitation rather than claiming structural safety. Shared-profile highlighting
+is derived from the generator and stays neutral for independently overridden tops.
 
 `src/core/generator.ts` creates the editable Piloti sources as boxes and
 rectangular frustums. `src/core/studyFuses.ts` replaces active source groups

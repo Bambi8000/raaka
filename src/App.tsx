@@ -24,6 +24,7 @@ import {
 import { MODEL_SCALE_PRESETS, scaleMassStudy } from './core/modelScale'
 import { partIdForPiece, partInGrid, partLabel } from './core/partSelection'
 import { affectedPilotiControls } from './core/controlInfluence'
+import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress, massPartProfile } from './core/massDivision'
 import {
   PILOTI_FUSE_GROUP_LIMIT,
   PILOTI_PART_COPY_LIMIT,
@@ -47,6 +48,7 @@ import type {
   PilotiFuseGroup,
   PilotiParameters,
   PilotiPartCopy,
+  PilotiMassPartOverride,
   PilotiSupportPositionOverride,
   PilotiSupportSizeOverride,
 } from './core/types'
@@ -229,8 +231,13 @@ function partCopyIdForPiece(pieceId: string): string | undefined {
   return /^(?:upper-mass|support|shoulder)-(copy-\d+)$/.exec(pieceId)?.[1]
 }
 
+function preferredSelection(ids: readonly string[]): string {
+  return ids.includes('upper-mass') ? 'upper-mass' :
+    (ids.find((id) => massPartAddress(id)) ?? ids[0] ?? '')
+}
+
 function partCopyPieceId(copy: PilotiPartCopy): string {
-  return copy.sourceId === 'upper-mass'
+  return copy.sourceId === 'upper-mass' || massPartAddress(copy.sourceId)
     ? `upper-mass-${copy.id}`
     : `support-${copy.id}`
 }
@@ -279,7 +286,7 @@ export default function App() {
   )
   const [selectedPieceId, setSelectedPieceId] = useState(() => {
     const ids = selectablePieceIds(initialSession.study.parameters)
-    return ids.includes('upper-mass') ? 'upper-mass' : (ids[0] ?? '')
+    return preferredSelection(ids)
   })
   const [supportEditScope, setSupportEditScope] =
     useState<SupportEditScope>('shared')
@@ -373,6 +380,13 @@ export default function App() {
   const selectedPartCopy = parameters.partCopies.find(
     (copy) => copy.id === selectedPartCopyId,
   )
+  const massSourceId = selectedPartCopy?.sourceId ?? selectedPieceId
+  const selectedMassPartId = massPartAddress(massSourceId) ? massSourceId : undefined
+  const selectedRawPiece = unfusedMasterStudy.pieces.find((piece) => piece.id === selectedPieceId)
+  const selectedMassOverride = parameters.massPartOverrides.find((entry) => entry.partId === selectedMassPartId)
+  const activeMassProfile = selectedMassPartId && selectedRawPiece && selectedRawPiece.kind !== 'mesh'
+    ? selectedMassOverride ?? massPartProfile(selectedRawPiece, selectedMassPartId)
+    : undefined
   const selectedFootOffsetOverride = parameters.footOffsetOverrides.find(
     (override) => override.supportId === selectedSupportId,
   )
@@ -455,7 +469,7 @@ export default function App() {
   ).length
   const duplicateSourceId =
     selectedPartCopy?.sourceId ??
-    (selectedPieceId === 'upper-mass' ? 'upper-mass' : selectedSupportId)
+    (selectedPieceId === 'upper-mass' || massPartAddress(selectedPieceId) ? selectedPieceId : selectedSupportId)
   const canDuplicateSelectedPiece =
     selectedPiece !== undefined &&
     duplicateSourceId !== undefined &&
@@ -493,7 +507,7 @@ export default function App() {
         availableIds.includes(group.id) && group.pieceIds.includes('upper-mass'),
       )
       setSelectedPieceId(owningFuse?.id ?? upperMassFuse?.id ??
-        (availableIds.includes('upper-mass') ? 'upper-mass' : (availableIds[0] ?? '')))
+        preferredSelection(availableIds))
       setSupportEditScope('shared')
     }
   }
@@ -528,6 +542,14 @@ export default function App() {
   const updateModelScale = (nextModelScale: ModelScale) => {
     if (nextModelScale === modelScale) return
     replaceStudy({ ...studyState, modelScale: nextModelScale })
+  }
+
+  const updateMassPart = (patch: Partial<Omit<PilotiMassPartOverride, 'partId'>>) => {
+    if (!activeMassProfile) return
+    update('massPartOverrides', [
+      ...parameters.massPartOverrides.filter((entry) => entry.partId !== activeMassProfile.partId),
+      { ...activeMassProfile, ...patch },
+    ].sort((a, b) => a.partId.localeCompare(b.partId)))
   }
 
   const replacePartCopy = (nextCopy: PilotiPartCopy) => {
@@ -616,9 +638,11 @@ export default function App() {
     if (owningFuse || ids.includes(pieceId)) setSelectedPieceId(owningFuse?.id ?? pieceId)
     setNotice({
       kind: 'info',
-      text: partInGrid(partId, parameters)
+      text: massPartAddress(partId) && nextParameters.removedPartIds.includes('upper-mass')
+        ? `${partLabel(partId)} restored, but the original upper mass is still removed. Restore Upper mass to show its cells.`
+        : partInGrid(partId, parameters)
         ? `${partLabel(partId)} restored. Undo is available.`
-        : `${partLabel(partId)} restored; increase the grid to show its source row and column.`,
+        : `${partLabel(partId)} restored; select its mass division or increase the support grid to show its source.`,
     })
   }
 
@@ -767,7 +791,7 @@ export default function App() {
       dispatch({ type: 'load', value: openedStudy })
       persistRecovery(openedStudy)
       const ids = selectablePieceIds(openedProject.parameters)
-      setSelectedPieceId(ids.includes('upper-mass') ? 'upper-mass' : (ids[0] ?? ''))
+      setSelectedPieceId(preferredSelection(ids))
       setFuseSelectionPieceIds([])
       setSupportEditScope('shared')
       setBaselineJson(openedJson)
@@ -1201,14 +1225,75 @@ export default function App() {
             <span>03</span>
             <h2>Composition controls</h2>
           </div>
+          <div className="control-subsection">
+            <span>UPPER MASS DIVISION</span>
+            <small>New divisions preserve the original envelope. Whole-mass copies stay whole; cell copies pause outside their source division.</small>
+          </div>
+          <div className={`offset-scope-switch mass-division-switch ${affectedControls.has('upperMassDivision') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass division">
+            {MASS_DIVISIONS.map((division) => (
+              <button key={division.value} type="button"
+                className={parameters.upperMassDivision === division.value ? 'is-active' : ''}
+                aria-pressed={parameters.upperMassDivision === division.value}
+                onClick={() => update('upperMassDivision', division.value)}>
+                <span>{division.label}</span><small>{division.description}</small>
+              </button>
+            ))}
+          </div>
+          {parameters.upperMassDivision !== 'whole' ? (
+            <>
+              <p className="selection-help">Select a mass part in the view or below. Whole restores the shared profile, not a union of edited parts. Each division remembers its edits. Part copies and Fuses pause when their source division is inactive.</p>
+              <div className="mass-part-picker" aria-label="Select mass part">
+                {unfusedMasterStudy.pieces.filter((piece) => massPartAddress(piece.id)).map((piece) => (
+                  <button key={piece.id} type="button" aria-pressed={selectedPieceId === piece.id}
+                    onClick={() => selectPiece(piece.id)}>{piece.label}</button>
+                ))}
+              </div>
+            </>
+          ) : null}
+          {activeMassProfile ? (
+            <div className="mass-part-editor">
+              <div className="control-subsection">
+                <span>{partLabel(activeMassProfile.partId).toUpperCase()} · {selectedMassOverride ? 'INDEPENDENT TOP' : 'SHARED PROFILE'}</span>
+                <small>Only this part and its live copies change. The bottom face stays linked; dimensions are design millimetres.</small>
+              </div>
+              <div className="offset-scope-switch affects-selection" aria-label="Selected mass part profile">
+                {(['block', 'tapered'] as const).map((profile) => (
+                  <button key={profile} type="button" className={activeMassProfile.profile === profile ? 'is-active' : ''}
+                    aria-pressed={activeMassProfile.profile === profile} onClick={() => updateMassPart({ profile })}>
+                    {profile === 'block' ? 'PART BLOCK' : 'PART TAPERED'}
+                  </button>
+                ))}
+              </div>
+              {activeMassProfile.profile === 'tapered' ? (
+                <>
+                  {([
+                    ['topWidthRatio', 'Part top width share', 0.01, ''],
+                    ['topDepthRatio', 'Part top depth share', 0.01, ''],
+                    ['topOffsetXMm', 'Part top drift X', 1, ' mm'],
+                    ['topOffsetYMm', 'Part top drift Y', 1, ' mm'],
+                  ] as const).map(([key, label, step, suffix]) => (
+                    <RangeField key={key} label={label} affected={true} value={activeMassProfile[key]}
+                      minimum={MASS_PART_RULES[key].minimum} maximum={MASS_PART_RULES[key].maximum}
+                      step={step} suffix={suffix} onInteractionStart={beginGesture} onInteractionEnd={endGesture}
+                      onChange={(value) => updateMassPart({ [key]: value })} />
+                  ))}
+                  <p className="selection-help">Negative / positive drift leans the top towards −X / +X or −Y / +Y. Use opposite signs on neighbouring parts.</p>
+                </>
+              ) : null}
+              <button type="button" className="subtle-button" disabled={!selectedMassOverride}
+                onClick={() => update('massPartOverrides', parameters.massPartOverrides.filter((entry) => entry.partId !== selectedMassPartId))}>
+                USE SHARED PROFILE
+              </button>
+            </div>
+          ) : null}
           {selectedPartCopy ? (
             <>
               <div className="control-subsection">
                 <span>COPY POSITION</span>
                 <small>
                   Source{' '}
-                  {selectedPartCopy.sourceId === 'upper-mass'
-                    ? 'UPPER MASS'
+                  {selectedPartCopy.sourceId === 'upper-mass' || massPartAddress(selectedPartCopy.sourceId)
+                    ? partLabel(selectedPartCopy.sourceId).toUpperCase()
                     : formatSupportId(selectedPartCopy.sourceId)}{' '}
                   supplies the live shape. This copy owns its translation.
                 </small>
@@ -1402,8 +1487,8 @@ export default function App() {
             onChange={(value) => update('upperOffsetYMm', value)}
           />
           <div className="control-subsection">
-            <span>UPPER MASS PROFILE</span>
-            <small>The bottom bearing face stays fixed.</small>
+            <span>{parameters.upperMassDivision === 'whole' ? 'UPPER MASS PROFILE' : 'SHARED UPPER MASS PROFILE'}</span>
+            <small>The bottom bearing face stays fixed. Independent part tops keep their own profile.</small>
           </div>
           <div className={`offset-scope-switch ${affectedControls.has('upperMassProfile') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass profile">
             <button
@@ -1864,7 +1949,7 @@ export default function App() {
                       ? 'The preview is temporarily showing separate source pieces.'
                       : currentFuseRenderState?.status === 'ready' &&
                           currentFuseRenderState.dormantFuseGroupIds.length > 0
-                        ? `${currentFuseRenderState.dormantFuseGroupIds.length} Fuse is dormant because a source is removed or outside the visible grid.`
+                        ? `${currentFuseRenderState.dormantFuseGroupIds.length} Fuse is dormant because a source is removed or outside the active grid / mass division.`
                         : 'Internal contact faces are removed and volume comes from the finished union.'}
                 </small>
               </div>
@@ -1885,6 +1970,9 @@ export default function App() {
                 </small>
               </div>
             </div>
+          ) : null}
+          {parameters.upperMassDivision !== 'whole' ? (
+            <p className="notice">Divided masses remain separate until fused. Independent tapers may create gaps or overlaps; overlapping volumes are counted twice outside a Fuse. Bearing checks use the outer footprint only, not gaps left by removed mass parts.</p>
           ) : null}
           {masterStudy.supportLayout &&
           (masterStudy.supportLayout.adjacentRowOverlapMm > 0 ||
@@ -2047,7 +2135,7 @@ export default function App() {
         </span>
         <span>{study.supportLayout?.totalSupports ?? 0} GRID LEGS</span>
         <span>{study.pieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.18 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.19 / LOCAL</span>
       </footer>
     </main>
   )

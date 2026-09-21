@@ -13,6 +13,7 @@ export type Size2 = readonly [width: number, depth: number]
 export type ModelScale = 1 | 0.5 | 0.25
 export type PilotiShoulderMode = 'divided' | 'shared'
 export type PilotiUpperMassProfile = 'block' | 'tapered'
+export type PilotiUpperMassDivision = 'whole' | 'x2' | 'y2' | 'xy4'
 export type PilotiUpperFootprintMode = 'linked' | 'detached'
 
 export interface Bounds3 {
@@ -88,6 +89,15 @@ export interface PilotiFuseGroup {
   readonly pieceIds: readonly string[]
 }
 
+export interface PilotiMassPartOverride {
+  readonly partId: string
+  readonly profile: PilotiUpperMassProfile
+  readonly topWidthRatio: number
+  readonly topDepthRatio: number
+  readonly topOffsetXMm: number
+  readonly topOffsetYMm: number
+}
+
 export interface PilotiParameters {
   readonly seed: number
   readonly heightMm: number
@@ -105,6 +115,8 @@ export interface PilotiParameters {
   readonly upperOffsetXMm: number
   readonly upperOffsetYMm: number
   readonly upperMassProfile: PilotiUpperMassProfile
+  readonly upperMassDivision: PilotiUpperMassDivision
+  readonly massPartOverrides: readonly PilotiMassPartOverride[]
   readonly upperTopWidthRatio: number
   readonly upperTopDepthRatio: number
   readonly upperTopOffsetXMm: number

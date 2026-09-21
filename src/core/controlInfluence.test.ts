@@ -46,7 +46,10 @@ describe('selection control influence', () => {
       partCopies: [{ id: 'copy-1', sourceId: 'upper-mass', offsetXMm: 120, offsetYMm: 0, offsetZMm: 0 }],
       fuseGroups: [{ id: 'fuse-1', pieceIds: ['support-2', 'shoulder-2'] }],
     }
-    expect(affectedPilotiControls(parameters, 'upper-mass-copy-1')).toEqual(affectedPilotiControls(parameters, 'upper-mass'))
+    const original = new Set(affectedPilotiControls(parameters, 'upper-mass'))
+    expect(original.delete('upperMassDivision')).toBe(true)
+    // Whole-mass copies retain the parent rather than following its division.
+    expect(affectedPilotiControls(parameters, 'upper-mass-copy-1')).toEqual(original)
     const fused = affectedPilotiControls(parameters, 'fuse-1')
     expect(fused.has('upperOffsetYMm')).toBe(true)
     expect(fused.has('footOffsetXMm')).toBe(true)

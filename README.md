@@ -125,6 +125,15 @@ remain available for other parts. Highlighting follows linked bearings, selected
 overrides, live copies and Fuse sources. The selection label stays pinned while
 scrolling, and narrow windows expose the object list through **Objects**.
 
+Version 0.1.19 adds **Upper mass division**: **2 · X**, **2 · Y** and **4 · XY**.
+Select a mass cell, choose **Part tapered**, then adjust its own top proportions
+and **Part top drift X/Y**. Opposite signs lean neighbouring parts in different
+directions. The first division preserves the current shape exactly; local edits
+leave the other cells and supports unchanged. **Use shared profile** re-links
+one cell; **Whole** returns to the shared mass rather than fusing edited cells.
+Cells support removal, Restore, Duplicate and Fuse, with save/recovery/history.
+Whole-mass copies stay whole; cell copies pause outside their source division.
+
 ## Run locally
 
 Requirements:
@@ -167,7 +176,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.18 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.19 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.18, the
+This document describes the product direction. In version 0.1.19, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -202,6 +202,23 @@ overrides. For a Fuse, highlighting describes its live source pieces, not a
 guarantee that changing an internal source changes the outside union surface.
 A pinned selection label retains context while scrolling. Compact layouts
 provide the same object selection and Restore actions in an Objects disclosure.
+
+Version 0.1.19 divides the original upper mass into two X halves, two Y halves
+or four XY cells. The untouched division preserves the complete outer shape,
+including an existing taper and top drift. Select a cell to author its own
+block/tapered profile, top width/depth and signed X/Y top drift; opposite signs
+produce opposing lean directions. Bottom faces retain the shared linked or
+detached footprint, and supports do not change. Independent tops no longer
+follow the shared top profile until **Use shared profile** is chosen.
+
+Each division retains its own edits and removed cells when inactive. **Whole**
+returns to the shared single mass, not the union of edited cells; use **Fuse**
+for that union. Individual cells can be copied, removed, restored and fused.
+Existing whole-mass copies stay whole; cell copies follow their source cell and
+pause outside its division. This is form composition, not manufacturing slicing.
+Independent tapers may overlap or separate, and remaining unfused volumes are
+nominal. Bearing feedback only checks the outer footprint, not holes left by
+removed cells. Public-sculpture engineering and mould design remain out of scope.
 
 ### Planned high-rise articulation module
 

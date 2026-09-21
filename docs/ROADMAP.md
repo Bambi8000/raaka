@@ -45,6 +45,7 @@ Mass-centre projection and static support-polygon feedback are implemented in
 0.1.27.
 Editable concrete and retained-core densities are implemented in 0.1.28.
 The reusable foot/neck/shoulder/bearing support family is implemented in 0.1.29.
+Two-, three- and four-level stepped upper masses are implemented in 0.1.30.
 
 ## 0.1 — foundation
 
@@ -84,6 +85,8 @@ Version 0.1.27 adds material-aware mass-centre and support-polygon feedback.
 Version 0.1.28 makes both material density assumptions editable and saved.
 Version 0.1.29 adds independent foot flare and bearing scale to one shared
 rectangular/polygon support profile.
+Version 0.1.30 adds selectable Z levels with cumulative scale/offset steps and
+independent per-level tops.
 
 ## 0.1.1 — correct the baseline
 
@@ -739,6 +742,32 @@ Verification: 431 tests plus lint, strict TypeScript and production build.
 Browser inspection covers dynamic stem/shoulder controls, 180% Foot flare,
 80% Bearing scale and measured shared-shoulder gap feedback.
 
+## 0.1.30 — stepped upper-mass levels
+
+- [x] add equal-height two-, three- and four-level Z divisions to rectangle,
+  hexagon and octagon upper masses
+- [x] keep the lowest bearing face and complete Z envelope fixed
+- [x] apply one cumulative 65–115% plan scale and −300–300 mm X/Y step
+- [x] preserve shape-specific stable level IDs as the level count grows
+- [x] expose each level as a selectable, removable and copyable semantic part
+- [x] reuse independent block/tapered tops and signed drift on every level
+- [x] support live Fuse groups and pause them when their source division is
+  inactive
+- [x] pause retained-core intent outside the whole upper-mass topology
+- [x] save the three step fields in Piloti recipe version 20 without a
+  pre-release version 19 migration; start `raaka.recovery.v3`
+- [x] keep disconnected authored steps explicit and refuse them in Fuse/STL
+
+Done when one compact step recipe produces asymmetric level stacks in every
+current Piloti plan, local edits do not leak between shapes or levels, and the
+same semantic pieces reach preview, save/recovery/history, scale, Fuse and the
+finished-solid boundary.
+
+Verification: 454 tests plus lint, strict TypeScript and production build.
+Automated UI and geometry coverage includes rectangle and polygon level counts,
+cumulative scale and X/Y steps, selected-level taper, removal, copying, Fuse
+and model scaling. Owner visual inspection follows on the published build.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -758,7 +787,7 @@ Browser inspection covers dynamic stem/shoulder controls, 180% Foot flare,
 - [x] linked/detached upper footprint with support-grid X/Y coupling only
 - [x] source-linked upper-mass and complete-support copies with X/Y/Z placement
 - [x] stable individual part removal and restoration without repacking the grid
-- [ ] stepped or multi-part asymmetric upper masses
+- [x] stepped or multi-part asymmetric upper masses
 - [ ] stable per-feature random streams, durable IDs and lock controls
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [x] focused solid-kernel spike before committing to a boolean dependency

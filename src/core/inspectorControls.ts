@@ -26,6 +26,11 @@ export function relevantPilotiControls(
     const copyId = /^upper-mass-(copy-\d+)$/.exec(piece.id)?.[1]
     const sourceId = parameters.partCopies.find((copy) => copy.id === copyId)?.sourceId ?? piece.id
     const part = massPartAddress(sourceId)
+    if (part?.division.endsWith('-level')) {
+      relevant.add('upperStepScaleRatio')
+      relevant.add('upperStepOffsetXMm')
+      relevant.add('upperStepOffsetYMm')
+    }
     if (sourceId === 'upper-mass' || (part && !parameters.massPartOverrides.some((entry) => entry.partId === sourceId))) {
       relevant.add('upperMassProfile')
     }

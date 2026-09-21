@@ -218,6 +218,14 @@ the established geometry. Shared bearings meet at 100%, open a measured gap
 below it and create a measured overlap above it instead of being silently
 corrected.
 
+Version 0.1.30 adds two, three or four vertical **Z levels** to rectangular,
+hexagonal and octagonal upper masses. Each higher level repeats one authored
+plan scale and X/Y step while the lowest bearing face and total height stay
+fixed. Every level remains a selectable semantic part with its own optional
+block/tapered top, removal, live copy and Fuse participation. The first level
+IDs stay stable when the count grows. Large steps may deliberately separate
+levels; Fuse and STL export then refuse to describe the islands as one solid.
+
 ## Run locally
 
 Requirements:
@@ -261,7 +269,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.29 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.30 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.

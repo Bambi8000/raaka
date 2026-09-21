@@ -1,6 +1,7 @@
 import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress } from './massDivision'
 import type {
   PilotiMassPartOverride,
+  PilotiPolygonMassDivision,
   PilotiUpperMassDivision,
   PilotiFootOffsetOverride,
   PilotiFootOffsetSpace,
@@ -132,6 +133,9 @@ export const PILOTI_PARAMETER_RULES = {
   upperTopDepthRatio: { minimum: 0.45, maximum: 1.25 },
   upperTopOffsetXMm: { minimum: -400, maximum: 400 },
   upperTopOffsetYMm: { minimum: -400, maximum: 400 },
+  upperStepScaleRatio: { minimum: 0.65, maximum: 1.15 },
+  upperStepOffsetXMm: { minimum: -300, maximum: 300 },
+  upperStepOffsetYMm: { minimum: -300, maximum: 300 },
   concreteDensityKgM3: { minimum: 800, maximum: 4_000, integer: true },
   retainedCoreScale: { minimum: 0.35, maximum: 0.85 },
   retainedCoreDensityKgM3: { minimum: 10, maximum: 500, integer: true },
@@ -572,6 +576,18 @@ export function normalizePilotiParameters(
     upperOffsetYMm: normalizeValue(input.upperOffsetYMm, 'upperOffsetYMm'),
     upperMassProfile: normalizeUpperMassProfile(input.upperMassProfile),
     upperMassDivision: readMassDivision(input.upperMassDivision),
+    upperStepScaleRatio: normalizeValue(
+      input.upperStepScaleRatio,
+      'upperStepScaleRatio',
+    ),
+    upperStepOffsetXMm: normalizeValue(
+      input.upperStepOffsetXMm,
+      'upperStepOffsetXMm',
+    ),
+    upperStepOffsetYMm: normalizeValue(
+      input.upperStepOffsetYMm,
+      'upperStepOffsetYMm',
+    ),
     massPartOverrides: readMassPartOverrides(input.massPartOverrides),
     concreteDensityKgM3: normalizeValue(
       input.concreteDensityKgM3,
@@ -1007,7 +1023,11 @@ export class ProjectValidationError extends Error {
 
 function readMassDivision(value: unknown): PilotiUpperMassDivision {
   const choice = MASS_DIVISIONS.find((division) => division.value === value)
-  if (!choice) throw new ProjectValidationError('Upper mass division must be whole, x2, y2 or xy4.')
+  if (!choice) {
+    throw new ProjectValidationError(
+      'Upper mass division must be whole, x2, y2, xy4, z2, z3 or z4.',
+    )
+  }
   return choice.value
 }
 
@@ -1025,9 +1045,17 @@ function readFootOffsetSpace(value: unknown): PilotiFootOffsetSpace {
   return value
 }
 
-function readPolygonDivision(value: unknown): 'whole' | 'sectors' {
-  if (value !== 'whole' && value !== 'sectors') {
-    throw new ProjectValidationError('Polygon mass division must be whole or sectors.')
+function readPolygonDivision(value: unknown): PilotiPolygonMassDivision {
+  if (
+    value !== 'whole' &&
+    value !== 'sectors' &&
+    value !== 'z2' &&
+    value !== 'z3' &&
+    value !== 'z4'
+  ) {
+    throw new ProjectValidationError(
+      'Polygon mass division must be whole, sectors, z2, z3 or z4.',
+    )
   }
   return value
 }
@@ -1092,6 +1120,9 @@ export function parsePilotiParameters(
     upperOffsetYMm: readParameter(record, 'upperOffsetYMm'),
     upperMassProfile: readUpperMassProfile(record),
     upperMassDivision: readMassDivision(record.upperMassDivision),
+    upperStepScaleRatio: readParameter(record, 'upperStepScaleRatio'),
+    upperStepOffsetXMm: readParameter(record, 'upperStepOffsetXMm'),
+    upperStepOffsetYMm: readParameter(record, 'upperStepOffsetYMm'),
     massPartOverrides: readMassPartOverrides(record.massPartOverrides),
     concreteDensityKgM3: readParameter(record, 'concreteDensityKgM3'),
     retainedCoreMode: readRetainedCoreMode(record.retainedCoreMode),

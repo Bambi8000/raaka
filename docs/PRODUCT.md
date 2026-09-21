@@ -6,14 +6,16 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.29, the
+This document describes the product direction. In version 0.1.30, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
 multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement, divided/shared shoulder rows and semantic part copies.
 The rectangular and polygon Piloti layouts now share one reusable foot, neck,
-shoulder and bearing profile.
+shoulder and bearing profile. Their upper masses can also become two, three or
+four independently editable vertical levels with one cumulative scale and X/Y
+step.
 The first watertight STL output and retained lightweight upper core are
 implemented. Live mass-centre projection and support-polygon feedback are also
 implemented, and concrete/core density assumptions are editable; drawings,
@@ -376,6 +378,24 @@ Piloti recipe version 19 requires both new fields. RAAKA is still pre-release
 and no user project archive exists, so version 18 files receive no support-profile
 migration. Local recovery moves to a new storage key and therefore begins as a
 fresh study instead of presenting an obsolete recovery warning.
+
+Version 0.1.30 adds equal-height two-, three- and four-level Z divisions to
+rectangular, hexagonal and octagonal upper masses. The lowest level preserves
+the original bearing face. Level `n` applies `stepScaleⁿ` and `n × stepOffset`
+in plan, so the complete Z range remains fixed while the silhouette can shrink,
+grow or walk in either horizontal direction. Scale accepts 65–115%; each X/Y
+step accepts −300–300 design millimetres. The same step drives all levels so
+the result remains a compact recipe rather than arbitrary transform state.
+
+Levels have plan-shape-specific stable IDs and remain separate semantic pieces.
+Each can be selected, removed, copied, added to a live Fuse and given its own
+block or tapered top with signed X/Y drift. Switching between plan divisions,
+sectors and Z levels retains dormant edits without applying them to a different
+shape. Retained-core intent pauses because the first core workflow still
+requires one whole upper mass. Finished STL export unions connected levels and
+refuses disconnected islands caused by an extreme step. Piloti recipe version
+20 requires the three step fields; version 19 receives no pre-release migration,
+and local recovery starts in the fresh `raaka.recovery.v3` namespace.
 
 ### Planned high-rise articulation module
 

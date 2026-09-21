@@ -122,13 +122,49 @@ describe('upper mass division', () => {
     expect(partInGrid('copy-1', { ...parameters, upperMassDivision: 'whole' })).toBe(false)
   })
 
-  it('pauses and restores Fuses when their division is inactive', async () => {
-    const fuseGroups = [{ id: 'fuse-1', pieceIds: ['upper-mass-xy4-1', 'upper-mass-xy4-2'] }]
-    const project = parseProject(serializeProject(createProject({ ...split, fuseGroups })))
+  it('keeps vertical levels selectable, removable and copyable without repacking', () => {
+    const sourceId = 'upper-mass-rect-level-2'
+    const parameters: PilotiParameters = {
+      ...defaults,
+      upperMassDivision: 'z3',
+      partCopies: [{
+        id: 'copy-1',
+        sourceId,
+        offsetXMm: -240,
+        offsetYMm: 0,
+        offsetZMm: 0,
+      }],
+    }
+    const complete = generatePiloti(parameters)
+    const removed = generatePiloti({ ...parameters, removedPartIds: [sourceId] })
+
+    expect(complete.pieces.filter((piece) => massPartAddress(piece.id))).toHaveLength(3)
+    expect(removed.pieces.some((piece) => piece.id === sourceId)).toBe(false)
+    expect(removed.pieces.some((piece) => piece.id === 'upper-mass-copy-1')).toBe(true)
+    expect(partIdForPiece(sourceId)).toBe(sourceId)
+    expect(partLabel(sourceId)).toBe('Upper level 2')
+    expect(partInGrid(sourceId, parameters)).toBe(true)
+    expect(partInGrid('upper-mass-rect-level-3', {
+      ...parameters,
+      upperMassDivision: 'z2',
+    })).toBe(false)
+    expect(partInGrid('upper-mass-rect-level-3', {
+      ...parameters,
+      upperMassDivision: 'z4',
+    })).toBe(true)
+  })
+
+  it.each([
+    ['xy4', ['upper-mass-xy4-1', 'upper-mass-xy4-2']],
+    ['z3', ['upper-mass-rect-level-1', 'upper-mass-rect-level-2']],
+  ] as const)('pauses and restores %s Fuses when their division is inactive', async (upperMassDivision, pieceIds) => {
+    const parameters: PilotiParameters = { ...defaults, upperMassDivision }
+    const fuseGroups = [{ id: 'fuse-1', pieceIds: [...pieceIds] }]
+    const project = parseProject(serializeProject(createProject({ ...parameters, fuseGroups })))
     const active = await resolveStudyFuses(generatePiloti(project.parameters), fuseGroups)
     expect(active.dormantFuseGroupIds).toEqual([])
     expect(active.study.pieces.some((p) => p.id === 'fuse-1')).toBe(true)
-    const paused = await resolveStudyFuses(generatePiloti({ ...split, upperMassDivision: 'whole' }), fuseGroups)
+    const paused = await resolveStudyFuses(generatePiloti({ ...parameters, upperMassDivision: 'whole' }), fuseGroups)
     expect(paused.dormantFuseGroupIds).toEqual(['fuse-1'])
   })
 
@@ -186,7 +222,7 @@ describe('upper mass division', () => {
   })
 
   it.each([
-    { upperMassDivision: 'z2' }, { upperMassDivision: undefined },
+    { upperMassDivision: 'z5' }, { upperMassDivision: undefined },
     { massPartOverrides: undefined }, { massPartOverrides: [override, override] },
     ...['upper-mass', 'upper-mass-x2-3', 'upper-mass-xy4-01', 'copy-1'].map((partId) => ({ massPartOverrides: [{ ...override, partId }] })),
     ...[NaN, Infinity, -1, 1.5, '0.8'].map((topWidthRatio) => ({ massPartOverrides: [{ ...override, topWidthRatio }] })),

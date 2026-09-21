@@ -9,8 +9,8 @@ import type { ModelScale, PilotiParameters } from './types'
 
 export const PROJECT_FORMAT = 'raaka-project'
 export const PROJECT_FORMAT_VERSION = 1
-export const PILOTI_RECIPE_VERSION = 19
-export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v2'
+export const PILOTI_RECIPE_VERSION = 20
+export const RECOVERY_STORAGE_KEY = 'raaka.recovery.v3'
 
 export interface RaakaProject {
   readonly format: typeof PROJECT_FORMAT
@@ -116,6 +116,7 @@ export function parseProject(serialized: string): RaakaProject {
     input.recipeVersion !== 16 &&
     input.recipeVersion !== 17 &&
     input.recipeVersion !== 18 &&
+    input.recipeVersion !== 19 &&
     input.recipeVersion !== PILOTI_RECIPE_VERSION
   ) {
     throw new ProjectValidationError(
@@ -257,6 +258,9 @@ export function parseProject(serialized: string): RaakaProject {
       ...(input.recipeVersion < 18 ? {
         concreteDensityKgM3: DEFAULT_CONCRETE_DENSITY_KG_M3,
         retainedCoreDensityKgM3: DEFAULT_RETAINED_CORE_DENSITY_KG_M3,
+        upperStepScaleRatio: 0.86,
+        upperStepOffsetXMm: 90,
+        upperStepOffsetYMm: 0,
       } : {}),
     }),
     modelScale,

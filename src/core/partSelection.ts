@@ -1,6 +1,7 @@
 import { isPilotiPartCopySourceId, pilotiSupportAddress } from './pilotiParameters'
 import type { PilotiParameters } from './types'
 import { massPartAddress } from './massDivision'
+import { upperMassLevelCount } from './upperMassLevels'
 
 /** Stems and shoulders share one removable leg; copies keep their own identity. */
 export function partIdForPiece(pieceId: string): string | undefined {
@@ -17,6 +18,9 @@ export function partLabel(partId: string): string {
   if (massPart?.division === 'hex6' || massPart?.division === 'oct8') {
     return `${massPart.division === 'hex6' ? 'Hex' : 'Oct'} sector ${massPart.index}`
   }
+  if (massPart?.division.endsWith('-level')) {
+    return `Upper level ${massPart.index}`
+  }
   if (massPart) return `Mass ${massPart.division.toUpperCase()} · ${massPart.index}`
   if (partId === 'upper-mass') return 'Upper mass'
   if (partId.startsWith('copy-')) return `Copy ${partId.slice(5)}`
@@ -32,6 +36,18 @@ export function partInGrid(partId: string, parameters: PilotiParameters): boolea
   if (sourceId === 'upper-mass') return true
   const massPart = massPartAddress(sourceId)
   if (massPart) {
+    if (massPart.division.endsWith('-level')) {
+      const planShape = massPart.division === 'rect-level'
+        ? 'rectangle'
+        : massPart.division === 'hex-level'
+          ? 'hexagon'
+          : 'octagon'
+      const division = planShape === 'rectangle'
+        ? parameters.upperMassDivision
+        : parameters.polygonMassDivision
+      return parameters.planShape === planShape &&
+        massPart.index <= (upperMassLevelCount(division) ?? 0)
+    }
     if (massPart.division === 'hex6' || massPart.division === 'oct8') {
       return parameters.polygonMassDivision === 'sectors' &&
         parameters.planShape === (massPart.division === 'hex6' ? 'hexagon' : 'octagon')

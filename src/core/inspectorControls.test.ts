@@ -94,4 +94,19 @@ describe('selection-focused inspector controls', () => {
     expect(controls.has('footOffsetXMm')).toBe(false)
     expect(controls.has('footOffsetYMm')).toBe(false)
   })
+
+  it('focuses the step controls on vertical upper levels', () => {
+    const partId = 'upper-mass-rect-level-2'
+    const parameters: PilotiParameters = {
+      ...defaults,
+      upperMassDivision: 'z3',
+    }
+    const controls = relevant(parameters, partId)
+
+    expect(controls.has('upperStepScaleRatio')).toBe(true)
+    expect(controls.has('upperStepOffsetXMm')).toBe(true)
+    expect(controls.has('upperStepOffsetYMm')).toBe(true)
+    expect(controls.has('upperMassProfile')).toBe(true)
+    expect(controls.has('footOffsetXMm')).toBe(false)
+  })
 })

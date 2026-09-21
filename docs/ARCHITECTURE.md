@@ -550,6 +550,24 @@ dragging. The existing sliders remain the keyboard path. Gizmo state, selection
 and its overlay are transient UI projections; recipe version 16, project files
 and recovery format are unchanged.
 
+### Exact numeric parameter entry
+
+Version 0.1.24 keeps `RangeField` as one semantic control while presenting two
+editing surfaces: the existing range input and a direct number input. A pure
+`numericInput.ts` boundary owns display scaling, parsing, finite/range/step
+validation and stable decimal formatting. Stored recipe values remain in their
+existing units. Millimetres map one-to-one, normalized proportions map to whole
+percent values, and discrete counts retain their integer step.
+
+A number field holds only a transient text draft while focused. Enter validates
+and dispatches one complete history gesture; Escape restores the live value
+without history; blur commits a valid change or restores an invalid draft with
+an explicit reason. External study changes update an unfocused field but do not
+overwrite an active draft. Range inputs and millimetre entry share a one-design-
+millimetre step, preventing the browser from displaying a rounded slider value
+beside a more precise model value. This is interface state only: recipe version
+16, project serialization, recovery and generated geometry remain unchanged.
+
 ## Interface themes
 
 Version 0.1.16 defaults to a charcoal dark interface and provides an explicit

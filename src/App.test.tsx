@@ -30,6 +30,9 @@ describe('wired selection inspector', () => {
     expect(html).toContain('MOVE XY')
     expect(html).toContain('UPPER MASS · SHARED XY')
     expect(html).toContain('1 MM DESIGN SNAP · ESC CANCELS')
+    expect(html).toContain('aria-label="Upper offset X numeric value"')
+    expect(html).toContain('aria-label="Base width share (3 columns) numeric value"')
+    expect(html).toContain('min="40" max="110" step="1" value="72"')
   })
 
   it('switches to stem controls when the upper mass has been removed', () => {

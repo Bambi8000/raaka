@@ -167,6 +167,13 @@ scale, one drag is one Undo step, and Escape cancels the drag. Orbit is paused
 only while a handle is active. Fuses must be unfused before their sources can be
 moved; the existing inspector sliders remain available for keyboard editing.
 
+Version 0.1.24 makes every visible slider value directly editable. Millimetre
+fields accept exact whole millimetres, percentage fields expose familiar whole
+percent values, and count fields remain integers. Enter commits one Undo step;
+Escape cancels the draft. Invalid and out-of-range values stay out of the study,
+explain the accepted range, and restore the current value when focus leaves.
+The sliders remain available and now share the same displayed precision.
+
 ## Run locally
 
 Requirements:
@@ -210,7 +217,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.23 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.24 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Manufacturing export is not implemented yet. Other
 recipes, drawings, cores and stability feedback are planned. The current mass

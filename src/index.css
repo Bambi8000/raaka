@@ -799,7 +799,7 @@ input:focus-visible {
   color: var(--muted);
 }
 
-.range-field.other-controls input {
+.range-field.other-controls input[type="range"] {
   accent-color: var(--concrete);
 }
 
@@ -878,15 +878,66 @@ input:focus-visible {
 .field-heading {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 10px;
   font-size: 10px;
   font-weight: 760;
 }
 
-.field-heading output {
+.field-heading > label {
+  min-width: 0;
+}
+
+.numeric-entry {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: 26px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.numeric-entry:focus-within {
+  border-color: var(--yellow);
+  box-shadow: inset 0 -2px var(--yellow);
+}
+
+.numeric-entry input {
+  width: 64px;
+  min-width: 0;
+  padding: 5px 4px 5px 7px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 750;
+  text-align: right;
+}
+
+.numeric-entry input[aria-invalid="true"] {
+  color: var(--pink);
+}
+
+.range-field.other-controls .numeric-entry input:not([aria-invalid="true"]) {
+  color: var(--muted);
+}
+
+.numeric-entry > span {
+  padding-right: 7px;
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.numeric-entry-message {
+  color: var(--pink);
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
 }
 
 input[type="range"] {

@@ -202,12 +202,17 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
       const shoulderTopWidth =
         bayWidth * (parameters.shoulderMode === 'shared' ? 1 : 0.92) * widthScale
       const shoulderTopDepth = shoulderDepth * depthScale
-      const shoulderPositionX = supportCentreX + individualShift * 0.8
+      const shoulderBasePositionX = bayCentre + individualShift * 0.8
+      const shoulderPositionX = shoulderBasePositionX + positionX
       const shoulderTopOffsetX =
+        parameters.upperFootprintMode === 'linked' ||
         parameters.shoulderMode === 'shared'
-          ? massBayCentre + positionX - shoulderPositionX
+          ? massBayCentre - shoulderBasePositionX
           : -individualShift * 0.45
+      const shoulderTopOffsetY =
+        parameters.upperFootprintMode === 'linked' ? upperCentreY : 0
       const shoulderCentreX = shoulderPositionX + shoulderTopOffsetX
+      const shoulderCentreY = supportCentreY + shoulderTopOffsetY
 
       pieces.push({
         kind: 'frustum',
@@ -243,13 +248,13 @@ export function generatePiloti(input: PilotiParameters): MassStudy {
         bottomSize: [neckWidth, neckDepth],
         topSize: [shoulderTopWidth, shoulderTopDepth],
         bottomOffset: [0, 0],
-        topOffset: [shoulderTopOffsetX, 0],
+        topOffset: [shoulderTopOffsetX, shoulderTopOffsetY],
       })
       shoulderBearings.push({
         row: rowNumber,
         column: columnNumber,
         centreX: shoulderCentreX,
-        centreY: supportCentreY,
+        centreY: shoulderCentreY,
         width: shoulderTopWidth,
         depth: shoulderTopDepth,
       })

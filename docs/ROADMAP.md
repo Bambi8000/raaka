@@ -354,6 +354,18 @@ Done when a new browser profile opens in Dark mode, either palette remains
 legible across the application and viewport, reloading restores the chosen
 mode, and switching themes never marks or mutates the current study.
 
+## 0.1.17 — linked-bearing and workspace clarity corrections
+
+- [x] align ordinary divided and shared shoulder bearing tops to linked upper
+  X/Y placement while keeping stems and feet fixed
+- [x] retain independent mass placement and overhang feedback in Detached mode
+- [x] preserve selected-support size and placement overrides as local authored
+  exceptions that may still overhang
+
+Done when the linked screenshot case with a tapered mass, X/Y placement and
+unaltered supports reports zero ordinary bearing overhang, while the equivalent
+Detached study preserves the independent cantilever.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls

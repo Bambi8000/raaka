@@ -91,6 +91,21 @@ export function scaleMassStudy(
     },
     estimatedMassKg: masterStudy.estimatedMassKg * volumeScale,
     groundContactMm2: masterStudy.groundContactMm2 * areaScale,
+    stability: {
+      ...masterStudy.stability,
+      centreOfMassMm: masterStudy.stability.centreOfMassMm
+        ? scaleVec3(masterStudy.stability.centreOfMassMm, modelScale)
+        : null,
+      projectionMm: masterStudy.stability.projectionMm
+        ? scaleSize2(masterStudy.stability.projectionMm, modelScale)
+        : null,
+      supportPolygonMm: masterStudy.stability.supportPolygonMm.map((point) =>
+        scaleSize2(point, modelScale),
+      ),
+      signedMarginMm: masterStudy.stability.signedMarginMm === null
+        ? null
+        : masterStudy.stability.signedMarginMm * modelScale,
+    },
     radialLayout: masterStudy.radialLayout ? {
       ...masterStudy.radialLayout,
       bearingOverhangMm: masterStudy.radialLayout.bearingOverhangMm * modelScale,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PILOTI_PARAMETERS, generatePiloti } from './generator'
 import { scaleMassStudy } from './modelScale'
+import { analyseStability } from './stability'
 import type { MassStudy, MeshPiece, ScenePiece } from './types'
 
 function expectPieceScaled(
@@ -116,6 +117,22 @@ describe('scaleMassStudy', () => {
         master.estimatedMassKg * scale ** 3,
         10,
       )
+      expect(scaled.stability.status).toBe(master.stability.status)
+      expect(scaled.stability.centreOfMassMm).toEqual(
+        master.stability.centreOfMassMm?.map((value) => value * scale),
+      )
+      expect(scaled.stability.projectionMm).toEqual(
+        master.stability.projectionMm?.map((value) => value * scale),
+      )
+      expect(scaled.stability.supportPolygonMm).toEqual(
+        master.stability.supportPolygonMm.map((point) =>
+          point.map((value) => value * scale),
+        ),
+      )
+      expect(scaled.stability.signedMarginMm).toBeCloseTo(
+        (master.stability.signedMarginMm ?? 0) * scale,
+        10,
+      )
       expect(scaled.bounds.min[2]).toBeCloseTo(0, 10)
       expect(scaled.supportLayout).toEqual({
         ...master.supportLayout,
@@ -195,6 +212,15 @@ describe('scaleMassStudy', () => {
       groundContactMm2: 4_000,
       sourcePieceIds: ['upper-mass', 'upper-mass-copy-1'],
     }
+    const retainedCore = {
+      status: 'off' as const,
+      pieces: [],
+      volumeMm3: 0,
+      massKg: 0,
+      densityKgM3: 30,
+      minimumCoverMm: 0,
+      message: 'Retained core is disabled.',
+    }
     const fusedStudy: MassStudy = {
       recipe: 'piloti',
       seed: 1,
@@ -205,17 +231,10 @@ describe('scaleMassStudy', () => {
       heightMm: 60,
       concreteVolumeMm3: 80_000,
       concreteMassKg: 0.192,
-      retainedCore: {
-        status: 'off',
-        pieces: [],
-        volumeMm3: 0,
-        massKg: 0,
-        densityKgM3: 30,
-        minimumCoverMm: 0,
-        message: 'Retained core is disabled.',
-      },
+      retainedCore,
       estimatedMassKg: 0.192,
       groundContactMm2: 4_000,
+      stability: analyseStability([mesh], retainedCore),
     }
 
     const scaled = scaleMassStudy(fusedStudy, 0.25)

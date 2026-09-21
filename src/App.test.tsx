@@ -37,6 +37,23 @@ describe('wired selection inspector', () => {
     expect(html).toContain('min="40" max="110" step="1" value="72"')
     expect(html).toContain('Export finished solid as binary STL in millimetres')
     expect(html).toContain('STL · MM')
+    expect(html).toContain('Mass centre X / Y / Z')
+    expect(html).toContain('Support reserve')
+    expect(html).toContain('MASS PROJECTION INSIDE')
+    expect(html).toContain('static geometry only')
+  })
+
+  it('shows an explicit warning when the mass projection leaves the support polygon', () => {
+    const html = renderInspector({
+      ...defaults,
+      supportCount: 1,
+      upperFootprintMode: 'detached',
+      upperOffsetXMm: 400,
+    })
+
+    expect(html).toContain('MASS PROJECTION OUTSIDE')
+    expect(html).toContain('BEYOND · MODEL')
+    expect(html).toContain('metric-error')
   })
 
   it('shows active retained-core controls and separate material readings', () => {

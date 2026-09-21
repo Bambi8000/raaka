@@ -5,6 +5,7 @@ import {
   scenePieceVolume,
 } from './pieceMetrics'
 import { fuseScenePieces } from './solidKernel'
+import { analyseStability } from './stability'
 import type {
   MassStudy,
   MeshPiece,
@@ -142,6 +143,7 @@ export async function resolveStudyFuses(
       concreteMassKg,
       estimatedMassKg: concreteMassKg + study.retainedCore.massKg,
       groundContactMm2,
+      stability: analyseStability(pieces, study.retainedCore),
     },
     dormantFuseGroupIds,
   }

@@ -171,6 +171,16 @@ export interface SupportLayoutAnalysis {
   readonly sideBearingOverhangMm: number
 }
 
+export interface StabilityAnalysis {
+  readonly status: 'inside' | 'edge' | 'outside' | 'unavailable'
+  readonly centreOfMassMm: Vec3 | null
+  readonly projectionMm: Vec2 | null
+  readonly supportPolygonMm: readonly Vec2[]
+  /** Positive inside the convex support boundary, negative outside. */
+  readonly signedMarginMm: number | null
+  readonly message: string
+}
+
 export interface MassStudy {
   readonly recipe: RecipeId
   readonly seed: number
@@ -192,6 +202,7 @@ export interface MassStudy {
   }
   readonly estimatedMassKg: number
   readonly groundContactMm2: number
+  readonly stability: StabilityAnalysis
   readonly supportLayout?: SupportLayoutAnalysis
   readonly radialLayout?: {
     readonly sides: 6 | 8

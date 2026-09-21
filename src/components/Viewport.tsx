@@ -86,6 +86,7 @@ const VIEWPORT_PALETTES: Readonly<Record<UiTheme, ViewportPalette>> = {
 
 const SELECTED_COLOUR = 0xffd400
 const FUSE_SELECTION_COLOUR = 0x287bc1
+const STABILITY_WARNING_COLOUR = 0xe33b97
 
 function pieceColour(
   piece: ScenePiece,
@@ -144,7 +145,7 @@ function geometryForPiece(piece: ScenePiece): THREE.BufferGeometry {
 
 function disposeObject(object: THREE.Object3D): void {
   object.traverse((child) => {
-    if (child instanceof THREE.Mesh || child instanceof THREE.LineSegments) {
+    if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
       const renderable = child as THREE.Mesh<
         THREE.BufferGeometry,
         THREE.Material | THREE.Material[]
@@ -156,6 +157,68 @@ function disposeObject(object: THREE.Object3D): void {
       for (const material of materials) material.dispose()
     }
   })
+}
+
+function createStabilityOverlay(study: MassStudy): THREE.Group {
+  const overlay = new THREE.Group()
+  overlay.name = 'stability-overlay'
+  const { stability } = study
+  const warning = stability.status === 'outside'
+  const markerColour = warning ? STABILITY_WARNING_COLOUR : SELECTED_COLOUR
+  const markerRadius = Math.max(5, Math.min(20, study.heightMm * 0.012))
+  const overlayMaterial = (colour: number) => new THREE.LineBasicMaterial({
+    color: colour,
+    depthTest: false,
+    transparent: true,
+    opacity: 0.96,
+  })
+
+  if (stability.supportPolygonMm.length >= 3) {
+    const points = stability.supportPolygonMm.map(
+      ([x, y]) => new THREE.Vector3(x, y, 3),
+    )
+    const boundary = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(points),
+      overlayMaterial(FUSE_SELECTION_COLOUR),
+    )
+    boundary.renderOrder = 5
+    overlay.add(boundary)
+  }
+
+  if (stability.centreOfMassMm && stability.projectionMm) {
+    const centre = new THREE.Mesh(
+      new THREE.SphereGeometry(markerRadius, 12, 8),
+      new THREE.MeshBasicMaterial({ color: markerColour, depthTest: false }),
+    )
+    centre.position.set(...stability.centreOfMassMm)
+    centre.renderOrder = 6
+    overlay.add(centre)
+
+    const [x, y] = stability.projectionMm
+    const projectionLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(x, y, 4),
+        new THREE.Vector3(...stability.centreOfMassMm),
+      ]),
+      overlayMaterial(markerColour),
+    )
+    projectionLine.renderOrder = 5
+    overlay.add(projectionLine)
+
+    const projection = new THREE.Mesh(
+      new THREE.RingGeometry(markerRadius * 0.65, markerRadius, 20),
+      new THREE.MeshBasicMaterial({
+        color: markerColour,
+        depthTest: false,
+        side: THREE.DoubleSide,
+      }),
+    )
+    projection.position.set(x, y, 4)
+    projection.renderOrder = 6
+    overlay.add(projection)
+  }
+
+  return overlay
 }
 
 export function Viewport({
@@ -551,6 +614,7 @@ export function Viewport({
       edges.renderOrder = core ? 3 : 0
       root.add(edges)
     }
+    root.add(createStabilityOverlay(study))
     const keyLight = keyLightRef.current
     if (keyLight) fitDirectionalShadow(keyLight, study.bounds)
     const visiblePieces = visibleStudyPieces(study)

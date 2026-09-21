@@ -41,6 +41,8 @@ Watertight binary STL export and a measured Kerros round trip are implemented
 in 0.1.25.
 Retained lightweight upper-core intent, separate material readings and matching
 STL subtraction are implemented in 0.1.26.
+Mass-centre projection and static support-polygon feedback are implemented in
+0.1.27.
 
 ## 0.1 — foundation
 
@@ -76,6 +78,7 @@ Version 0.1.23 adds direct translation handles for existing placement fields.
 Version 0.1.24 adds validated numeric entry beside every visible slider.
 Version 0.1.25 adds a watertight, model-scaled binary STL handoff to Kerros.
 Version 0.1.26 adds retained upper-core intent and subtraction.
+Version 0.1.27 adds material-aware mass-centre and support-polygon feedback.
 
 ## 0.1.1 — correct the baseline
 
@@ -431,10 +434,10 @@ emphasis to match its actual parameter dependencies.
 
 Unchecked items remain proposals. The owner-requested dynamic inspector is now
 implemented; fuller selected-first ordering and copy-source navigation remain
-open. Translation gizmos, exact numeric entry and the first STL handoff are
-implemented. The first retained lightweight core is also implemented. Next:
-centre-of-mass projection and support-polygon feedback, while keeping the
-existing manufacturing gates below in scope.
+open. Translation gizmos, exact numeric entry, the first STL handoff, retained
+lightweight core and static stability feedback are implemented. Next: editable
+material density, while keeping the existing manufacturing gates below in
+scope.
 
 ## 0.1.19 — divided upper masses and opposing tapers
 
@@ -665,6 +668,32 @@ clean console. The actual 96-triangle 1:4 download is 270.0 × 127.5 × 375.0 mm
 and 5.34 L; Kerros's production importer reports binary STL, zero open edges,
 positive signed volume and no warnings.
 
+## 0.1.27 — mass centre and static support polygon
+
+- [x] integrate exact volume centroids for boxes, rectangular lofts, polygon
+  lofts and completed Fuse meshes
+- [x] calculate the manufactured mass centre from concrete plus retained foam,
+  subtracting the concrete displaced by an active core
+- [x] form a convex support polygon from actual grounded stem faces and
+  finished-solid ground contact
+- [x] report a signed nearest-edge reserve in physical model millimetres
+- [x] draw the support boundary, three-dimensional centre and vertical ground
+  projection without making renderer state authoritative
+- [x] recompute after removal, copies and Fuse; retain explicit nominal-overlap
+  and disconnected-part limitations
+- [x] scale the centre, polygon and reserve linearly at 1:1, 1:2 and 1:4
+- [x] expose inside, edge, outside and unavailable states with actionable text
+  and an explicit non-structural safety boundary
+
+Done when the viewport and manufacturing panel agree on the same material-aware
+mass projection, an authored cantilever can cross the measured foot boundary,
+and every supported model scale preserves the result without changing project
+data. A positive reserve remains design feedback, not structural approval.
+
+Verification: 410 tests plus lint, strict TypeScript and production build.
+Browser inspection covers the retained-core 1:4 study, visible support boundary,
+mass-centre marker, projection line, signed reserve and an authored outside case.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -689,7 +718,8 @@ positive signed volume and no warnings.
 - [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [x] focused solid-kernel spike before committing to a boolean dependency
 - [x] union selected preview pieces and resolve their internal contact faces
-- [ ] editable density, centre-of-mass projection and support-polygon feedback
+- [ ] editable concrete and retained-core densities
+- [x] centre-of-mass projection and static support-polygon feedback
 - [x] geometric bearing/contact feedback without automatic aesthetic correction
 - [x] retained lightweight core intent, preview and matching solid subtraction
 - [x] separate concrete/core volume and mass, with explicit material assumptions

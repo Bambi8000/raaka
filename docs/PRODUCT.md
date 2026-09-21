@@ -6,13 +6,14 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.26, the
+This document describes the product direction. In version 0.1.27, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
 multi-row support grids, selected-support width/depth overrides, selected X/Y
 support placement, divided/shared shoulder rows and semantic part copies.
 The first watertight STL output and retained lightweight upper core are
+implemented. Live mass-centre projection and support-polygon feedback are also
 implemented; drawings, open/removable void workflows and the remaining recipe
 families are planned. Authored X/Y
 upper-mass offsets add a controlled cantilever without replacing seeded
@@ -327,6 +328,21 @@ the saved core settings and explains the required repair. Copies remain solid.
 These constraints keep the first subtraction deterministic while preserving a
 future path for per-part, removable and visible voids. Piloti recipe version 17
 stores the mode and size; versions 1–16 migrate to solid concrete unchanged.
+
+Version 0.1.27 adds a derived static stability reading without changing project
+data. The total mass centre includes concrete and replaces displaced concrete
+with retained foam at their stated densities. The support polygon is the convex
+hull of the actual Z = 0 support faces, including tilted rectangular feet,
+radial polygon feet and completed Fuse meshes. The viewport shows the boundary,
+the three-dimensional mass centre and its vertical projection. A signed reserve
+reports the nearest perpendicular distance to the boundary in physical model
+millimetres: positive is inside, zero is on an edge and negative is outside.
+
+This is deliberately a geometric warning, not an approval. It does not test
+whether separate preview parts are connected, whether the ground or foot can
+carry the load, or whether reinforcement, anchors, handling and environmental
+loads are adequate. Unfused overlapping volumes retain the same nominal-mass
+limitation as the manufacturing estimate.
 
 ### Planned high-rise articulation module
 

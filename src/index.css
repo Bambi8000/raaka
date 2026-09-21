@@ -596,6 +596,34 @@ input:focus-visible {
   color: var(--accent-ink);
 }
 
+.viewport-gizmo-status {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: grid;
+  gap: 2px;
+  min-width: 172px;
+  padding: 8px 10px;
+  border: 1px solid var(--overlay-border);
+  background: var(--overlay);
+  box-shadow: inset 3px 0 var(--yellow);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.viewport-gizmo-status span,
+.viewport-gizmo-status small {
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.viewport-gizmo-status strong {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
 .viewport-meta {
   position: absolute;
   bottom: 13px;
@@ -646,6 +674,13 @@ input:focus-visible {
   font-weight: 400;
   letter-spacing: normal;
   line-height: 1.5;
+}
+
+.gizmo-help span {
+  padding: 2px 4px;
+  background: var(--yellow);
+  color: var(--accent-ink);
+  font-weight: 900;
 }
 
 .inspector-actions {

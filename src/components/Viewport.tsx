@@ -1,12 +1,18 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 import type {
   MassStudy,
   ModelScale,
   PieceRole,
   ScenePiece,
+  Vec3,
 } from '../core/types'
+import {
+  translatedGizmoValue,
+  type TranslationGizmoTarget,
+} from '../core/translationGizmo'
 import type { UiTheme } from '../core/uiTheme'
 import { createFrustumGeometry } from '../geometry/frustum'
 import { polygonLoftMesh } from '../core/polygonLoft'
@@ -18,7 +24,18 @@ interface ViewportProps {
   readonly uiTheme: UiTheme
   readonly selectedPieceId: string
   readonly fuseSelectionPieceIds: readonly string[]
+  readonly translationGizmo?: TranslationGizmoTarget
   readonly onSelect: (pieceId: string) => void
+  readonly onTranslationStart: (target: TranslationGizmoTarget) => void
+  readonly onTranslationChange: (
+    target: TranslationGizmoTarget,
+    valueDesignMm: Vec3,
+  ) => void
+  readonly onTranslationEnd: (
+    target: TranslationGizmoTarget,
+    changed: boolean,
+  ) => void
+  readonly onTranslationCancel: (target: TranslationGizmoTarget) => void
 }
 
 interface ViewportPalette {
@@ -143,7 +160,12 @@ export function Viewport({
   uiTheme,
   selectedPieceId,
   fuseSelectionPieceIds,
+  translationGizmo,
   onSelect,
+  onTranslationStart,
+  onTranslationChange,
+  onTranslationEnd,
+  onTranslationCancel,
 }: ViewportProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
@@ -154,9 +176,16 @@ export function Viewport({
   const groundRef = useRef<THREE.Mesh>(null)
   const gridRef = useRef<THREE.GridHelper>(null)
   const modelRootRef = useRef<THREE.Group>(null)
+  const translationObjectRef = useRef<THREE.Object3D>(null)
+  const transformControlsRef = useRef<TransformControls>(null)
   const selectableRef = useRef<THREE.Mesh[]>([])
   const pieceIdsRef = useRef(new Map<THREE.Object3D, string>())
   const onSelectRef = useRef(onSelect)
+  const translationGizmoRef = useRef(translationGizmo)
+  const onTranslationStartRef = useRef(onTranslationStart)
+  const onTranslationChangeRef = useRef(onTranslationChange)
+  const onTranslationEndRef = useRef(onTranslationEnd)
+  const onTranslationCancelRef = useRef(onTranslationCancel)
   const selectedPieceIdRef = useRef(selectedPieceId)
   const fuseSelectionPieceIdsRef = useRef(new Set(fuseSelectionPieceIds))
   const studyRef = useRef(study)
@@ -167,6 +196,20 @@ export function Viewport({
   useEffect(() => {
     onSelectRef.current = onSelect
   }, [onSelect])
+
+  useEffect(() => {
+    translationGizmoRef.current = translationGizmo
+    onTranslationStartRef.current = onTranslationStart
+    onTranslationChangeRef.current = onTranslationChange
+    onTranslationEndRef.current = onTranslationEnd
+    onTranslationCancelRef.current = onTranslationCancel
+  }, [
+    onTranslationCancel,
+    onTranslationChange,
+    onTranslationEnd,
+    onTranslationStart,
+    translationGizmo,
+  ])
 
   useEffect(() => {
     selectedPieceIdRef.current = selectedPieceId
@@ -230,6 +273,18 @@ export function Viewport({
     modelRootRef.current = modelRoot
     scene.add(modelRoot)
 
+    const translationObject = new THREE.Object3D()
+    translationObjectRef.current = translationObject
+    scene.add(translationObject)
+
+    const transformControls = new TransformControls(camera, canvas)
+    transformControls.setMode('translate')
+    transformControls.setSpace('world')
+    transformControls.setSize(0.82)
+    transformControls.setColors(SELECTED_COLOUR, FUSE_SELECTION_COLOUR, 0xf2f2ec, 0xffffff)
+    transformControlsRef.current = transformControls
+    scene.add(transformControls.getHelper())
+
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(8_000, 8_000),
       new THREE.MeshStandardMaterial({ color: palette.ground, roughness: 1 }),
@@ -257,11 +312,16 @@ export function Viewport({
 
     const raycaster = new THREE.Raycaster()
     const pointer = new THREE.Vector2()
+    let gizmoDragging = false
+    let dragCancelled = false
+    let dragChanged = false
+    let dragStartTarget: TranslationGizmoTarget | undefined
+    let lastEmittedValue: Vec3 | undefined
     let pointerStart:
       | { readonly id: number; readonly x: number; readonly y: number }
       | undefined
     const rememberPointer = (event: PointerEvent) => {
-      if (event.button !== 0) return
+      if (event.button !== 0 || gizmoDragging) return
       pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY }
     }
     const selectAtPointer = (event: PointerEvent) => {
@@ -282,9 +342,73 @@ export function Viewport({
     const cancelPointer = () => {
       pointerStart = undefined
     }
+    const equalValue = (left: Vec3 | undefined, right: Vec3) =>
+      left !== undefined && left.every((value, axis) => value === right[axis])
+    const handleGizmoMouseDown = () => {
+      const target = translationGizmoRef.current
+      if (!target) return
+      pointerStart = undefined
+      dragCancelled = false
+      dragChanged = false
+      dragStartTarget = target
+      lastEmittedValue = target.valueDesignMm
+      onTranslationStartRef.current(target)
+    }
+    const handleGizmoObjectChange = () => {
+      if (!dragStartTarget) return
+      const next = translatedGizmoValue(
+        dragStartTarget,
+        translationObject.position.toArray(),
+        modelScaleRef.current,
+      )
+      if (equalValue(lastEmittedValue, next)) return
+      lastEmittedValue = next
+      dragChanged = dragChanged || !equalValue(dragStartTarget.valueDesignMm, next)
+      onTranslationChangeRef.current(dragStartTarget, next)
+    }
+    const handleGizmoMouseUp = () => {
+      if (!dragStartTarget) return
+      if (dragCancelled) {
+        onTranslationCancelRef.current(dragStartTarget)
+      } else {
+        onTranslationEndRef.current(dragStartTarget, dragChanged)
+      }
+      dragStartTarget = undefined
+      lastEmittedValue = undefined
+      dragCancelled = false
+      dragChanged = false
+    }
+    const handleDraggingChanged = (event: { readonly value: unknown }) => {
+      gizmoDragging = event.value === true
+      controls.enabled = !gizmoDragging
+      if (gizmoDragging) pointerStart = undefined
+    }
+    const cancelGizmo = () => {
+      if (!transformControls.dragging) return
+      dragCancelled = true
+      transformControls.reset()
+      transformControls.pointerUp(null)
+      controls.enabled = true
+      gizmoDragging = false
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !transformControls.dragging) return
+      event.preventDefault()
+      event.stopPropagation()
+      cancelGizmo()
+    }
+    const handlePointerCancel = () => {
+      cancelPointer()
+      cancelGizmo()
+    }
+    transformControls.addEventListener('mouseDown', handleGizmoMouseDown)
+    transformControls.addEventListener('objectChange', handleGizmoObjectChange)
+    transformControls.addEventListener('mouseUp', handleGizmoMouseUp)
+    transformControls.addEventListener('dragging-changed', handleDraggingChanged)
     canvas.addEventListener('pointerdown', rememberPointer)
     canvas.addEventListener('pointerup', selectAtPointer)
-    canvas.addEventListener('pointercancel', cancelPointer)
+    canvas.addEventListener('pointercancel', handlePointerCancel)
+    window.addEventListener('keydown', handleKeyDown)
 
     let frame = 0
     const render = () => {
@@ -298,9 +422,15 @@ export function Viewport({
       cancelAnimationFrame(frame)
       canvas.removeEventListener('pointerdown', rememberPointer)
       canvas.removeEventListener('pointerup', selectAtPointer)
-      canvas.removeEventListener('pointercancel', cancelPointer)
+      canvas.removeEventListener('pointercancel', handlePointerCancel)
+      window.removeEventListener('keydown', handleKeyDown)
+      transformControls.removeEventListener('mouseDown', handleGizmoMouseDown)
+      transformControls.removeEventListener('objectChange', handleGizmoObjectChange)
+      transformControls.removeEventListener('mouseUp', handleGizmoMouseUp)
+      transformControls.removeEventListener('dragging-changed', handleDraggingChanged)
       observer.disconnect()
       controls.dispose()
+      transformControls.dispose()
       disposeObject(modelRoot)
       ground.geometry.dispose()
       ;(ground.material as THREE.Material).dispose()
@@ -316,10 +446,50 @@ export function Viewport({
       groundRef.current = null
       gridRef.current = null
       modelRootRef.current = null
+      translationObjectRef.current = null
+      transformControlsRef.current = null
       selectableRef.current = []
       pieceIds.clear()
     }
   }, [])
+
+  useEffect(() => {
+    translationGizmoRef.current = translationGizmo
+    const object = translationObjectRef.current
+    const controls = transformControlsRef.current
+    if (!object || !controls) return
+    if (!translationGizmo) {
+      controls.detach()
+      return
+    }
+    if (controls.dragging) return
+
+    object.position.set(...translationGizmo.anchorModelMm)
+    controls.attach(object)
+    controls.showX = true
+    controls.showY = true
+    controls.showZ = translationGizmo.axes === 'xyz'
+    controls.showXY = true
+    controls.showYZ = translationGizmo.axes === 'xyz'
+    controls.showXZ = translationGizmo.axes === 'xyz'
+    controls.showXYZE = false
+    controls.showE = false
+    controls.setTranslationSnap(modelScale)
+
+    const bounded = controls as TransformControls & { minX: number }
+    bounded.minX = translationGizmo.anchorModelMm[0] +
+      (translationGizmo.minimumDesignMm[0] - translationGizmo.valueDesignMm[0]) * modelScale
+    bounded.maxX = translationGizmo.anchorModelMm[0] +
+      (translationGizmo.maximumDesignMm[0] - translationGizmo.valueDesignMm[0]) * modelScale
+    bounded.minY = translationGizmo.anchorModelMm[1] +
+      (translationGizmo.minimumDesignMm[1] - translationGizmo.valueDesignMm[1]) * modelScale
+    bounded.maxY = translationGizmo.anchorModelMm[1] +
+      (translationGizmo.maximumDesignMm[1] - translationGizmo.valueDesignMm[1]) * modelScale
+    bounded.minZ = translationGizmo.anchorModelMm[2] +
+      (translationGizmo.minimumDesignMm[2] - translationGizmo.valueDesignMm[2]) * modelScale
+    bounded.maxZ = translationGizmo.anchorModelMm[2] +
+      (translationGizmo.maximumDesignMm[2] - translationGizmo.valueDesignMm[2]) * modelScale
+  }, [modelScale, translationGizmo])
 
   useEffect(() => {
     const root = modelRootRef.current
@@ -454,11 +624,20 @@ export function Viewport({
           HOME
         </button>
       </div>
+      {translationGizmo ? (
+        <div className="viewport-gizmo-status" role="status">
+          <span>MOVE {translationGizmo.axes.toUpperCase()}</span>
+          <strong>{translationGizmo.label}</strong>
+          <small>1 MM DESIGN SNAP · ESC CANCELS</small>
+        </div>
+      ) : null}
       <div className="viewport-meta viewport-meta--left">
         PERSPECTIVE · Z UP · MM
       </div>
       <div className="viewport-meta viewport-meta--right">
-        DRAG TO ORBIT · SCROLL TO ZOOM
+        {translationGizmo
+          ? 'DRAG HANDLE TO MOVE · EMPTY SPACE TO ORBIT'
+          : 'DRAG TO ORBIT · SCROLL TO ZOOM'}
       </div>
     </div>
   )

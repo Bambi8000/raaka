@@ -517,6 +517,32 @@ sidebar breakpoint. A sticky selection label keeps the target visible while
 scrolling through controls. Yellow field borders and SELECTED labels supplement
 colour, and sliders expose their current influence through accessible text.
 
+### Direct translation
+
+Version 0.1.23 adds `translationGizmo.ts` as the pure boundary between semantic
+selection and viewport interaction. It derives one target from the generated
+physical study: shared upper X/Y placement, complete selected-leg X/Y placement
+or copied-part X/Y/Z placement. Original divided mass cells deliberately resolve
+to the shared upper offsets. Fuse meshes, removed parts and dormant copies have
+no target. Applying a target writes the existing Piloti parameters; Three.js
+never becomes model truth.
+
+The viewport attaches `TransformControls` to an otherwise empty scene object at
+the selected target's measured physical centre. Moving that object is converted
+back through model scale and snapped to one design millimetre before the pure
+parameter update. Unsupported axes are hidden and bounded to the same ranges as
+the inspector. A selected-leg move creates complete foot, size and position
+override entries so its inherited lean and proportions do not change later when
+shared values change.
+
+Pointer-down starts the existing history gesture, continuous object changes
+replace the current study, and pointer-up commits one entry. Escape resets the
+control and dispatches `cancel-gesture`, restoring the exact pre-drag study
+without consuming redo. OrbitControls are disabled only while the transform is
+dragging. The existing sliders remain the keyboard path. Gizmo state, selection
+and its overlay are transient UI projections; recipe version 16, project files
+and recovery format are unchanged.
+
 ## Interface themes
 
 Version 0.1.16 defaults to a charcoal dark interface and provides an explicit

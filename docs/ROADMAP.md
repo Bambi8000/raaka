@@ -35,6 +35,7 @@ Hexagonal/octagonal Piloti plans, radial support rings and matching six/eight
 upper-mass sectors are implemented in 0.1.20.
 Global and centered foot offset spaces for polygon Piloti are implemented in 0.1.21.
 The selection-focused inspector with Show all is implemented in 0.1.22.
+Scoped translation gizmos are implemented in 0.1.23.
 
 ## 0.1 — foundation
 
@@ -65,6 +66,7 @@ Version 0.1.15 adds saved, measured Fuse groups and reversible Unfuse.
 Version 0.1.16 adds a default dark workspace and persistent Light/Dark switch.
 Version 0.1.17 corrects linked bearing placement, removes distance fog and
 serialises feature-branch verification through pull requests.
+Version 0.1.23 adds direct translation handles for existing placement fields.
 
 ## 0.1.1 — correct the baseline
 
@@ -419,8 +421,9 @@ emphasis to match its actual parameter dependencies.
 
 Unchecked items remain proposals. The owner-requested dynamic inspector is now
 implemented; fuller selected-first ordering and copy-source navigation remain
-open. Next: scoped translation gizmos, then numeric entry and the first STL
-handoff. Keep the existing manufacturing and weight/core gates below in scope.
+open. Translation gizmos are implemented in 0.1.23. Next: numeric entry and the
+first STL handoff. Keep the existing manufacturing and weight/core gates below
+in scope.
 
 ## 0.1.19 — divided upper masses and opposing tapers
 
@@ -530,29 +533,39 @@ selection, local overrides, independent tops, live copies, a connected Fuse,
 zero-offset Global/Centered reachability, keyboard-edit Undo and 1:4 recovery.
 The existing bundle-size and Manifold externalization warnings remain unchanged.
 
-### Next — scoped translation gizmos
+## 0.1.23 — scoped translation gizmos
 
-- [ ] upper-mass X/Y handles write the existing authored placement offsets;
+- [x] upper-mass X/Y handles write the existing authored placement offsets;
   preserve linked shoulder-top behavior and independent Z proportions
-- [ ] selected-leg X/Y handles move the whole stem/shoulder pair, retain ground
+- [x] selected-leg X/Y handles move the whole stem/shoulder pair, retain ground
   contact and explicitly create a local override when required
-- [ ] copied-part X/Y/Z handles write that copy's existing translation fields
-- [ ] keep feet/lean handles visually and semantically separate from whole-part
+- [x] copied-part X/Y/Z handles write that copy's existing translation fields
+- [x] keep feet/lean handles visually and semantically separate from whole-part
   translation; unsupported rotation/scale/vertical axes stay unavailable
-- [ ] use shared upper placement for original cells until independent cell
+- [x] use shared upper placement for original cells until independent cell
   placement has an explicit model contract; never imply a local move exists
-- [ ] one completed drag equals one undo step; Escape cancels to the starting
+- [x] one completed drag equals one undo step; Escape cancels to the starting
   values; dragging blocks camera orbit and releases it reliably afterwards
-- [ ] convert physical handle movement back to design millimetres at 1:1, 1:2
+- [x] convert physical handle movement back to design millimetres at 1:1, 1:2
   and 1:4; model truth stays in recipe parameters, not Three.js transforms
-- [ ] show the handle's target and scope; retain keyboard/numeric alternatives
+- [x] show the handle's target and scope; retain keyboard/numeric alternatives
   and require Unfuse before direct manipulation of a Fuse's individual sources
-- [ ] test selection changes, drag cancellation, history, file recovery, linked
+- [x] test selection changes, drag cancellation, history, file recovery, linked
   bearings and rectangular/polygon layouts before release
 
-Gizmos are not implemented in 0.1.22. Numeric fields beside sliders are the
-following precision-editing step. The next output milestone remains a watertight
-STL and measured millimetre round trip into Kerros; mould construction stays there.
+Done when the visible handle describes the exact object scope, writes only
+existing design parameters, follows model scale correctly and makes one history
+entry per completed drag. Escape restores the exact pre-drag study. Existing
+range controls remain the keyboard alternative; dedicated numeric fields are
+the following precision-editing step. The next output milestone remains a
+watertight STL and measured millimetre round trip into Kerros; mould construction
+stays there.
+
+Verification: 359 tests plus lint, strict TypeScript and production build.
+Browser checks cover upper, complete-leg and copy handle scopes; a 1:4 drag;
+one-step Undo; automatic selected-leg override creation; 1 mm agreement between
+the handle and sliders; Fuse suppression; and a clean console. Escape recovery
+and redo preservation are pinned by the history regression.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

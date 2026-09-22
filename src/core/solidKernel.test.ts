@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   finishScenePieces,
   fuseScenePieces,
+  projectScenePiecesAlongAxis,
   sectionScenePiecesAtPlane,
   sectionScenePiecesAtZ,
   type SolidKernelMesh,
@@ -212,6 +213,50 @@ describe('solid-kernel gate', () => {
 
     expect(section.areaMm2).toBeCloseTo(10_000 - 3_600, 8)
     expect(section.polygons).toHaveLength(2)
+  })
+
+  it.each([
+    ['z', 120, 80],
+    ['x', 80, 100],
+    ['y', 120, 100],
+  ] as const)('returns a measured %s-axis orthographic silhouette', async (
+    axis,
+    expectedWidth,
+    expectedHeight,
+  ) => {
+    const projection = await projectScenePiecesAlongAxis(
+      [box('offset', [20, -10, 50], [120, 80, 100])],
+      axis,
+    )
+    const points = projection.polygons.flat()
+    const horizontal = points.map(([value]) => value)
+    const vertical = points.map(([, value]) => value)
+
+    expect(projection.areaMm2).toBeCloseTo(expectedWidth * expectedHeight, 8)
+    expect(Math.max(...horizontal) - Math.min(...horizontal)).toBeCloseTo(expectedWidth, 8)
+    expect(Math.max(...vertical) - Math.min(...vertical)).toBeCloseTo(expectedHeight, 8)
+  })
+
+  it('unions overlapping silhouettes without triangulation or duplicate outlines', async () => {
+    const projection = await projectScenePiecesAlongAxis([
+      box('left', [0, 0, 0]),
+      box('right', [50, 0, 0]),
+    ], 'z')
+
+    expect(projection.areaMm2).toBeCloseTo(15_000, 8)
+    expect(projection.polygons).toHaveLength(1)
+    expect(projection.polygons[0]).toHaveLength(4)
+  })
+
+  it('keeps a fully enclosed retained core hidden from the outer projection', async () => {
+    const projection = await projectScenePiecesAlongAxis(
+      [box('outer', [0, 0, 50])],
+      'y',
+      [box('core', [0, 0, 50], [60, 60, 60])],
+    )
+
+    expect(projection.areaMm2).toBeCloseTo(10_000, 8)
+    expect(projection.polygons).toHaveLength(1)
   })
 
   it('keeps a thin positive overlap as one deterministic solid', async () => {

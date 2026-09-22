@@ -35,10 +35,16 @@ export interface SolidKernelSection {
 }
 
 export type SolidKernelSectionAxis = 'x' | 'y' | 'z'
+export type SolidKernelProjectionAxis = SolidKernelSectionAxis
 
 export interface SolidKernelSectionPlane {
   readonly axis: SolidKernelSectionAxis
   readonly offsetMm: number
+}
+
+export interface SolidKernelProjection {
+  readonly polygons: readonly (readonly (readonly [number, number])[])[]
+  readonly areaMm2: number
 }
 
 let kernelPromise: Promise<ManifoldToplevel> | undefined
@@ -296,6 +302,45 @@ export async function sectionScenePiecesAtPlane(
     } finally {
       simplified?.delete()
       section.delete()
+      oriented?.delete()
+    }
+  }, subtractors)
+}
+
+/**
+ * Project the finished scene along one world axis. Output coordinates are X/Y
+ * for plan, Y/Z for an X elevation and X/Z for a Y elevation.
+ */
+export async function projectScenePiecesAlongAxis(
+  pieces: readonly ScenePiece[],
+  axis: SolidKernelProjectionAxis,
+  subtractors: readonly ScenePiece[] = [],
+): Promise<SolidKernelProjection> {
+  return withSceneManifold(pieces, (result) => {
+    let oriented: ManifoldSolid | undefined
+    let mapPoint: (point: readonly [number, number]) => readonly [number, number]
+    if (axis === 'x') {
+      oriented = result.rotate(0, -90, 0)
+      mapPoint = ([negativeZ, y]) => [y, -negativeZ]
+    } else if (axis === 'y') {
+      oriented = result.rotate(90, 0, 0)
+      mapPoint = ([x, negativeZ]) => [x, -negativeZ]
+    } else {
+      mapPoint = ([x, y]) => [x, y]
+    }
+    const projection = (oriented ?? result).project()
+    let simplified: ReturnType<ManifoldSolid['project']> | undefined
+    try {
+      simplified = projection.simplify()
+      return {
+        polygons: simplified.toPolygons().map((polygon) =>
+          polygon.map((point) => mapPoint(point)),
+        ),
+        areaMm2: simplified.area(),
+      }
+    } finally {
+      simplified?.delete()
+      projection.delete()
       oriented?.delete()
     }
   }, subtractors)

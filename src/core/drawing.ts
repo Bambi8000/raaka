@@ -1,5 +1,7 @@
 import {
+  projectScenePiecesAlongAxis,
   sectionScenePiecesAtPlane,
+  type SolidKernelProjection,
   type SolidKernelSection,
 } from './solidKernel'
 import type { ScenePiece, Vec2 } from './types'
@@ -8,7 +10,9 @@ export const DRAWING_PATH_SET_FORMAT = 'raaka.path-set'
 export const DRAWING_PATH_SET_VERSION = 1
 
 export type SectionDrawingAxis = 'x' | 'y'
-export type DrawingRole = 'section'
+export type OrthographicDrawingViewId = 'plan' | 'elevation-x' | 'elevation-y'
+export type DrawingViewId = OrthographicDrawingViewId | `section-${SectionDrawingAxis}`
+export type DrawingRole = 'outline' | 'section'
 
 export interface DrawingBounds2 {
   readonly min: Vec2
@@ -28,29 +32,38 @@ export interface DrawingPathSet {
   readonly formatVersion: typeof DRAWING_PATH_SET_VERSION
   readonly units: 'mm'
   readonly coordinateSystem: 'cartesian'
-  readonly view: {
-    readonly kind: 'section'
-    readonly planeAxis: SectionDrawingAxis
-    readonly planeOffsetMm: number
-    readonly horizontalAxis: 'x' | 'y'
-    readonly verticalAxis: 'z'
-  }
+  readonly view:
+    | {
+        readonly id: `section-${SectionDrawingAxis}`
+        readonly kind: 'section'
+        readonly planeAxis: SectionDrawingAxis
+        readonly planeOffsetMm: number
+        readonly horizontalAxis: 'x' | 'y'
+        readonly verticalAxis: 'z'
+      }
+    | {
+        readonly id: OrthographicDrawingViewId
+        readonly kind: 'orthographic'
+        readonly projectionAxis: 'x' | 'y' | 'z'
+        readonly horizontalAxis: 'x' | 'y'
+        readonly verticalAxis: 'y' | 'z'
+      }
   readonly bounds: DrawingBounds2
   readonly areaMm2: number
   readonly paths: readonly DrawingPath[]
 }
 
-export interface SectionSvgOptions {
+export interface DrawingSvgOptions {
   readonly title: string
   readonly paperScaleDenominator: number
   readonly marginMm?: number
   readonly strokeWidthMm?: number
 }
 
-export class SectionDrawingError extends Error {
+export class DrawingError extends Error {
   public constructor(message: string) {
     super(message)
-    this.name = 'SectionDrawingError'
+    this.name = 'DrawingError'
   }
 }
 
@@ -79,7 +92,7 @@ export function sectionPathSet(
   planeOffsetMm: number,
 ): DrawingPathSet {
   if (!Number.isFinite(planeOffsetMm)) {
-    throw new SectionDrawingError('Section plane offset must be finite.')
+    throw new DrawingError('Section plane offset must be finite.')
   }
   const paths = section.polygons
     .filter((polygon) => polygon.length >= 3)
@@ -95,6 +108,7 @@ export function sectionPathSet(
     units: 'mm',
     coordinateSystem: 'cartesian',
     view: {
+      id: `section-${planeAxis}`,
       kind: 'section',
       planeAxis,
       planeOffsetMm,
@@ -114,7 +128,7 @@ export async function createSectionPathSet(
   planeOffsetMm: number,
 ): Promise<DrawingPathSet> {
   if (pieces.length === 0) {
-    throw new SectionDrawingError(
+    throw new DrawingError(
       'Section drawing needs at least one visible part. Restore a part and try again.',
     )
   }
@@ -126,9 +140,75 @@ export async function createSectionPathSet(
   return sectionPathSet(section, planeAxis, planeOffsetMm)
 }
 
+function orthographicView(viewId: OrthographicDrawingViewId): Extract<
+  DrawingPathSet['view'],
+  { readonly kind: 'orthographic' }
+> {
+  if (viewId === 'plan') {
+    return {
+      id: viewId,
+      kind: 'orthographic',
+      projectionAxis: 'z',
+      horizontalAxis: 'x',
+      verticalAxis: 'y',
+    }
+  }
+  const projectionAxis = viewId === 'elevation-x' ? 'x' : 'y'
+  return {
+    id: viewId,
+    kind: 'orthographic',
+    projectionAxis,
+    horizontalAxis: projectionAxis === 'x' ? 'y' : 'x',
+    verticalAxis: 'z',
+  }
+}
+
+export function orthographicPathSet(
+  projection: SolidKernelProjection,
+  viewId: OrthographicDrawingViewId,
+): DrawingPathSet {
+  const paths = projection.polygons
+    .filter((polygon) => polygon.length >= 3)
+    .map((polygon, index): DrawingPath => ({
+      id: `outline-${index + 1}`,
+      role: 'outline',
+      closed: true,
+      points: polygon.map(([x, y]) => [normalizeZero(x), normalizeZero(y)]),
+    }))
+  return {
+    format: DRAWING_PATH_SET_FORMAT,
+    formatVersion: DRAWING_PATH_SET_VERSION,
+    units: 'mm',
+    coordinateSystem: 'cartesian',
+    view: orthographicView(viewId),
+    bounds: drawingBounds(paths),
+    areaMm2: projection.areaMm2,
+    paths,
+  }
+}
+
+export async function createOrthographicPathSet(
+  pieces: readonly ScenePiece[],
+  retainedCorePieces: readonly ScenePiece[],
+  viewId: OrthographicDrawingViewId,
+): Promise<DrawingPathSet> {
+  if (pieces.length === 0) {
+    throw new DrawingError(
+      'Orthographic drawing needs at least one visible part. Restore a part and try again.',
+    )
+  }
+  const view = orthographicView(viewId)
+  const projection = await projectScenePiecesAlongAxis(
+    pieces,
+    view.projectionAxis,
+    retainedCorePieces,
+  )
+  return orthographicPathSet(projection, viewId)
+}
+
 function finitePositive(value: number, label: string): number {
   if (!Number.isFinite(value) || value <= 0) {
-    throw new SectionDrawingError(`${label} must be a positive finite number.`)
+    throw new DrawingError(`${label} must be a positive finite number.`)
   }
   return value
 }
@@ -147,14 +227,23 @@ function xml(value: string): string {
     .replaceAll("'", '&apos;')
 }
 
+function drawingDescription(pathSet: DrawingPathSet): string {
+  if (pathSet.view.kind === 'section') {
+    return `section ${pathSet.view.planeAxis.toUpperCase()}=${coordinate(pathSet.view.planeOffsetMm)}mm`
+  }
+  return pathSet.view.id === 'plan'
+    ? 'orthographic plan'
+    : `orthographic elevation ${pathSet.view.projectionAxis.toUpperCase()}`
+}
+
 /** Serialize one line-only, tightly bounded paper-scaled SVG drawing. */
-export function encodeSectionSvg(
+export function encodeDrawingSvg(
   pathSet: DrawingPathSet,
-  options: SectionSvgOptions,
+  options: DrawingSvgOptions,
 ): string {
   if (pathSet.paths.length === 0) {
-    throw new SectionDrawingError(
-      'SVG export stopped: the section plane does not intersect the finished solid.',
+    throw new DrawingError(
+      'SVG export stopped: the drawing view contains no finished-solid outline.',
     )
   }
   const denominator = finitePositive(
@@ -176,38 +265,48 @@ export function encodeSectionSvg(
   const viewMinX = pathSet.bounds.min[0] - modelMargin
   const viewMinY = -pathSet.bounds.max[1] - modelMargin
   const strokeWidth = strokeWidthMm * denominator
-  const pathMarkup = pathSet.paths.map((path) => {
-    const [first, ...rest] = path.points
-    const commands = [
-      `M ${coordinate(first[0])} ${coordinate(-first[1])}`,
-      ...rest.map(([x, y]) => `L ${coordinate(x)} ${coordinate(-y)}`),
-      path.closed ? 'Z' : '',
-    ].filter(Boolean).join(' ')
-    return `    <path id="${xml(path.id)}" data-role="${path.role}" d="${commands}" />`
+  const roles = [...new Set(pathSet.paths.map((path) => path.role))]
+  const layerMarkup = roles.map((role) => {
+    const pathMarkup = pathSet.paths
+      .filter((path) => path.role === role)
+      .map((path) => {
+        const [first, ...rest] = path.points
+        const commands = [
+          `M ${coordinate(first[0])} ${coordinate(-first[1])}`,
+          ...rest.map(([x, y]) => `L ${coordinate(x)} ${coordinate(-y)}`),
+          path.closed ? 'Z' : '',
+        ].filter(Boolean).join(' ')
+        return `    <path id="${xml(path.id)}" data-role="${path.role}" d="${commands}" />`
+      }).join('\n')
+    return [
+      `  <g id="layer-${role}" data-layer="${role}" fill="none" stroke="#000000" stroke-width="${coordinate(strokeWidth)}" stroke-linecap="square" stroke-linejoin="miter">`,
+      pathMarkup,
+      '  </g>',
+    ].join('\n')
   }).join('\n')
-  const axisLabel = `${pathSet.view.planeAxis.toUpperCase()}=${coordinate(pathSet.view.planeOffsetMm)}mm`
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<svg xmlns="http://www.w3.org/2000/svg" width="${coordinate(paperWidth)}mm" height="${coordinate(paperHeight)}mm" viewBox="${coordinate(viewMinX)} ${coordinate(viewMinY)} ${coordinate(viewWidth)} ${coordinate(viewHeight)}" data-format="${DRAWING_PATH_SET_FORMAT}" data-format-version="${DRAWING_PATH_SET_VERSION}" data-units="mm" data-paper-scale="1:${coordinate(denominator)}">`,
     `  <title>${xml(options.title)}</title>`,
-    `  <desc>RAAKA section ${axisLabel}; geometry is stored in physical millimetres.</desc>`,
-    `  <g id="layer-section" data-layer="section" fill="none" stroke="#000000" stroke-width="${coordinate(strokeWidth)}" stroke-linecap="square" stroke-linejoin="miter">`,
-    pathMarkup,
-    '  </g>',
+    `  <desc>RAAKA ${drawingDescription(pathSet)}; geometry is stored in physical millimetres.</desc>`,
+    layerMarkup,
     '</svg>',
     '',
   ].join('\n')
 }
 
-export function sectionSvgFilename(
+export function drawingSvgFilename(
   seed: number,
   modelScaleDenominator: number,
-  axis: SectionDrawingAxis,
-  planeOffsetMm: number,
+  view: DrawingPathSet['view'],
   paperScaleDenominator: number,
 ): string {
-  const offset = Math.round(planeOffsetMm)
-  const signedOffset = offset < 0 ? `minus-${Math.abs(offset)}` : `plus-${offset}`
-  return `raaka-piloti-${String(seed).padStart(4, '0')}-model-1to${modelScaleDenominator}-section-${axis}-${signedOffset}mm-paper-1to${paperScaleDenominator}.svg`
+  let viewName: string = view.id
+  if (view.kind === 'section') {
+    const offset = Math.round(view.planeOffsetMm)
+    const signedOffset = offset < 0 ? `minus-${Math.abs(offset)}` : `plus-${offset}`
+    viewName = `${view.id}-${signedOffset}mm`
+  }
+  return `raaka-piloti-${String(seed).padStart(4, '0')}-model-1to${modelScaleDenominator}-${viewName}-paper-1to${paperScaleDenominator}.svg`
 }

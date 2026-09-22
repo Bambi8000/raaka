@@ -1,16 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  createOrthographicPathSet,
   createSectionPathSet,
-  encodeSectionSvg,
-  sectionSvgFilename,
+  drawingSvgFilename,
+  encodeDrawingSvg,
   type DrawingPathSet,
+  type DrawingViewId,
+  type OrthographicDrawingViewId,
   type SectionDrawingAxis,
-} from '../core/sectionDrawing'
+} from '../core/drawing'
 import type { Bounds3, ScenePiece } from '../core/types'
 
 const PAPER_SCALES = [1, 2, 5, 10, 20] as const
+const DRAWING_VIEWS: readonly {
+  readonly id: DrawingViewId
+  readonly label: string
+  readonly description: string
+}[] = [
+  { id: 'plan', label: 'PLAN', description: 'TOP' },
+  { id: 'elevation-x', label: 'ELEV X', description: 'LOOK X' },
+  { id: 'elevation-y', label: 'ELEV Y', description: 'LOOK Y' },
+  { id: 'section-x', label: 'SECTION X', description: 'CUT X' },
+  { id: 'section-y', label: 'SECTION Y', description: 'CUT Y' },
+]
 
-interface SectionWorkspaceProps {
+interface DrawingWorkspaceProps {
   readonly pieces: readonly ScenePiece[]
   readonly retainedCorePieces: readonly ScenePiece[]
   readonly bounds: Bounds3
@@ -26,16 +40,16 @@ type DrawingState =
       readonly drawing: DrawingPathSet
       readonly pieces: readonly ScenePiece[]
       readonly retainedCorePieces: readonly ScenePiece[]
-      readonly axis: SectionDrawingAxis
-      readonly planeOffsetMm: number
+      readonly viewId: DrawingViewId
+      readonly planeOffsetMm?: number
     }
   | {
       readonly status: 'error'
       readonly message: string
       readonly pieces: readonly ScenePiece[]
       readonly retainedCorePieces: readonly ScenePiece[]
-      readonly axis: SectionDrawingAxis
-      readonly planeOffsetMm: number
+      readonly viewId: DrawingViewId
+      readonly planeOffsetMm?: number
     }
 
 function centre(minimum: number, maximum: number): number {
@@ -56,47 +70,85 @@ function previewPath(points: readonly (readonly [number, number])[]): string {
   ).join(' ') + ' Z'
 }
 
-export function SectionWorkspace({
+function sectionAxis(viewId: DrawingViewId): SectionDrawingAxis | undefined {
+  if (viewId === 'section-x') return 'x'
+  if (viewId === 'section-y') return 'y'
+  return undefined
+}
+
+function drawingTitle(viewId: DrawingViewId): string {
+  if (viewId === 'plan') return 'PLAN'
+  if (viewId === 'elevation-x') return 'ELEVATION X'
+  if (viewId === 'elevation-y') return 'ELEVATION Y'
+  const axis = sectionAxis(viewId)
+  return `SECTION ${axis?.toUpperCase()}–${axis?.toUpperCase()}`
+}
+
+function drawingAxes(viewId: DrawingViewId): string {
+  if (viewId === 'plan') return 'HORIZONTAL X · VERTICAL Y · TOP PROJECTION · SILHOUETTE ONLY'
+  if (viewId === 'elevation-x') return 'HORIZONTAL Y · VERTICAL Z · LOOK ALONG X · SILHOUETTE ONLY'
+  if (viewId === 'elevation-y') return 'HORIZONTAL X · VERTICAL Z · LOOK ALONG Y · SILHOUETTE ONLY'
+  const axis = sectionAxis(viewId)
+  return `HORIZONTAL ${axis === 'x' ? 'Y' : 'X'} · VERTICAL Z · FINISHED SOLID`
+}
+
+function pathLabel(drawing: DrawingPathSet): string {
+  const count = drawing.paths.length
+  const role = drawing.paths[0]?.role.toUpperCase() ?? 'DRAWING'
+  return `${count} ${role} PATH${count === 1 ? '' : 'S'}`
+}
+
+export function DrawingWorkspace({
   pieces,
   retainedCorePieces,
   bounds,
   seed,
   modelScaleDenominator,
   onMessage,
-}: SectionWorkspaceProps) {
-  const [axis, setAxis] = useState<SectionDrawingAxis>('x')
+}: DrawingWorkspaceProps) {
+  const [viewId, setViewId] = useState<DrawingViewId>('section-x')
   const [offsets, setOffsets] = useState(() => ({
     x: centre(bounds.min[0], bounds.max[0]),
     y: centre(bounds.min[1], bounds.max[1]),
   }))
   const [paperScaleDenominator, setPaperScaleDenominator] = useState(10)
   const [drawingState, setDrawingState] = useState<DrawingState>({ status: 'loading' })
-  const axisIndex = axis === 'x' ? 0 : 1
+  const activeSectionAxis = sectionAxis(viewId)
+  const axisIndex = activeSectionAxis === 'y' ? 1 : 0
   const minimum = Math.ceil(bounds.min[axisIndex])
   const maximum = Math.floor(bounds.max[axisIndex])
-  const planeOffsetMm = clamp(offsets[axis], minimum, maximum)
+  const planeOffsetMm = activeSectionAxis
+    ? clamp(offsets[activeSectionAxis], minimum, maximum)
+    : undefined
 
   useEffect(() => {
     let cancelled = false
     const timer = window.setTimeout(() => {
-      void createSectionPathSet(
-        pieces,
-        retainedCorePieces,
-        axis,
-        planeOffsetMm,
-      ).then(
+      const drawingPromise = activeSectionAxis && planeOffsetMm !== undefined
+        ? createSectionPathSet(
+            pieces,
+            retainedCorePieces,
+            activeSectionAxis,
+            planeOffsetMm,
+          )
+        : createOrthographicPathSet(
+            pieces,
+            retainedCorePieces,
+            viewId as OrthographicDrawingViewId,
+          )
+      void drawingPromise.then(
         (drawing) => {
           if (!cancelled) setDrawingState({
-            status: 'ready', drawing, pieces, retainedCorePieces, axis, planeOffsetMm,
+            status: 'ready', drawing, pieces, retainedCorePieces, viewId, planeOffsetMm,
           })
         },
         (error: unknown) => {
           if (!cancelled) setDrawingState({
             status: 'error',
-            message: error instanceof Error ? error.message : 'Unknown section error.',
+            message: error instanceof Error ? error.message : 'Unknown drawing error.',
             pieces,
             retainedCorePieces,
-            axis,
+            viewId,
             planeOffsetMm,
           })
         },
@@ -106,17 +158,17 @@ export function SectionWorkspace({
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [axis, pieces, planeOffsetMm, retainedCorePieces])
+  }, [activeSectionAxis, pieces, planeOffsetMm, retainedCorePieces, viewId])
 
   const currentDrawingState = useMemo((): DrawingState =>
     drawingState.status !== 'loading'
       && drawingState.pieces === pieces
       && drawingState.retainedCorePieces === retainedCorePieces
-      && drawingState.axis === axis
+      && drawingState.viewId === viewId
       && drawingState.planeOffsetMm === planeOffsetMm
       ? drawingState
       : { status: 'loading' },
-  [axis, drawingState, pieces, planeOffsetMm, retainedCorePieces])
+  [drawingState, pieces, planeOffsetMm, retainedCorePieces, viewId])
 
   const preview = useMemo(() => {
     if (currentDrawingState.status !== 'ready' || currentDrawingState.drawing.paths.length === 0) {
@@ -138,25 +190,24 @@ export function SectionWorkspace({
   }, [currentDrawingState])
 
   const updatePlane = (value: number) => {
-    if (!Number.isFinite(value)) return
+    if (!activeSectionAxis || !Number.isFinite(value)) return
     setOffsets((current) => ({
       ...current,
-      [axis]: clamp(value, minimum, maximum),
+      [activeSectionAxis]: clamp(value, minimum, maximum),
     }))
   }
 
   const exportSvg = () => {
     if (currentDrawingState.status !== 'ready') return
     try {
-      const filename = sectionSvgFilename(
+      const filename = drawingSvgFilename(
         seed,
         modelScaleDenominator,
-        axis,
-        planeOffsetMm,
+        currentDrawingState.drawing.view,
         paperScaleDenominator,
       )
-      const svg = encodeSectionSvg(currentDrawingState.drawing, {
-        title: `RAAKA PILOTI ${seed} · SECTION ${axis.toUpperCase()}=${format(planeOffsetMm, 1)} MM · PAPER 1:${paperScaleDenominator}`,
+      const svg = encodeDrawingSvg(currentDrawingState.drawing, {
+        title: `RAAKA PILOTI ${seed} · ${drawingTitle(viewId)} · PAPER 1:${paperScaleDenominator}`,
         paperScaleDenominator,
       })
       const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
@@ -167,66 +218,69 @@ export function SectionWorkspace({
       window.setTimeout(() => URL.revokeObjectURL(url), 0)
       onMessage(
         'info',
-        `Exported ${filename}: ${currentDrawingState.drawing.paths.length} section paths · ${format(currentDrawingState.drawing.areaMm2, 1)} mm² cut area.`,
+        `Exported ${filename}: ${pathLabel(currentDrawingState.drawing).toLowerCase()} · ${format(currentDrawingState.drawing.areaMm2, 1)} mm² ${currentDrawingState.drawing.view.kind === 'section' ? 'cut' : 'projected'} area.`,
       )
     } catch (error) {
       onMessage(
         'error',
-        `Section export failed: ${error instanceof Error ? error.message : 'Unknown SVG error.'}`,
+        `Drawing export failed: ${error instanceof Error ? error.message : 'Unknown SVG error.'}`,
       )
     }
   }
 
   const drawing = currentDrawingState.status === 'ready' ? currentDrawingState.drawing : undefined
-  const hasSection = (drawing?.paths.length ?? 0) > 0
-  const horizontalAxis = axis === 'x' ? 'Y' : 'X'
+  const hasDrawing = (drawing?.paths.length ?? 0) > 0
+  const viewTitle = drawingTitle(viewId)
 
   return (
     <div className="section-workspace">
       <header className="section-toolbar">
         <div className="section-title">
           <span>DRAWING 01</span>
-          <strong>SECTION {axis.toUpperCase()}–{axis.toUpperCase()}</strong>
-          <small>HORIZONTAL {horizontalAxis} · VERTICAL Z · FINISHED SOLID</small>
+          <strong>{viewTitle}</strong>
+          <small>{drawingAxes(viewId)}</small>
         </div>
-        <div className="section-axis-switch" aria-label="Section plane axis">
-          {(['x', 'y'] as const).map((choice) => (
+        <div className="drawing-view-switch" aria-label="Drawing view">
+          {DRAWING_VIEWS.map((choice) => (
             <button
               type="button"
-              key={choice}
-              className={axis === choice ? 'is-active' : ''}
-              aria-pressed={axis === choice}
-              onClick={() => setAxis(choice)}
+              key={choice.id}
+              className={viewId === choice.id ? 'is-active' : ''}
+              aria-pressed={viewId === choice.id}
+              onClick={() => setViewId(choice.id)}
             >
-              {choice.toUpperCase()} PLANE
+              <span>{choice.label}</span>
+              <small>{choice.description}</small>
             </button>
           ))}
         </div>
-        <label className="section-plane-field">
-          <span>PLANE POSITION</span>
-          <span className="section-numeric-entry">
+        {activeSectionAxis && planeOffsetMm !== undefined ? (
+          <label className="section-plane-field">
+            <span>PLANE POSITION</span>
+            <span className="section-numeric-entry">
+              <input
+                type="number"
+                aria-label="Section plane position numeric value"
+                min={minimum}
+                max={maximum}
+                step={1}
+                value={planeOffsetMm}
+                onChange={(event) => updatePlane(event.currentTarget.valueAsNumber)}
+              />
+              <small>MM</small>
+            </span>
             <input
-              type="number"
-              aria-label="Section plane position numeric value"
+              type="range"
+              aria-label="Section plane position"
               min={minimum}
               max={maximum}
               step={1}
               value={planeOffsetMm}
+              disabled={minimum === maximum}
               onChange={(event) => updatePlane(event.currentTarget.valueAsNumber)}
             />
-            <small>MM</small>
-          </span>
-          <input
-            type="range"
-            aria-label="Section plane position"
-            min={minimum}
-            max={maximum}
-            step={1}
-            value={planeOffsetMm}
-            disabled={minimum === maximum}
-            onChange={(event) => updatePlane(event.currentTarget.valueAsNumber)}
-          />
-        </label>
+          </label>
+        ) : null}
         <div className="section-paper-scale">
           <span>PAPER SCALE</span>
           <div>
@@ -246,7 +300,7 @@ export function SectionWorkspace({
         <button
           type="button"
           className="section-export"
-          disabled={currentDrawingState.status !== 'ready' || !hasSection}
+          disabled={currentDrawingState.status !== 'ready' || !hasDrawing}
           onClick={exportSvg}
         >
           EXPORT
@@ -258,11 +312,11 @@ export function SectionWorkspace({
         {preview ? (
           <svg
             role="img"
-            aria-label={`Section ${axis.toUpperCase()} at ${format(planeOffsetMm, 1)} millimetres`}
+            aria-label={`${viewTitle}${planeOffsetMm === undefined ? '' : ` at ${format(planeOffsetMm, 1)} millimetres`}`}
             viewBox={preview.viewBox}
             preserveAspectRatio="xMidYMid meet"
           >
-            <g className="section-preview-lines">
+            <g className="drawing-preview-lines">
               {preview.paths.map((path) => (
                 <path key={path.id} d={previewPath(path.points)} />
               ))}
@@ -272,25 +326,35 @@ export function SectionWorkspace({
           <div className={`section-state ${currentDrawingState.status === 'error' ? 'is-error' : ''}`}>
             <strong>
               {currentDrawingState.status === 'loading'
-                ? 'BUILDING SECTION…'
+                ? 'BUILDING DRAWING…'
                 : currentDrawingState.status === 'error'
-                  ? 'SECTION UNAVAILABLE'
-                  : 'NO INTERSECTION'}
+                  ? 'DRAWING UNAVAILABLE'
+                  : 'NO OUTLINE'}
             </strong>
             <span>
               {currentDrawingState.status === 'error'
                 ? currentDrawingState.message
                 : currentDrawingState.status === 'ready'
-                  ? `The ${axis.toUpperCase()}=${format(planeOffsetMm, 1)} mm plane does not cross the finished solid.`
-                  : 'Resolving union and retained-core subtraction.'}
+                  ? activeSectionAxis && planeOffsetMm !== undefined
+                    ? `The ${activeSectionAxis.toUpperCase()}=${format(planeOffsetMm, 1)} mm plane does not cross the finished solid.`
+                    : 'The finished solid has no outline in this view.'
+                  : 'Resolving finished-solid union and projection.'}
             </span>
           </div>
         )}
         <div className="section-sheet-meta">
-          <span>PLANE {axis.toUpperCase()}={format(planeOffsetMm, 1)} MM</span>
+          <span>
+            {activeSectionAxis && planeOffsetMm !== undefined
+              ? `PLANE ${activeSectionAxis.toUpperCase()}=${format(planeOffsetMm, 1)} MM`
+              : viewTitle}
+          </span>
           <span>MODEL 1:{modelScaleDenominator}</span>
           <span>PAPER 1:{paperScaleDenominator}</span>
-          <span>{drawing ? `${drawing.paths.length} PATHS · ${format(drawing.areaMm2, 1)} MM²` : 'MEASURING'}</span>
+          <span>
+            {drawing
+              ? `${pathLabel(drawing)} · ${format(drawing.areaMm2, 1)} MM² ${drawing.view.kind === 'section' ? 'CUT' : 'PROJECTED'}`
+              : 'MEASURING'}
+          </span>
         </div>
       </div>
     </div>

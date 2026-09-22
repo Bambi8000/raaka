@@ -54,6 +54,8 @@ Selection-only material updates, on-demand rendering, complete viewport cleanup
 and a retryable WebGL failure state are implemented in 0.1.33.
 Measured X/Y section drawings and line-only scaled SVG export are implemented
 in 0.1.34.
+Measured plan and X/Y elevation silhouettes, sharing the same semantic drawing
+pipeline, are implemented in 0.1.35.
 
 ## 0.1 — foundation
 
@@ -103,6 +105,8 @@ Version 0.1.33 closes the first viewport resource-lifecycle audit item without
 changing model truth or project data.
 Version 0.1.34 begins the drawing pipeline with vertical finished-solid
 sections, the millimetre path-set contract and paper-scaled section SVGs.
+Version 0.1.35 adds finished-solid plan and X/Y elevation silhouettes without
+claiming unimplemented visible creases or hidden lines.
 
 ## 0.1.1 — correct the baseline
 
@@ -895,6 +899,37 @@ refusal and visible drawing controls. Browser inspection covered X and Y
 planes, numeric plane edits, the compact layout and a retained core changing
 one outer path into outer and inner section paths.
 
+## 0.1.35 — orthographic outline drawings
+
+- [x] project the finished physical solid along world Z, X or Y
+- [x] provide a measured top plan and X/Y elevation in the drawing workspace
+- [x] union overlapping pieces before projection so shared and internal edges
+  do not become duplicate outline strokes
+- [x] subtract retained-core geometry before projection so a fully enclosed
+  core remains hidden from the exterior outline
+- [x] map plan to X/Y, X elevation to Y/Z and Y elevation to X/Z in explicit
+  physical-millimetre path-set coordinates
+- [x] add semantic `outline` paths beside the existing `section` role
+- [x] share paper-scale preview, page bounds, filename and line-only SVG export
+  across orthographic and section drawings
+- [x] identify plan and elevation output as silhouette-only rather than
+  implying unimplemented visible creases or hidden lines
+- [x] preserve the selected drawing view when moving between 3D and drawings
+- [x] retain Piloti recipe version 21 and recovery v4 because drawing workspace
+  state does not change the model or portable project
+
+Done when the plan and both elevations derive their bounds and net projected
+area from the same final boolean solid used by STL and sections, overlapping
+pieces produce one exterior outline, an enclosed retained core does not appear,
+and each SVG reports its semantic outline layer and selected paper scale.
+
+Verification: 513 tests plus lint, strict TypeScript and production build.
+Coverage includes all three axis mappings, measured projection bounds and area,
+overlap union, enclosed-core occlusion, semantic view metadata, outline SVG
+layers and filenames, plus the existing section contract. Browser inspection
+covered plan and both elevations in the compact layout and confirmed that the
+drawing workspace remains usable when WebGL is unavailable.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -951,13 +986,16 @@ Moved ahead of the complete recipe set: vector drawings are a core outcome,
 and one recipe is enough to validate that workflow. The hidden-line spike can
 begin during 0.2; finished drawing output must agree with the final solid.
 
-- [ ] orthographic plans and elevations
+- [x] orthographic plan and X/Y elevation silhouette views
 - [x] vertical X/Y sections at authored physical-model planes
-- [ ] silhouette and crease extraction with no triangulation diagonals
+- [x] silhouette extraction with no triangulation diagonals
+- [ ] visible crease extraction with no triangulation diagonals
 - [ ] hidden-line removal spike, including overlapping coplanar pieces
-- [ ] semantic drawing roles beyond the implemented `section` role
-- [x] documented physical-millimetre path-set contract for section output
-- [x] line-only section SVG with derived page size, paper scale and named layer
+- [x] semantic drawing roles for `section` and `outline`
+- [x] documented physical-millimetre path-set contract for section and
+  orthographic outline output
+- [x] line-only section and outline SVG with derived page size, paper scale and
+  named semantic layers
 - [ ] duplicate-stroke checks, clear hidden-line policy and stroke-text policy
 - [ ] Muusia adapter and real path-set/scale verification
 - [ ] axonometric drawing after hidden-line correctness is established

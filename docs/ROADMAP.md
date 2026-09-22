@@ -52,6 +52,8 @@ A shared parameter schema and executable recipe registry are implemented in
 0.1.32.
 Selection-only material updates, on-demand rendering, complete viewport cleanup
 and a retryable WebGL failure state are implemented in 0.1.33.
+Measured X/Y section drawings and line-only scaled SVG export are implemented
+in 0.1.34.
 
 ## 0.1 — foundation
 
@@ -99,6 +101,8 @@ Version 0.1.32 binds Piloti defaults, schema, normalization and generation into
 the same recipe contract future families will implement.
 Version 0.1.33 closes the first viewport resource-lifecycle audit item without
 changing model truth or project data.
+Version 0.1.34 begins the drawing pipeline with vertical finished-solid
+sections, the millimetre path-set contract and paper-scaled section SVGs.
 
 ## 0.1.1 — correct the baseline
 
@@ -862,6 +866,35 @@ and repeated Retry without losing project controls. Normal WebGL appearance
 requires owner inspection on the published build because the inspection
 browser could not allocate a graphics context.
 
+## 0.1.34 — first measured section drawing
+
+- [x] slice the finished physical solid on authored world X or Y planes
+- [x] resolve overlapping pieces as one union before drawing the cut boundary
+- [x] subtract retained upper-core geometry from both section area and paths
+- [x] keep path-set coordinates in full physical millimetres with explicit
+  Cartesian horizontal/Z axes and a semantic `section` role
+- [x] preview the measured section without requiring a working WebGL context
+- [x] provide exact plane-position entry plus a bounded slider
+- [x] keep paper scale independent from model scale with 1:1, 1:2, 1:5, 1:10
+  and 1:20 choices
+- [x] export tightly bounded, line-only SVG with a named section layer,
+  millimetre page dimensions and paper-scale metadata
+- [x] refuse a blank SVG when the authored plane does not intersect the solid
+- [x] retain Piloti recipe version 21 and recovery v4 because drawing workspace
+  state does not change the model or portable project
+
+Done when the same scaled Piloti pieces used by the viewport and STL produce
+measured X/Z or Y/Z paths, a retained core creates its inner boundary, and the
+SVG's paper dimensions equal physical drawing bounds divided by the selected
+paper scale plus its fixed paper margin.
+
+Verification: 504 tests plus lint, strict TypeScript and production build.
+Coverage includes both vertical axis transforms, finished-solid core
+subtraction, semantic path metadata, paper size, SVG layer identity, blank-cut
+refusal and visible drawing controls. Browser inspection covered X and Y
+planes, numeric plane edits, the compact layout and a retained core changing
+one outer path into outer and inner section paths.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -919,11 +952,12 @@ and one recipe is enough to validate that workflow. The hidden-line spike can
 begin during 0.2; finished drawing output must agree with the final solid.
 
 - [ ] orthographic plans and elevations
-- [ ] sections at authored planes
+- [x] vertical X/Y sections at authored physical-model planes
 - [ ] silhouette and crease extraction with no triangulation diagonals
 - [ ] hidden-line removal spike, including overlapping coplanar pieces
-- [ ] semantic drawing roles and a documented millimetre path-set contract
-- [ ] line-only SVG export with page size, scale and named drawing layers
+- [ ] semantic drawing roles beyond the implemented `section` role
+- [x] documented physical-millimetre path-set contract for section output
+- [x] line-only section SVG with derived page size, paper scale and named layer
 - [ ] duplicate-stroke checks, clear hidden-line policy and stroke-text policy
 - [ ] Muusia adapter and real path-set/scale verification
 - [ ] axonometric drawing after hidden-line correctness is established

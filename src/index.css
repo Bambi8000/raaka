@@ -202,6 +202,21 @@ input:focus-visible {
   font-size: 7px;
 }
 
+.button--drawing {
+  box-shadow: inset 0 -4px 0 var(--blue);
+}
+
+.button--drawing.is-active {
+  background: var(--blue);
+  color: var(--accent-on-colour);
+}
+
+.button--drawing span {
+  display: block;
+  margin-top: 2px;
+  font-size: 7px;
+}
+
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
@@ -591,9 +606,264 @@ input:focus-visible {
 }
 
 .workspace {
+  position: relative;
   grid-area: work;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.workspace-layer.is-hidden {
+  display: none;
+}
+
+.section-workspace {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  background: var(--viewport-background);
+}
+
+.section-toolbar {
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.section-title {
+  display: grid;
+  flex: 1 1 190px;
+  align-content: center;
+  gap: 2px;
+  min-height: 62px;
+  padding: 9px 12px;
+  border-right: 1px solid var(--ink);
+}
+
+.section-title > span,
+.section-title small,
+.section-plane-field > span:first-child,
+.section-paper-scale > span {
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.section-title strong {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.section-axis-switch {
+  display: grid;
+  flex: 0 0 118px;
+  grid-template-columns: 1fr 1fr;
+  border-right: 1px solid var(--ink);
+}
+
+.section-axis-switch button,
+.section-paper-scale button {
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.section-axis-switch button:first-child,
+.section-paper-scale button:first-child {
+  border-left: 0;
+}
+
+.section-axis-switch button.is-active,
+.section-paper-scale button.is-active {
+  background: var(--yellow);
+  color: var(--accent-ink);
+}
+
+.section-plane-field {
+  display: grid;
+  flex: 1 1 190px;
+  grid-template-columns: 1fr auto;
+  align-content: center;
+  gap: 5px 10px;
+  min-height: 62px;
+  padding: 8px 11px;
+  border-right: 1px solid var(--ink);
+}
+
+.section-plane-field > input[type="range"] {
+  grid-column: 1 / -1;
+}
+
+.section-numeric-entry {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.section-numeric-entry:focus-within {
+  border-color: var(--yellow);
+}
+
+.section-numeric-entry input {
+  width: 67px;
+  padding: 4px 5px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  text-align: right;
+}
+
+.section-numeric-entry small {
+  padding-right: 6px;
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.section-paper-scale {
+  display: grid;
+  flex: 1 1 210px;
+  gap: 6px;
+  align-content: center;
+  min-height: 62px;
+  padding: 8px 11px;
+  border-right: 1px solid var(--ink);
+}
+
+.section-paper-scale > div {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  min-height: 26px;
+  border: 1px solid var(--line);
+}
+
+.section-export {
+  flex: 0 0 122px;
+  min-height: 62px;
+  border: 0;
+  background: var(--blue);
+  color: var(--accent-on-colour);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.section-export span {
+  display: block;
+  margin-top: 3px;
+  font-size: 7px;
+}
+
+.section-export:disabled {
+  background: var(--panel);
+  color: var(--disabled);
+  cursor: not-allowed;
+}
+
+.section-sheet {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  margin: clamp(14px, 3vw, 38px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--line) 28%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 28%, transparent) 1px, transparent 1px);
+  background-size: 20px 20px;
+  box-shadow: 8px 8px 0 color-mix(in srgb, var(--blue) 35%, transparent);
+}
+
+.section-sheet svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.section-preview-lines {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+.section-preview-lines path {
+  vector-effect: non-scaling-stroke;
+}
+
+.section-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  gap: 6px;
+  width: min(360px, calc(100% - 36px));
+  padding: 17px;
+  border: 1px solid var(--blue);
+  background: var(--paper);
+  box-shadow: inset 5px 0 0 var(--blue);
+  transform: translate(-50%, -50%);
+}
+
+.section-state.is-error {
+  border-color: var(--pink);
+  box-shadow: inset 5px 0 0 var(--pink);
+}
+
+.section-state strong {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.section-state span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.section-sheet-meta {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  border: 1px solid var(--line);
+  background: var(--overlay);
+  backdrop-filter: blur(8px);
+}
+
+.section-sheet-meta span {
+  padding: 6px 8px;
+  border-left: 1px solid var(--line);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.section-sheet-meta span:first-child {
+  border-left: 0;
 }
 
 .viewport-shell {
@@ -1522,6 +1792,31 @@ input[type="range"] {
 
   .topbar-actions .button--quiet {
     display: none;
+  }
+
+  .brand-block {
+    gap: 0;
+    padding: 0 8px;
+  }
+
+  .brand-mark {
+    display: none;
+  }
+
+  .brand-block strong {
+    font-size: 18px;
+    letter-spacing: -1px;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+  }
+
+  .topbar-actions .button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 7px;
+    font-size: 8px;
   }
 
   .study-toolbar {

@@ -9,6 +9,7 @@ import {
 import { Viewport } from './components/Viewport'
 import { ObjectList } from './components/ObjectList'
 import { ControlGroup, InspectorControls, RangeField } from './components/InspectorControls'
+import { SectionWorkspace } from './components/SectionWorkspace'
 import { boundsSize } from './core/bounds'
 import { MAX_SEED } from './core/generator'
 import {
@@ -77,6 +78,7 @@ interface Notice {
 
 type ProjectOrigin = 'DEFAULT' | 'RECOVERED' | 'SAVED'
 type SupportEditScope = 'shared' | 'selected'
+type WorkspaceMode = 'model' | 'section'
 
 interface PilotiStudyState {
   readonly parameters: PilotiParameters
@@ -235,6 +237,8 @@ export default function App() {
   const [supportEditScope, setSupportEditScope] =
     useState<SupportEditScope>('shared')
   const [showAllControls, setShowAllControls] = useState(false)
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('model')
+  const [sectionWorkspaceOpened, setSectionWorkspaceOpened] = useState(false)
   const [baselineJson, setBaselineJson] = useState(initialSession.baseline)
   const [projectOrigin, setProjectOrigin] = useState<ProjectOrigin>(
     initialSession.origin,
@@ -1075,6 +1079,19 @@ export default function App() {
           </button>
           <button
             type="button"
+            className={`button button--drawing ${workspaceMode === 'section' ? 'is-active' : ''}`}
+            aria-pressed={workspaceMode === 'section'}
+            onClick={() => {
+              if (workspaceMode === 'model') setSectionWorkspaceOpened(true)
+              setWorkspaceMode(workspaceMode === 'model' ? 'section' : 'model')
+            }}
+            title="Open measured vertical sections through the finished physical solid."
+          >
+            {workspaceMode === 'section' ? '3D VIEW' : 'SECTION'}
+            <span>{workspaceMode === 'section' ? 'MODEL' : 'DRAWING'}</span>
+          </button>
+          <button
+            type="button"
             className="button button--primary"
             aria-label="Export finished solid as binary STL in millimetres"
             disabled={exportPending}
@@ -1182,19 +1199,33 @@ export default function App() {
       </aside>
 
       <section className="workspace">
-        <Viewport
-          study={study}
-          modelScale={modelScale}
-          uiTheme={uiTheme}
-          selectedPieceId={selectedPieceId}
-          fuseSelectionPieceIds={validFuseSelectionPieceIds}
-          translationGizmo={translationGizmo}
-          onSelect={selectPiece}
-          onTranslationStart={beginGizmoTranslation}
-          onTranslationChange={applyGizmoTranslation}
-          onTranslationEnd={endGizmoTranslation}
-          onTranslationCancel={cancelGizmoTranslation}
-        />
+        <div className={`workspace-layer ${workspaceMode !== 'model' ? 'is-hidden' : ''}`}>
+          <Viewport
+            study={study}
+            modelScale={modelScale}
+            uiTheme={uiTheme}
+            selectedPieceId={selectedPieceId}
+            fuseSelectionPieceIds={validFuseSelectionPieceIds}
+            translationGizmo={translationGizmo}
+            onSelect={selectPiece}
+            onTranslationStart={beginGizmoTranslation}
+            onTranslationChange={applyGizmoTranslation}
+            onTranslationEnd={endGizmoTranslation}
+            onTranslationCancel={cancelGizmoTranslation}
+          />
+        </div>
+        {sectionWorkspaceOpened ? (
+          <div className={`workspace-layer ${workspaceMode !== 'section' ? 'is-hidden' : ''}`}>
+            <SectionWorkspace
+              pieces={study.pieces}
+              retainedCorePieces={study.retainedCore.pieces}
+              bounds={study.bounds}
+              seed={parameters.seed}
+              modelScaleDenominator={modelScaleDenominator}
+              onMessage={(kind, text) => setNotice({ kind, text })}
+            />
+          </div>
+        ) : null}
       </section>
 
       <aside className="right-panel panel">
@@ -2611,7 +2642,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.33 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.34 / LOCAL</span>
       </footer>
     </main>
   )

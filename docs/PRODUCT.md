@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.32, the
+This document describes the product direction. In version 0.1.33, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -21,6 +21,9 @@ Piloti is now registered through the same executable recipe contract future
 families will use. That contract binds defaults, a complete typed parameter
 schema, normalization and generation; planned recipe cards remain definitions,
 not claims that an unavailable generator exists.
+The 3D viewport now changes selection materials without replacing geometry,
+renders on demand, releases its owned graphics resources and keeps project work
+reachable behind a clear retryable state when WebGL cannot run.
 The first watertight STL output and retained lightweight upper core are
 implemented. Live mass-centre projection and support-polygon feedback are also
 implemented, and concrete/core density assumptions are editable; drawings,

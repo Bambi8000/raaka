@@ -2611,7 +2611,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.32 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.33 / LOCAL</span>
       </footer>
     </main>
   )

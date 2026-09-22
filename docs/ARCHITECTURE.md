@@ -769,6 +769,32 @@ real handoff; it does not validate foam placement or casting in material.
 
 ## Interface themes
 
+### Viewport lifecycle
+
+Version 0.1.33 gives each generated piece one viewport visual record containing
+its semantic source, mesh and crease edges. Study changes still replace the
+analytic render geometry, but selection, Fuse selection and theme changes call
+`applyPieceAppearance` on the existing records. That path changes material
+colour and retained-core opacity only; mesh and edge geometry identity stays
+fixed. The core edge now follows the same blue/yellow state as its translucent
+surface instead of retaining the colour captured at construction.
+
+The viewport no longer owns a perpetual animation loop. Resize, camera
+controls, model replacement, material changes, gizmo interaction and explicit
+Fit/Home actions invalidate one frame. Orbit damping requests further frames
+only while `OrbitControls.update()` reports movement. A lost graphics context
+pauses requests until restoration or an explicit retry.
+
+`viewportLifecycle.ts` owns renderer startup and resource disposal. Startup
+exceptions become a visible **3D preview unavailable** state; context loss uses
+the same retry path without taking project, save or inspector controls away.
+Cleanup removes listeners and releases model/overlay geometry and materials,
+the current grid and ground, transform/orbit controls, directional shadow,
+renderer lists, renderer state and the WebGL context. Shared resources are
+deduplicated before disposal. Retry recreates the runtime and rebuilds current
+study visuals from the unchanged model state. No project or geometry schema
+changes, so Piloti remains recipe version 21 and recovery remains v4.
+
 Version 0.1.16 defaults to a charcoal dark interface and provides an explicit
 top-bar switch to the original light interface. Both palettes preserve the
 same semantic accent roles: yellow is current selection, blue is constructive

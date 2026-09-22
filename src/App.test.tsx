@@ -1,9 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { DEFAULT_PILOTI_PARAMETERS as defaults } from './core/generator'
 import { createProject, RECOVERY_STORAGE_KEY, serializeProject } from './core/project'
+import { PILOTI_RECIPE } from './core/recipes'
 import type { PilotiParameters } from './core/types'
+
+const defaults = PILOTI_RECIPE.defaultParameters
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -52,6 +54,8 @@ describe('wired selection inspector', () => {
     expect(html).toContain('aria-label="Retained core density"')
     expect(html).toContain('value="2400"')
     expect(html).toContain('value="30"')
+    expect(html).toContain('<small>ACTIVE</small>')
+    expect(html.match(/<small>PLANNED<\/small>/g)).toHaveLength(5)
   })
 
   it('shows a saved seed lock on the selected upper-mass source and object list', () => {

@@ -3,7 +3,6 @@ import {
   DEFAULT_PILOTI_PARAMETERS,
   generatePiloti,
   MAX_SEED,
-  RECIPES,
 } from './generator'
 import { sceneBounds, scenePieceBounds } from './bounds'
 import { PILOTI_PARAMETER_RULES } from './pilotiParameters'
@@ -1620,10 +1619,4 @@ describe('generatePiloti', () => {
     )
   })
 
-  it('exposes the six agreed recipe families with only Piloti enabled', () => {
-    expect(RECIPES).toHaveLength(6)
-    expect(RECIPES.filter((recipe) => recipe.available).map((recipe) => recipe.id)).toEqual([
-      'piloti',
-    ])
-  })
 })

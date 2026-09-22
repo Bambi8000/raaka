@@ -10,12 +10,7 @@ import { Viewport } from './components/Viewport'
 import { ObjectList } from './components/ObjectList'
 import { ControlGroup, InspectorControls, RangeField } from './components/InspectorControls'
 import { boundsSize } from './core/bounds'
-import {
-  DEFAULT_PILOTI_PARAMETERS,
-  generatePiloti,
-  MAX_SEED,
-  RECIPES,
-} from './core/generator'
+import { MAX_SEED } from './core/generator'
 import {
   createHistory,
   reduceHistory,
@@ -61,6 +56,7 @@ import {
   randomLockTargetForPiece,
   toggleRandomLockForTarget,
 } from './core/randomLocks'
+import { PILOTI_RECIPE, RECIPE_DEFINITIONS } from './core/recipes'
 import type {
   MassStudy,
   ModelScale,
@@ -108,7 +104,7 @@ type FuseRenderState =
     }
 
 const DEFAULT_STUDY: PilotiStudyState = {
-  parameters: DEFAULT_PILOTI_PARAMETERS,
+  parameters: PILOTI_RECIPE.defaultParameters,
   modelScale: 1,
 }
 
@@ -159,7 +155,7 @@ function formatNumber(value: number, maximumFractionDigits = 0): string {
 }
 
 function selectablePieceIds(parameters: PilotiParameters): readonly string[] {
-  const study = generatePiloti(parameters)
+  const study = PILOTI_RECIPE.generate(parameters)
   const pieces = study.pieces
   const available = new Set(pieces.map((piece) => piece.id))
   const activeGroups = parameters.fuseGroups.filter((group) =>
@@ -283,7 +279,7 @@ export default function App() {
     writeUiTheme(window.localStorage, uiTheme)
   }, [uiTheme])
   const unfusedMasterStudy = useMemo(
-    () => generatePiloti(parameters),
+    () => PILOTI_RECIPE.generate(parameters),
     [parameters],
   )
   useEffect(() => {
@@ -1164,17 +1160,19 @@ export default function App() {
             <h2>Recipe</h2>
           </div>
           <div className="recipe-list">
-            {RECIPES.map((recipe, index) => (
+            {RECIPE_DEFINITIONS.map((recipe, index) => (
               <button
                 type="button"
                 key={recipe.id}
                 className={`recipe-card ${recipe.id === 'piloti' ? 'is-active' : ''}`}
-                disabled={!recipe.available}
-                title={recipe.description}
+                disabled={recipe.status !== 'active'}
+                title={recipe.status === 'active'
+                  ? recipe.description
+                  : `${recipe.description} ${recipe.unavailableReason}`}
               >
                 <span>{String(index + 1).padStart(2, '0')}</span>
                 <strong>{recipe.name}</strong>
-                <small>{recipe.available ? 'ACTIVE' : 'DEFINED'}</small>
+                <small>{recipe.status.toUpperCase()}</small>
               </button>
             ))}
           </div>
@@ -2613,7 +2611,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.31 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.32 / LOCAL</span>
       </footer>
     </main>
   )

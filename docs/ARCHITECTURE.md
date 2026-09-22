@@ -34,6 +34,31 @@ leave the delayed scanner without its source commit. Pull requests now have one
 authoritative pre-merge run; the merged commit receives the separate `main`
 run.
 
+## Recipe and parameter contracts
+
+Version 0.1.32 replaces the former recipe-menu metadata in `generator.ts` with
+the typed registry in `recipes.ts`. An executable recipe definition binds its
+durable ID and presentation text to one complete parameter schema, default
+parameters, normalizer and pure generator. The application obtains both the
+recipe menu and the active Piloti generator through this registry, so a
+definition that is never wired is visible to automated UI coverage. Planned
+definitions carry an explicit reason and no generator, defaults or parameter
+schema; they cannot be mistaken for implemented recipes.
+
+`parameterSchema.ts` defines the shared number, choice and collection forms.
+`PILOTI_PARAMETER_SCHEMA` contains every persisted `PilotiParameters` key.
+Numeric entries own minimum, maximum, integer and unit metadata; the existing
+`PILOTI_PARAMETER_RULES` name is a compatibility view of those same objects,
+not a second range table. Choice entries enumerate every legal value, while
+collection entries name the semantic identity field used by authored records.
+Type checking requires complete schema coverage and tests compare its runtime
+keys to the default parameter object. This lays the contract for Silos without
+inventing its artistic parameters before that recipe is designed.
+
+The change is structural: generated geometry and persisted fields are
+unchanged. Piloti therefore remains recipe version 21 and recovery remains
+`raaka.recovery.v4`.
+
 Manifold 3.5.3 is the accepted solid kernel for boolean geometry,
 cross-sections and watertight mesh output. Version 0.1.14 adds it as a pinned
 dependency after a focused gate covering deterministic booleans, planar face

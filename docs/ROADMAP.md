@@ -48,6 +48,8 @@ The reusable foot/neck/shoulder/bearing support family is implemented in 0.1.29.
 Two-, three- and four-level stepped upper masses are implemented in 0.1.30.
 Named feature streams, durable random targets and source locks are implemented
 in 0.1.31.
+A shared parameter schema and executable recipe registry are implemented in
+0.1.32.
 
 ## 0.1 — foundation
 
@@ -91,6 +93,8 @@ Version 0.1.30 adds selectable Z levels with cumulative scale/offset steps and
 independent per-level tops.
 Version 0.1.31 makes seed variation order-independent and lockable per upper
 mass or support source.
+Version 0.1.32 binds Piloti defaults, schema, normalization and generation into
+the same recipe contract future families will implement.
 
 ## 0.1.1 — correct the baseline
 
@@ -801,6 +805,29 @@ Automated UI and geometry coverage includes pinned streams, row/column identity,
 rectangle and polygon locks, copy/source mapping, persistence and Undo/Redo.
 Owner visual inspection follows on the published build.
 
+## 0.1.32 — shared recipe and parameter contracts
+
+- [x] define shared numeric, choice and identity-bearing collection parameter
+  schema forms
+- [x] cover every persisted Piloti parameter with one typed schema entry
+- [x] derive existing numeric validation bounds from the schema rather than a
+  parallel range table
+- [x] bind Piloti ID, presentation, defaults, schema, normalization and pure
+  generation into one executable recipe definition
+- [x] render the recipe menu and generate the active study through the registry
+- [x] represent the other five agreed families as planned definitions without
+  fake generators or premature parameter choices
+- [x] retain Piloti recipe version 21 and recovery v4 because geometry and
+  persisted state are unchanged
+
+Done when a future recipe has one explicit contract to implement and adding a
+persisted Piloti parameter without a schema entry fails type checking and
+runtime coverage.
+
+Verification: 488 tests plus lint, strict TypeScript and production build.
+Coverage includes registry identity and status, executable Piloti dispatch,
+complete schema/default parity, default bounds and collection identity.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -822,7 +849,7 @@ Owner visual inspection follows on the published build.
 - [x] stable individual part removal and restoration without repacking the grid
 - [x] stepped or multi-part asymmetric upper masses
 - [x] stable per-feature random streams, durable IDs and lock controls
-- [ ] a shared parameter schema and actual recipe definitions beyond menu metadata
+- [x] a shared parameter schema and actual recipe definitions beyond menu metadata
 - [x] focused solid-kernel spike before committing to a boolean dependency
 - [x] union selected preview pieces and resolve their internal contact faces
 - [x] editable concrete and retained-core densities

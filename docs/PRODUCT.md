@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.35, the
+This document describes the product direction. In version 0.1.36, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -25,16 +25,16 @@ The 3D viewport now changes selection materials without replacing geometry,
 renders on demand, releases its owned graphics resources and keeps project work
 reachable behind a clear retryable state when WebGL cannot run.
 The drawing workspace produces measured vertical X/Y sections, a top plan and
-X/Y elevation silhouettes from the finished physical solid, including
-retained-core subtraction, and exports line-only semantic SVG at an
-independently selected paper scale. Plan and elevation output currently
-contains exterior outlines only; visible creases and hidden-line policy remain
-planned.
+X/Y elevations from the finished physical solid, including retained-core
+subtraction, and exports line-only semantic SVG at an independently selected
+paper scale. Orthographic views provide independently selectable exterior
+outlines and visible crease lines above an adjustable angle threshold. Creases
+are clipped against nearer faces; dashed hidden-line output remains planned.
 The first watertight STL output and retained lightweight upper core are
 implemented. Live mass-centre projection and support-polygon feedback are also
-implemented, and concrete/core density assumptions are editable; visible
-drawing creases, hidden-line views, open/removable void workflows and the
-remaining recipe families are planned. Authored X/Y
+implemented, and concrete/core density assumptions are editable; dashed
+hidden-line views, open/removable void workflows and the remaining recipe
+families are planned. Authored X/Y
 upper-mass offsets add a controlled cantilever without replacing seeded
 asymmetry, and the upper mass can be a block or a tapered loft. Piloti supports
 rectangular grids and regular hexagonal/octagonal plans with radial legs and

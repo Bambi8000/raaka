@@ -789,31 +789,51 @@ retained core does not appear in the exterior silhouette. These orthographic
 views deliberately contain exterior silhouettes only; they do not claim
 visible crease or hidden-line extraction.
 
+Version 0.1.36 adds `orthographicCreases.ts` after that same finished-solid
+boundary. Plan, X elevation and Y elevation are viewed from the positive Z, X
+and Y sides respectively, with sight rays travelling along the negative axis.
+The extractor canonicalises Manifold's merged vertices, builds triangle-edge
+adjacency and compares the two outward face normals at every shared edge.
+Coplanar triangulation diagonals remain below the authored 5–90° threshold;
+30° is the workspace default.
+
+A candidate must border at least one front-facing face and no back-facing face.
+For every candidate, projected barycentric intervals identify where a nearer
+front-facing triangle covers the segment; depth is affine on both the edge and
+triangle, so the exact crossing splits visible from occluded portions without
+a raster depth buffer. Segments already carried by the exterior outline are
+removed, and equal remaining segments are deduplicated. This produces visible
+crease paths only. Hidden edges are omitted; a later drawing decision may map
+selected hidden geometry to dashed lines, but 0.1.36 does not imply that policy.
+
 `drawing.ts` defines path-set format `raaka.path-set` version 1. The contract
 is renderer-independent JSON-shaped data with `units: "mm"`, a Cartesian
-coordinate system, explicit section plane or projection axis, horizontal and
-vertical world-axis names, measured net cut or projected area, bounds and
-paths. Every current path is a closed polyline with semantic role `section` or
-`outline`; section holes such as a retained core remain separate rings.
+coordinate system, explicit section plane or projection axis and direction,
+horizontal and vertical world-axis names, measured net cut or projected area,
+bounds and paths. Section and outline paths are closed polylines; visible
+creases are open two-point paths with semantic role `crease`. Section holes
+such as a retained core remain separate rings.
 Coordinates always describe the manufactured physical model in millimetres.
 Paper scale does not rewrite this path set.
 
 The initial SVG serializer is deliberately line-only. It groups paths into
-named `layer-section` or `layer-outline` groups, uses no polygon fills or text
-strokes, inverts only the SVG display Y axis and derives a tightly bounded
-millimetre page. The selected paper denominator scales the physical bounds, a
-10 mm paper margin and a 0.35 mm paper stroke independently from model scale.
-Metadata records the path-set version, millimetre units and paper scale. Empty
-cuts and projections are refused with an explicit reason instead of producing
-a valid-looking blank document.
+named `layer-section`, `layer-outline` or `layer-crease` groups, uses no polygon
+fills or text strokes, inverts only the SVG display Y axis and derives a tightly
+bounded millimetre page. The selected paper denominator scales the physical
+bounds, a 10 mm paper margin and a 0.35 mm paper stroke independently from
+model scale. Metadata records the path-set version, millimetre units, paper
+scale and any active crease threshold. Empty cuts and drawings with no enabled
+line roles are refused with an explicit reason instead of producing a
+valid-looking blank document. Hiding Outline keeps the complete projection
+bounds so role comparison does not resize the sheet.
 
-Selected drawing view, section plane position and paper scale are
-drawing-workspace state, not recipe geometry, recovery history or portable
-project data. These views therefore keep Piloti recipe version 21 and recovery
-v4. Standard paper sizes, saved drawing sheets, visible creases, hidden-line
-policy, dimensions, hatching, annotations and the Muusia adapter remain later
-drawing work; the current SVG must not be mistaken for the RAAKA 1974 document
-preset.
+Selected drawing view, section plane position, paper scale, enabled line roles
+and crease threshold are drawing-workspace state, not recipe geometry, recovery
+history or portable project data. These views therefore keep Piloti recipe
+version 21 and recovery v4. Standard paper sizes, saved drawing sheets, hidden
+edge styling, dimensions, hatching, annotations and the Muusia adapter remain
+later drawing work; the current SVG must not be mistaken for the RAAKA 1974
+document preset.
 
 ## Interface themes
 

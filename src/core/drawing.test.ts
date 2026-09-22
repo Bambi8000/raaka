@@ -72,8 +72,10 @@ describe('drawing path set', () => {
       id: viewId,
       kind: 'orthographic',
       projectionAxis,
+      viewDirection: `-${projectionAxis}`,
       horizontalAxis,
       verticalAxis,
+      creaseAngleDegrees: 30,
     })
     expect(drawing.bounds).toEqual({ min: expectedMin, max: expectedMax })
     expect(drawing.paths).toHaveLength(1)
@@ -125,7 +127,7 @@ describe('drawing path set', () => {
     expect(() => encodeDrawingSvg(empty, {
       title: 'Empty',
       paperScaleDenominator: 10,
-    })).toThrow('contains no finished-solid outline')
+    })).toThrow('contains no enabled finished-solid paths')
   })
 
   it('names model scale, section plane and paper scale independently', () => {
@@ -139,6 +141,7 @@ describe('drawing path set', () => {
     const drawing = orthographicPathSet({
       polygons: [[[-50, -40], [50, -40], [50, 40], [-50, 40]]],
       areaMm2: 8_000,
+      creaseSegments: [],
     }, 'plan')
     const svg = encodeDrawingSvg(drawing, {
       title: 'Plan',
@@ -151,5 +154,52 @@ describe('drawing path set', () => {
     expect(drawingSvgFilename(318, 1, drawing.view, 5)).toBe(
       'raaka-piloti-0318-model-1to1-plan-paper-1to5.svg',
     )
+  })
+
+  it('writes open crease paths to a separate semantic SVG layer', () => {
+    const drawing = orthographicPathSet({
+      polygons: [[[-50, -40], [50, -40], [50, 40], [-50, 40]]],
+      areaMm2: 8_000,
+      creaseSegments: [[[-20, 0], [20, 0]]],
+    }, 'plan', { creaseAngleDegrees: 30 })
+    const svg = encodeDrawingSvg(drawing, {
+      title: 'Plan with creases',
+      paperScaleDenominator: 5,
+    })
+
+    expect(drawing.view).toMatchObject({ creaseAngleDegrees: 30 })
+    expect(drawing.paths[1]).toMatchObject({
+      id: 'crease-1',
+      role: 'crease',
+      closed: false,
+    })
+    expect(svg).toContain('id="layer-crease" data-layer="crease"')
+    expect(svg).toContain('data-crease-angle-degrees="30"')
+    expect(svg).toContain('data-role="crease" d="M -20 0 L 20 0"')
+    expect(svg).not.toContain('data-role="crease" d="M -20 0 L 20 0 Z"')
+  })
+
+  it('can request an outline-only orthographic path set', async () => {
+    const drawing = await createOrthographicPathSet(
+      [box('outer', [0, 0, 50], [120, 80, 100])],
+      [],
+      'plan',
+      { includeCreases: false },
+    )
+
+    expect(drawing.view).not.toHaveProperty('creaseAngleDegrees')
+    expect(drawing.paths.every((path) => path.role === 'outline')).toBe(true)
+  })
+
+  it('can omit the outline while retaining projection bounds and crease paths', () => {
+    const drawing = orthographicPathSet({
+      polygons: [[[-50, -40], [50, -40], [50, 40], [-50, 40]]],
+      areaMm2: 8_000,
+      creaseSegments: [[[-20, 0], [20, 0]]],
+    }, 'plan', { includeOutline: false, creaseAngleDegrees: 30 })
+
+    expect(drawing.bounds).toEqual({ min: [-50, -40], max: [50, 40] })
+    expect(drawing.paths).toHaveLength(1)
+    expect(drawing.paths[0].role).toBe('crease')
   })
 })

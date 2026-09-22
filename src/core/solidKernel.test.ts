@@ -235,6 +235,7 @@ describe('solid-kernel gate', () => {
     expect(projection.areaMm2).toBeCloseTo(expectedWidth * expectedHeight, 8)
     expect(Math.max(...horizontal) - Math.min(...horizontal)).toBeCloseTo(expectedWidth, 8)
     expect(Math.max(...vertical) - Math.min(...vertical)).toBeCloseTo(expectedHeight, 8)
+    expect(projection.creaseSegments).toEqual([])
   })
 
   it('unions overlapping silhouettes without triangulation or duplicate outlines', async () => {
@@ -257,6 +258,51 @@ describe('solid-kernel gate', () => {
 
     expect(projection.areaMm2).toBeCloseTo(10_000, 8)
     expect(projection.polygons).toHaveLength(1)
+  })
+
+  it('extracts visible step creases without silhouette or triangulation duplicates', async () => {
+    const projection = await projectScenePiecesAlongAxis([
+      box('base', [0, 0, 25], [100, 100, 50]),
+      box('top', [0, 0, 75], [50, 50, 50]),
+    ], 'z', [], 30)
+
+    expect(projection.creaseSegments).toHaveLength(4)
+    const points = projection.creaseSegments.flat()
+    expect(Math.min(...points.map(([x]) => x))).toBeCloseTo(-25, 8)
+    expect(Math.max(...points.map(([x]) => x))).toBeCloseTo(25, 8)
+    expect(Math.min(...points.map(([, y]) => y))).toBeCloseTo(-25, 8)
+    expect(Math.max(...points.map(([, y]) => y))).toBeCloseTo(25, 8)
+  })
+
+  it('applies the authored crease-angle threshold to the finished solid', async () => {
+    const projection = await projectScenePiecesAlongAxis([
+      box('base', [0, 0, 25], [100, 100, 50]),
+      box('top', [0, 0, 75], [50, 50, 50]),
+    ], 'z', [], 100)
+
+    expect(projection.creaseSegments).toEqual([])
+  })
+
+  it('clips crease portions hidden behind a nearer disconnected solid', async () => {
+    const rear: FrustumPiece = {
+      kind: 'frustum',
+      id: 'rear',
+      label: 'Rear',
+      role: 'mass',
+      position: [0, 0, 50],
+      height: 100,
+      bottomSize: [200, 200],
+      topSize: [100, 100],
+      bottomOffset: [0, 0],
+      topOffset: [0, 0],
+    }
+    const projection = await projectScenePiecesAlongAxis([
+      rear,
+      box('nearer', [50, 0, 210], [100, 200, 20]),
+    ], 'z', [], 30)
+
+    expect(projection.creaseSegments.length).toBeGreaterThan(0)
+    expect(projection.creaseSegments.flat().every(([x]) => x <= 1e-4)).toBe(true)
   })
 
   it('keeps a thin positive overlap as one deterministic solid', async () => {

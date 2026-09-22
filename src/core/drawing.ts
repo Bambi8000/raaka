@@ -8,11 +8,18 @@ import type { ScenePiece, Vec2 } from './types'
 
 export const DRAWING_PATH_SET_FORMAT = 'raaka.path-set'
 export const DRAWING_PATH_SET_VERSION = 1
+export const DEFAULT_CREASE_ANGLE_DEGREES = 30
 
 export type SectionDrawingAxis = 'x' | 'y'
 export type OrthographicDrawingViewId = 'plan' | 'elevation-x' | 'elevation-y'
 export type DrawingViewId = OrthographicDrawingViewId | `section-${SectionDrawingAxis}`
-export type DrawingRole = 'outline' | 'section'
+export type DrawingRole = 'crease' | 'outline' | 'section'
+
+export interface OrthographicDrawingOptions {
+  readonly includeOutline?: boolean
+  readonly includeCreases?: boolean
+  readonly creaseAngleDegrees?: number
+}
 
 export interface DrawingBounds2 {
   readonly min: Vec2
@@ -45,8 +52,10 @@ export interface DrawingPathSet {
         readonly id: OrthographicDrawingViewId
         readonly kind: 'orthographic'
         readonly projectionAxis: 'x' | 'y' | 'z'
+        readonly viewDirection: '-x' | '-y' | '-z'
         readonly horizontalAxis: 'x' | 'y'
         readonly verticalAxis: 'y' | 'z'
+        readonly creaseAngleDegrees?: number
       }
   readonly bounds: DrawingBounds2
   readonly areaMm2: number
@@ -140,7 +149,10 @@ export async function createSectionPathSet(
   return sectionPathSet(section, planeAxis, planeOffsetMm)
 }
 
-function orthographicView(viewId: OrthographicDrawingViewId): Extract<
+function orthographicView(
+  viewId: OrthographicDrawingViewId,
+  creaseAngleDegrees?: number,
+): Extract<
   DrawingPathSet['view'],
   { readonly kind: 'orthographic' }
 > {
@@ -149,8 +161,10 @@ function orthographicView(viewId: OrthographicDrawingViewId): Extract<
       id: viewId,
       kind: 'orthographic',
       projectionAxis: 'z',
+      viewDirection: '-z',
       horizontalAxis: 'x',
       verticalAxis: 'y',
+      ...(creaseAngleDegrees === undefined ? {} : { creaseAngleDegrees }),
     }
   }
   const projectionAxis = viewId === 'elevation-x' ? 'x' : 'y'
@@ -158,16 +172,19 @@ function orthographicView(viewId: OrthographicDrawingViewId): Extract<
     id: viewId,
     kind: 'orthographic',
     projectionAxis,
+    viewDirection: projectionAxis === 'x' ? '-x' : '-y',
     horizontalAxis: projectionAxis === 'x' ? 'y' : 'x',
     verticalAxis: 'z',
+    ...(creaseAngleDegrees === undefined ? {} : { creaseAngleDegrees }),
   }
 }
 
 export function orthographicPathSet(
   projection: SolidKernelProjection,
   viewId: OrthographicDrawingViewId,
+  options: Pick<OrthographicDrawingOptions, 'includeOutline' | 'creaseAngleDegrees'> = {},
 ): DrawingPathSet {
-  const paths = projection.polygons
+  const allOutlinePaths = projection.polygons
     .filter((polygon) => polygon.length >= 3)
     .map((polygon, index): DrawingPath => ({
       id: `outline-${index + 1}`,
@@ -175,13 +192,21 @@ export function orthographicPathSet(
       closed: true,
       points: polygon.map(([x, y]) => [normalizeZero(x), normalizeZero(y)]),
     }))
+  const outlinePaths = options.includeOutline === false ? [] : allOutlinePaths
+  const creasePaths = projection.creaseSegments.map((segment, index): DrawingPath => ({
+    id: `crease-${index + 1}`,
+    role: 'crease',
+    closed: false,
+    points: segment.map(([x, y]) => [normalizeZero(x), normalizeZero(y)]),
+  }))
+  const paths = [...outlinePaths, ...creasePaths]
   return {
     format: DRAWING_PATH_SET_FORMAT,
     formatVersion: DRAWING_PATH_SET_VERSION,
     units: 'mm',
     coordinateSystem: 'cartesian',
-    view: orthographicView(viewId),
-    bounds: drawingBounds(paths),
+    view: orthographicView(viewId, options.creaseAngleDegrees),
+    bounds: drawingBounds(allOutlinePaths),
     areaMm2: projection.areaMm2,
     paths,
   }
@@ -191,19 +216,27 @@ export async function createOrthographicPathSet(
   pieces: readonly ScenePiece[],
   retainedCorePieces: readonly ScenePiece[],
   viewId: OrthographicDrawingViewId,
+  options: OrthographicDrawingOptions = {},
 ): Promise<DrawingPathSet> {
   if (pieces.length === 0) {
     throw new DrawingError(
       'Orthographic drawing needs at least one visible part. Restore a part and try again.',
     )
   }
-  const view = orthographicView(viewId)
+  const creaseAngleDegrees = options.includeCreases === false
+    ? undefined
+    : options.creaseAngleDegrees ?? DEFAULT_CREASE_ANGLE_DEGREES
+  const view = orthographicView(viewId, creaseAngleDegrees)
   const projection = await projectScenePiecesAlongAxis(
     pieces,
     view.projectionAxis,
     retainedCorePieces,
+    creaseAngleDegrees,
   )
-  return orthographicPathSet(projection, viewId)
+  return orthographicPathSet(projection, viewId, {
+    includeOutline: options.includeOutline,
+    creaseAngleDegrees,
+  })
 }
 
 function finitePositive(value: number, label: string): number {
@@ -243,7 +276,7 @@ export function encodeDrawingSvg(
 ): string {
   if (pathSet.paths.length === 0) {
     throw new DrawingError(
-      'SVG export stopped: the drawing view contains no finished-solid outline.',
+      'SVG export stopped: the drawing contains no enabled finished-solid paths.',
     )
   }
   const denominator = finitePositive(
@@ -284,10 +317,14 @@ export function encodeDrawingSvg(
       '  </g>',
     ].join('\n')
   }).join('\n')
+  const creaseMetadata = pathSet.view.kind === 'orthographic'
+    && pathSet.view.creaseAngleDegrees !== undefined
+    ? ` data-crease-angle-degrees="${coordinate(pathSet.view.creaseAngleDegrees)}"`
+    : ''
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${coordinate(paperWidth)}mm" height="${coordinate(paperHeight)}mm" viewBox="${coordinate(viewMinX)} ${coordinate(viewMinY)} ${coordinate(viewWidth)} ${coordinate(viewHeight)}" data-format="${DRAWING_PATH_SET_FORMAT}" data-format-version="${DRAWING_PATH_SET_VERSION}" data-units="mm" data-paper-scale="1:${coordinate(denominator)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${coordinate(paperWidth)}mm" height="${coordinate(paperHeight)}mm" viewBox="${coordinate(viewMinX)} ${coordinate(viewMinY)} ${coordinate(viewWidth)} ${coordinate(viewHeight)}" data-format="${DRAWING_PATH_SET_FORMAT}" data-format-version="${DRAWING_PATH_SET_VERSION}" data-units="mm" data-paper-scale="1:${coordinate(denominator)}"${creaseMetadata}>`,
     `  <title>${xml(options.title)}</title>`,
     `  <desc>RAAKA ${drawingDescription(pathSet)}; geometry is stored in physical millimetres.</desc>`,
     layerMarkup,

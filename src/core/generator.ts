@@ -14,52 +14,12 @@ import type {
   BoxPiece,
   FrustumPiece,
   PilotiParameters,
-  RecipeSummary,
   ScenePiece,
 } from './types'
 
 const LINKED_FOOTPRINT_REFERENCE_COLUMNS = 3
 const MEASUREMENT_EPSILON_MM = 1e-9
 export { MAX_SEED } from './pilotiParameters'
-
-export const RECIPES: readonly RecipeSummary[] = [
-  {
-    id: 'monolith',
-    name: 'Monolith',
-    description: 'One dominant mass cut by planes and deep voids.',
-    available: false,
-  },
-  {
-    id: 'piloti',
-    name: 'Piloti',
-    description: 'A heavy upper mass carried by faceted funnel supports.',
-    available: true,
-  },
-  {
-    id: 'silos',
-    name: 'Silos',
-    description: 'Clusters of monumental faceted storage towers.',
-    available: false,
-  },
-  {
-    id: 'ziggurat',
-    name: 'Ziggurat',
-    description: 'Stepped masses that shift, taper and turn.',
-    available: false,
-  },
-  {
-    id: 'lamella-tower',
-    name: 'Lamella tower',
-    description: 'Slender vertical plates with deep articulation.',
-    available: false,
-  },
-  {
-    id: 'gate',
-    name: 'Gate',
-    description: 'Two uprights composed around one dominant void.',
-    available: false,
-  },
-]
 
 export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   planShape: 'rectangle',

@@ -236,6 +236,14 @@ geometry, survive inactive layouts and removal, and participate in project
 files, local recovery and Undo/Redo. Locked sources are marked in the object
 list.
 
+Version 0.1.32 replaces the recipe menu's isolated labels with a typed recipe
+registry. Piloti is now an executable definition that owns its defaults,
+complete parameter schema, normalization and generator contract. The shared
+schema describes every persisted parameter as a bounded number, explicit
+choice or identity-bearing collection; numeric validation and controls retain
+the same range source. The other five agreed families remain explicit planned
+definitions without pretend generators or invented parameters.
+
 ## Run locally
 
 Requirements:
@@ -279,7 +287,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.31 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.32 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.

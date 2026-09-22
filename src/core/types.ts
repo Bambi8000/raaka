@@ -235,10 +235,3 @@ export interface MassStudy {
     readonly shoulderOverlapMm2: number
   }
 }
-
-export interface RecipeSummary {
-  readonly id: RecipeId
-  readonly name: string
-  readonly description: string
-  readonly available: boolean
-}

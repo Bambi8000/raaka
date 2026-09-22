@@ -1,5 +1,10 @@
 import { MASS_DIVISIONS, MASS_PART_RULES, massPartAddress } from './massDivision'
 import type {
+  NumericParameterDefinition,
+  ParameterUnit,
+  RecipeParameterSchema,
+} from './parameterSchema'
+import type {
   PilotiMassPartOverride,
   PilotiPolygonMassDivision,
   PilotiUpperMassDivision,
@@ -21,32 +26,6 @@ import type {
 export const MAX_SEED = 0xffff_ffff
 export const DEFAULT_CONCRETE_DENSITY_KG_M3 = 2_400
 export const DEFAULT_RETAINED_CORE_DENSITY_KG_M3 = 30
-
-interface ParameterRule {
-  readonly minimum: number
-  readonly maximum: number
-  readonly integer?: boolean
-}
-
-type NumericPilotiParameter = Exclude<
-  keyof PilotiParameters,
-  | 'shoulderMode'
-  | 'planShape'
-  | 'polygonMassDivision'
-  | 'upperFootprintMode'
-  | 'upperMassProfile'
-  | 'upperMassDivision'
-  | 'massPartOverrides'
-  | 'randomLocks'
-  | 'retainedCoreMode'
-  | 'footOffsetOverrides'
-  | 'footOffsetSpace'
-  | 'supportSizeOverrides'
-  | 'supportPositionOverrides'
-  | 'partCopies'
-  | 'fuseGroups'
-  | 'removedPartIds'
->
 
 export const PILOTI_SUPPORT_SIZE_SCALE = {
   minimum: 0.55,
@@ -115,37 +94,97 @@ function normalizeUpperMassProfile(value: unknown): PilotiUpperMassProfile {
   return value
 }
 
-export const PILOTI_PARAMETER_RULES = {
-  radialSpreadRatio: { minimum: 0.55, maximum: 1.45 },
-  seed: { minimum: 0, maximum: MAX_SEED, integer: true },
-  heightMm: { minimum: 1_000, maximum: 2_000 },
-  supportCount: { minimum: 1, maximum: 6, integer: true },
-  supportRowCount: { minimum: 1, maximum: 3, integer: true },
-  rowSpacingMm: { minimum: 100, maximum: 800 },
-  supportDepthRatio: { minimum: 0.25, maximum: 0.92 },
-  supportHeightRatio: { minimum: 0.25, maximum: 0.58 },
-  shoulderRatio: { minimum: 0.2, maximum: 0.8 },
-  neckWidthRatio: { minimum: 0.18, maximum: 0.7 },
-  footFlareRatio: { minimum: 0.6, maximum: 1.8 },
-  bearingScaleRatio: { minimum: 0.65, maximum: 1.25 },
-  upperWidthRatio: { minimum: 0.4, maximum: 1.1 },
-  upperDepthRatio: { minimum: 0.2, maximum: 0.65 },
-  upperOffsetXMm: { minimum: -400, maximum: 400 },
-  upperOffsetYMm: { minimum: -400, maximum: 400 },
-  upperTopWidthRatio: { minimum: 0.45, maximum: 1.25 },
-  upperTopDepthRatio: { minimum: 0.45, maximum: 1.25 },
-  upperTopOffsetXMm: { minimum: -400, maximum: 400 },
-  upperTopOffsetYMm: { minimum: -400, maximum: 400 },
-  upperStepScaleRatio: { minimum: 0.65, maximum: 1.15 },
-  upperStepOffsetXMm: { minimum: -300, maximum: 300 },
-  upperStepOffsetYMm: { minimum: -300, maximum: 300 },
-  concreteDensityKgM3: { minimum: 800, maximum: 4_000, integer: true },
-  retainedCoreScale: { minimum: 0.35, maximum: 0.85 },
-  retainedCoreDensityKgM3: { minimum: 10, maximum: 500, integer: true },
-  asymmetry: { minimum: 0, maximum: 0.5 },
-  footOffsetXMm: { minimum: -300, maximum: 300 },
-  footOffsetYMm: { minimum: -300, maximum: 300 },
-} satisfies Readonly<Record<NumericPilotiParameter, ParameterRule>>
+function numericParameter(
+  label: string,
+  group: string,
+  unit: ParameterUnit,
+  minimum: number,
+  maximum: number,
+  integer = false,
+): NumericParameterDefinition {
+  return {
+    kind: 'number',
+    label,
+    group,
+    unit,
+    minimum,
+    maximum,
+    ...(integer ? { integer: true } : {}),
+  }
+}
+
+export const PILOTI_NUMERIC_PARAMETER_SCHEMA = {
+  radialSpreadRatio: numericParameter('Radial spread', 'Plan', 'ratio', 0.55, 1.45),
+  seed: numericParameter('Seed', 'Variation', 'seed', 0, MAX_SEED, true),
+  heightMm: numericParameter('Design height', 'Composition', 'mm', 1_000, 2_000),
+  supportCount: numericParameter('Columns', 'Support grid', 'count', 1, 6, true),
+  supportRowCount: numericParameter('Rows', 'Support grid', 'count', 1, 3, true),
+  rowSpacingMm: numericParameter('Row spacing', 'Support grid', 'mm', 100, 800),
+  supportDepthRatio: numericParameter('Support depth', 'Support family', 'ratio', 0.25, 0.92),
+  supportHeightRatio: numericParameter('Support height', 'Support family', 'ratio', 0.25, 0.58),
+  shoulderRatio: numericParameter('Shoulder height', 'Support family', 'ratio', 0.2, 0.8),
+  neckWidthRatio: numericParameter('Neck width', 'Support family', 'ratio', 0.18, 0.7),
+  footFlareRatio: numericParameter('Foot flare', 'Support family', 'ratio', 0.6, 1.8),
+  bearingScaleRatio: numericParameter('Bearing scale', 'Support family', 'ratio', 0.65, 1.25),
+  upperWidthRatio: numericParameter('Upper width', 'Upper mass', 'ratio', 0.4, 1.1),
+  upperDepthRatio: numericParameter('Upper depth', 'Upper mass', 'ratio', 0.2, 0.65),
+  upperOffsetXMm: numericParameter('Upper offset X', 'Upper mass', 'mm', -400, 400),
+  upperOffsetYMm: numericParameter('Upper offset Y', 'Upper mass', 'mm', -400, 400),
+  upperTopWidthRatio: numericParameter('Top width', 'Upper mass profile', 'ratio', 0.45, 1.25),
+  upperTopDepthRatio: numericParameter('Top depth', 'Upper mass profile', 'ratio', 0.45, 1.25),
+  upperTopOffsetXMm: numericParameter('Top offset X', 'Upper mass profile', 'mm', -400, 400),
+  upperTopOffsetYMm: numericParameter('Top offset Y', 'Upper mass profile', 'mm', -400, 400),
+  upperStepScaleRatio: numericParameter('Level scale', 'Upper level step', 'ratio', 0.65, 1.15),
+  upperStepOffsetXMm: numericParameter('Level step X', 'Upper level step', 'mm', -300, 300),
+  upperStepOffsetYMm: numericParameter('Level step Y', 'Upper level step', 'mm', -300, 300),
+  concreteDensityKgM3: numericParameter('Concrete density', 'Materials', 'kg/m3', 800, 4_000, true),
+  retainedCoreScale: numericParameter('Core size', 'Retained core', 'ratio', 0.35, 0.85),
+  retainedCoreDensityKgM3: numericParameter('Retained core density', 'Materials', 'kg/m3', 10, 500, true),
+  asymmetry: numericParameter('Asymmetry', 'Variation', 'ratio', 0, 0.5),
+  footOffsetXMm: numericParameter('Foot offset X', 'Support lean', 'mm', -300, 300),
+  footOffsetYMm: numericParameter('Foot offset Y', 'Support lean', 'mm', -300, 300),
+} as const
+
+function choiceParameter<Option extends string>(
+  label: string,
+  group: string,
+  options: readonly Option[],
+) {
+  return { kind: 'choice', label, group, options } as const
+}
+
+function collectionParameter(
+  label: string,
+  group: string,
+  itemIdentity: string,
+) {
+  return { kind: 'collection', label, group, itemIdentity } as const
+}
+
+export const PILOTI_PARAMETER_SCHEMA = {
+  ...PILOTI_NUMERIC_PARAMETER_SCHEMA,
+  planShape: choiceParameter('Plan shape', 'Plan', ['rectangle', 'hexagon', 'octagon']),
+  polygonMassDivision: choiceParameter('Polygon mass division', 'Upper mass', ['whole', 'sectors', 'z2', 'z3', 'z4']),
+  shoulderMode: choiceParameter('Shoulder topology', 'Support family', ['divided', 'shared']),
+  upperFootprintMode: choiceParameter('Upper footprint', 'Upper mass', ['linked', 'detached']),
+  upperMassProfile: choiceParameter('Upper mass profile', 'Upper mass profile', ['block', 'tapered']),
+  upperMassDivision: choiceParameter('Upper mass division', 'Upper mass', ['whole', 'x2', 'y2', 'xy4', 'z2', 'z3', 'z4']),
+  retainedCoreMode: choiceParameter('Retained core', 'Retained core', ['none', 'upper-mass']),
+  footOffsetSpace: choiceParameter('Foot offset space', 'Support lean', ['global', 'centered']),
+  massPartOverrides: collectionParameter('Mass part overrides', 'Authored parts', 'partId'),
+  randomLocks: collectionParameter('Variation locks', 'Variation', 'targetId'),
+  footOffsetOverrides: collectionParameter('Support lean overrides', 'Authored supports', 'supportId'),
+  supportSizeOverrides: collectionParameter('Support size overrides', 'Authored supports', 'supportId'),
+  supportPositionOverrides: collectionParameter('Support position overrides', 'Authored supports', 'supportId'),
+  partCopies: collectionParameter('Part copies', 'Composition', 'id'),
+  fuseGroups: collectionParameter('Fuse groups', 'Composition', 'id'),
+  removedPartIds: collectionParameter('Removed parts', 'Composition', 'value'),
+} as const satisfies RecipeParameterSchema<PilotiParameters>
+
+export type NumericPilotiParameter = keyof typeof PILOTI_NUMERIC_PARAMETER_SCHEMA
+
+/** Compatibility name for consumers that need numeric bounds only. */
+export const PILOTI_PARAMETER_RULES = PILOTI_NUMERIC_PARAMETER_SCHEMA
 
 export function isPilotiRetainedCoreMode(
   value: unknown,

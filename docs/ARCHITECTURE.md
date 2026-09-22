@@ -779,29 +779,41 @@ positive upward in both views. Simplification happens inside the kernel before
 polygons leave the WASM boundary, so preview triangulation diagonals are never
 drawing paths.
 
-`sectionDrawing.ts` defines path-set format `raaka.path-set` version 1. The
-contract is renderer-independent JSON-shaped data with `units: "mm"`, a
-Cartesian coordinate system, explicit plane axis and physical-model offset,
-horizontal and vertical world-axis names, measured net section area, bounds
-and paths. Every current path is a closed polyline with semantic role
-`section`; holes such as a retained core remain separate rings. Coordinates
-always describe the manufactured physical model in millimetres. Paper scale
-does not rewrite this path set.
+Version 0.1.35 adds `projectScenePiecesAlongAxis` at the same finished-solid
+boundary. It unions positive pieces, subtracts active retained cores and calls
+Manifold's exact 2D projection after an axis-aligned rotation. World Z produces
+an X/Y plan, world X produces a Y/Z elevation and world Y produces an X/Z
+elevation. Because projection happens after the boolean result is complete,
+overlapping pieces do not leave duplicate strokes and a fully enclosed
+retained core does not appear in the exterior silhouette. These orthographic
+views deliberately contain exterior silhouettes only; they do not claim
+visible crease or hidden-line extraction.
 
-The initial SVG serializer is deliberately line-only. It creates one named
-`layer-section` group, uses no polygon fills or text strokes, inverts only the
-SVG display Y axis and derives a tightly bounded millimetre page. The selected
-paper denominator scales the physical bounds, a 10 mm paper margin and a
-0.35 mm paper stroke independently from model scale. Metadata records the
-path-set version, millimetre units and paper scale. Empty cuts are refused with
-an explicit reason instead of producing a valid-looking blank document.
+`drawing.ts` defines path-set format `raaka.path-set` version 1. The contract
+is renderer-independent JSON-shaped data with `units: "mm"`, a Cartesian
+coordinate system, explicit section plane or projection axis, horizontal and
+vertical world-axis names, measured net cut or projected area, bounds and
+paths. Every current path is a closed polyline with semantic role `section` or
+`outline`; section holes such as a retained core remain separate rings.
+Coordinates always describe the manufactured physical model in millimetres.
+Paper scale does not rewrite this path set.
 
-Section axis, plane position and paper scale are drawing-workspace state, not
-recipe geometry, recovery history or portable project data. This first slice
-therefore keeps Piloti recipe version 21 and recovery v4. Standard paper sizes,
-saved drawing sheets, plan/elevation projection, hidden-line policy,
-dimensions, hatching, annotations and the Muusia adapter remain later drawing
-work; the current SVG must not be mistaken for the RAAKA 1974 document preset.
+The initial SVG serializer is deliberately line-only. It groups paths into
+named `layer-section` or `layer-outline` groups, uses no polygon fills or text
+strokes, inverts only the SVG display Y axis and derives a tightly bounded
+millimetre page. The selected paper denominator scales the physical bounds, a
+10 mm paper margin and a 0.35 mm paper stroke independently from model scale.
+Metadata records the path-set version, millimetre units and paper scale. Empty
+cuts and projections are refused with an explicit reason instead of producing
+a valid-looking blank document.
+
+Selected drawing view, section plane position and paper scale are
+drawing-workspace state, not recipe geometry, recovery history or portable
+project data. These views therefore keep Piloti recipe version 21 and recovery
+v4. Standard paper sizes, saved drawing sheets, visible creases, hidden-line
+policy, dimensions, hatching, annotations and the Muusia adapter remain later
+drawing work; the current SVG must not be mistaken for the RAAKA 1974 document
+preset.
 
 ## Interface themes
 

@@ -9,7 +9,7 @@ import {
 import { Viewport } from './components/Viewport'
 import { ObjectList } from './components/ObjectList'
 import { ControlGroup, InspectorControls, RangeField } from './components/InspectorControls'
-import { SectionWorkspace } from './components/SectionWorkspace'
+import { DrawingWorkspace } from './components/DrawingWorkspace'
 import { boundsSize } from './core/bounds'
 import { MAX_SEED } from './core/generator'
 import {
@@ -78,7 +78,7 @@ interface Notice {
 
 type ProjectOrigin = 'DEFAULT' | 'RECOVERED' | 'SAVED'
 type SupportEditScope = 'shared' | 'selected'
-type WorkspaceMode = 'model' | 'section'
+type WorkspaceMode = 'model' | 'drawing'
 
 interface PilotiStudyState {
   readonly parameters: PilotiParameters
@@ -238,7 +238,7 @@ export default function App() {
     useState<SupportEditScope>('shared')
   const [showAllControls, setShowAllControls] = useState(false)
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('model')
-  const [sectionWorkspaceOpened, setSectionWorkspaceOpened] = useState(false)
+  const [drawingWorkspaceOpened, setDrawingWorkspaceOpened] = useState(false)
   const [baselineJson, setBaselineJson] = useState(initialSession.baseline)
   const [projectOrigin, setProjectOrigin] = useState<ProjectOrigin>(
     initialSession.origin,
@@ -1079,16 +1079,16 @@ export default function App() {
           </button>
           <button
             type="button"
-            className={`button button--drawing ${workspaceMode === 'section' ? 'is-active' : ''}`}
-            aria-pressed={workspaceMode === 'section'}
+            className={`button button--drawing ${workspaceMode === 'drawing' ? 'is-active' : ''}`}
+            aria-pressed={workspaceMode === 'drawing'}
             onClick={() => {
-              if (workspaceMode === 'model') setSectionWorkspaceOpened(true)
-              setWorkspaceMode(workspaceMode === 'model' ? 'section' : 'model')
+              if (workspaceMode === 'model') setDrawingWorkspaceOpened(true)
+              setWorkspaceMode(workspaceMode === 'model' ? 'drawing' : 'model')
             }}
-            title="Open measured vertical sections through the finished physical solid."
+            title="Open measured plans, elevations and sections from the finished physical solid."
           >
-            {workspaceMode === 'section' ? '3D VIEW' : 'SECTION'}
-            <span>{workspaceMode === 'section' ? 'MODEL' : 'DRAWING'}</span>
+            {workspaceMode === 'drawing' ? '3D VIEW' : 'DRAWINGS'}
+            <span>{workspaceMode === 'drawing' ? 'MODEL' : '2D · SVG'}</span>
           </button>
           <button
             type="button"
@@ -1214,9 +1214,9 @@ export default function App() {
             onTranslationCancel={cancelGizmoTranslation}
           />
         </div>
-        {sectionWorkspaceOpened ? (
-          <div className={`workspace-layer ${workspaceMode !== 'section' ? 'is-hidden' : ''}`}>
-            <SectionWorkspace
+        {drawingWorkspaceOpened ? (
+          <div className={`workspace-layer ${workspaceMode !== 'drawing' ? 'is-hidden' : ''}`}>
+            <DrawingWorkspace
               pieces={study.pieces}
               retainedCorePieces={study.retainedCore.pieces}
               bounds={study.bounds}
@@ -2642,7 +2642,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.34 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.35 / LOCAL</span>
       </footer>
     </main>
   )

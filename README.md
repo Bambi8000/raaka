@@ -262,6 +262,14 @@ closed section lines in a named layer at paper scales from 1:1 through 1:20;
 the underlying path set remains in full physical millimetres for the future
 Muusia adapter.
 
+Version 0.1.35 extends the same measured drawing workspace with a top plan and
+X/Y elevation outlines. Each view projects the complete finished boolean solid,
+so overlapping parts become one exterior silhouette and a fully enclosed
+retained core stays hidden. The SVG path set now distinguishes semantic
+`outline` and `section` roles while preserving full physical millimetres and
+independent paper scale. Plans and elevations are explicitly silhouette-only:
+visible crease extraction and hidden-line policy remain later drawing work.
+
 ## Run locally
 
 Requirements:
@@ -305,13 +313,14 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.34 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.35 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.
-Measured X/Y section SVGs are available; plans, elevations, hidden-line views,
-Muusia routing, mould output, other recipes and removable/open void workflows
-remain planned. The current mass, core, ground-contact
+Measured X/Y section, plan and outline-elevation SVGs are available; visible
+crease extraction, hidden-line views, Muusia routing, mould output, other
+recipes and removable/open void workflows remain planned. The current mass,
+core, ground-contact
 and static stability readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
 including seeded variation,

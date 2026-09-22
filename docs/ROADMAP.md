@@ -56,6 +56,8 @@ Measured X/Y section drawings and line-only scaled SVG export are implemented
 in 0.1.34.
 Measured plan and X/Y elevation silhouettes, sharing the same semantic drawing
 pipeline, are implemented in 0.1.35.
+Angle-filtered visible creases, depth occlusion and independent line-role
+controls are implemented in 0.1.36.
 
 ## 0.1 — foundation
 
@@ -107,6 +109,8 @@ Version 0.1.34 begins the drawing pipeline with vertical finished-solid
 sections, the millimetre path-set contract and paper-scaled section SVGs.
 Version 0.1.35 adds finished-solid plan and X/Y elevation silhouettes without
 claiming unimplemented visible creases or hidden lines.
+Version 0.1.36 adds finished-mesh visible creases while continuing to omit
+hidden edges rather than styling them as a completed hidden-line drawing.
 
 ## 0.1.1 — correct the baseline
 
@@ -930,6 +934,39 @@ layers and filenames, plus the existing section contract. Browser inspection
 covered plan and both elevations in the compact layout and confirmed that the
 drawing workspace remains usable when WebGL is unavailable.
 
+## 0.1.36 — visible orthographic creases
+
+- [x] derive candidate edges from adjacent faces of the finished boolean mesh,
+  not from independent source-piece outlines
+- [x] reject coplanar triangulation diagonals with a 5–90° adjustable minimum
+  face-angle threshold and a 30° default
+- [x] define plan and elevations as views from +Z, +X and +Y respectively
+- [x] retain only front-facing crease candidates and clip their projected
+  segments wherever a nearer front-facing triangle occludes them
+- [x] remove crease segments already represented by the exterior outline and
+  deduplicate identical remaining strokes
+- [x] expose independent Outline and Creases switches without changing recipe,
+  recovery, project or history state
+- [x] keep projected drawing bounds stable when either line role is hidden
+- [x] add open semantic `crease` paths and a named `layer-crease` SVG group
+- [x] record the crease threshold in path-set view data and SVG metadata
+- [x] state that hidden edges are omitted; do not present them as completed
+  dashed hidden-line output
+- [x] retain Piloti recipe version 21 and recovery v4 because drawing controls
+  remain transient workspace state
+
+Done when boxes contain no triangulation diagonals or duplicate silhouette
+strokes, a stepped solid exposes only its four visible internal edges, a nearer
+solid clips a rear crease at the exact projected depth boundary, and the same
+roles appear in preview and SVG with stable physical-millimetre bounds.
+
+Verification: 519 tests plus lint, strict TypeScript and production build.
+Coverage includes angle thresholds, stepped-solid creases, silhouette
+deduplication, complete and partial depth occlusion, role filtering, open SVG
+paths and crease metadata. Browser inspection covered a tapered Piloti plan,
+both elevations, Outline-only, Creases-only and the explicit empty-role refusal
+in the compact layout.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -989,14 +1026,17 @@ begin during 0.2; finished drawing output must agree with the final solid.
 - [x] orthographic plan and X/Y elevation silhouette views
 - [x] vertical X/Y sections at authored physical-model planes
 - [x] silhouette extraction with no triangulation diagonals
-- [ ] visible crease extraction with no triangulation diagonals
-- [ ] hidden-line removal spike, including overlapping coplanar pieces
+- [x] visible crease extraction with no triangulation diagonals
+- [x] depth-clip visible creases against nearer finished-solid faces
+- [ ] hidden-edge/dashed-line policy, including overlapping coplanar pieces
 - [x] semantic drawing roles for `section` and `outline`
-- [x] documented physical-millimetre path-set contract for section and
-  orthographic outline output
-- [x] line-only section and outline SVG with derived page size, paper scale and
-  named semantic layers
-- [ ] duplicate-stroke checks, clear hidden-line policy and stroke-text policy
+- [x] semantic `crease` role with an independently selectable SVG layer
+- [x] documented physical-millimetre path-set contract for section, outline and
+  crease output
+- [x] line-only orthographic and section SVG with derived page size, paper
+  scale and named semantic layers
+- [x] duplicate silhouette/crease stroke checks
+- [ ] clear hidden-line and stroke-text policy
 - [ ] Muusia adapter and real path-set/scale verification
 - [ ] axonometric drawing after hidden-line correctness is established
 - [ ] RAAKA 1974 drawing preset: title block, module bubbles, dimensions,

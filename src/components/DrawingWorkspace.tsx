@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   createOrthographicPathSet,
   createSectionPathSet,
+  DEFAULT_CREASE_ANGLE_DEGREES,
   drawingSvgFilename,
   encodeDrawingSvg,
+  type DrawingPath,
   type DrawingPathSet,
   type DrawingViewId,
   type OrthographicDrawingViewId,
@@ -18,8 +20,8 @@ const DRAWING_VIEWS: readonly {
   readonly description: string
 }[] = [
   { id: 'plan', label: 'PLAN', description: 'TOP' },
-  { id: 'elevation-x', label: 'ELEV X', description: 'LOOK X' },
-  { id: 'elevation-y', label: 'ELEV Y', description: 'LOOK Y' },
+  { id: 'elevation-x', label: 'ELEV X', description: 'FROM +X' },
+  { id: 'elevation-y', label: 'ELEV Y', description: 'FROM +Y' },
   { id: 'section-x', label: 'SECTION X', description: 'CUT X' },
   { id: 'section-y', label: 'SECTION Y', description: 'CUT Y' },
 ]
@@ -42,6 +44,7 @@ type DrawingState =
       readonly retainedCorePieces: readonly ScenePiece[]
       readonly viewId: DrawingViewId
       readonly planeOffsetMm?: number
+      readonly settingsKey: string
     }
   | {
       readonly status: 'error'
@@ -50,6 +53,7 @@ type DrawingState =
       readonly retainedCorePieces: readonly ScenePiece[]
       readonly viewId: DrawingViewId
       readonly planeOffsetMm?: number
+      readonly settingsKey: string
     }
 
 function centre(minimum: number, maximum: number): number {
@@ -64,10 +68,10 @@ function format(value: number, digits = 0): string {
   return new Intl.NumberFormat('en', { maximumFractionDigits: digits }).format(value)
 }
 
-function previewPath(points: readonly (readonly [number, number])[]): string {
-  return points.map(([x, y], index) =>
+function previewPath(path: DrawingPath): string {
+  return path.points.map(([x, y], index) =>
     `${index === 0 ? 'M' : 'L'} ${x} ${-y}`,
-  ).join(' ') + ' Z'
+  ).join(' ') + (path.closed ? ' Z' : '')
 }
 
 function sectionAxis(viewId: DrawingViewId): SectionDrawingAxis | undefined {
@@ -84,18 +88,32 @@ function drawingTitle(viewId: DrawingViewId): string {
   return `SECTION ${axis?.toUpperCase()}–${axis?.toUpperCase()}`
 }
 
-function drawingAxes(viewId: DrawingViewId): string {
-  if (viewId === 'plan') return 'HORIZONTAL X · VERTICAL Y · TOP PROJECTION · SILHOUETTE ONLY'
-  if (viewId === 'elevation-x') return 'HORIZONTAL Y · VERTICAL Z · LOOK ALONG X · SILHOUETTE ONLY'
-  if (viewId === 'elevation-y') return 'HORIZONTAL X · VERTICAL Z · LOOK ALONG Y · SILHOUETTE ONLY'
+function drawingAxes(
+  viewId: DrawingViewId,
+  showOutline: boolean,
+  showCreases: boolean,
+  creaseAngleDegrees: number,
+): string {
+  const lineRoles = [
+    showOutline ? 'OUTLINE' : undefined,
+    showCreases ? `VISIBLE CREASES ≥${creaseAngleDegrees}°` : undefined,
+  ].filter(Boolean).join(' + ') || 'NO LINE ROLES'
+  const lineDetail = `${lineRoles} · HIDDEN LINES OMITTED`
+  if (viewId === 'plan') return `HORIZONTAL X · VERTICAL Y · VIEW FROM +Z · ${lineDetail}`
+  if (viewId === 'elevation-x') return `HORIZONTAL Y · VERTICAL Z · VIEW FROM +X · ${lineDetail}`
+  if (viewId === 'elevation-y') return `HORIZONTAL X · VERTICAL Z · VIEW FROM +Y · ${lineDetail}`
   const axis = sectionAxis(viewId)
   return `HORIZONTAL ${axis === 'x' ? 'Y' : 'X'} · VERTICAL Z · FINISHED SOLID`
 }
 
 function pathLabel(drawing: DrawingPathSet): string {
-  const count = drawing.paths.length
-  const role = drawing.paths[0]?.role.toUpperCase() ?? 'DRAWING'
-  return `${count} ${role} PATH${count === 1 ? '' : 'S'}`
+  const roles = ['outline', 'crease', 'section'] as const
+  return roles.flatMap((role) => {
+    const count = drawing.paths.filter((path) => path.role === role).length
+    return count === 0
+      ? []
+      : [`${count} ${role.toUpperCase()}${count === 1 ? '' : 'S'}`]
+  }).join(' · ') || '0 PATHS'
 }
 
 export function DrawingWorkspace({
@@ -112,6 +130,11 @@ export function DrawingWorkspace({
     y: centre(bounds.min[1], bounds.max[1]),
   }))
   const [paperScaleDenominator, setPaperScaleDenominator] = useState(10)
+  const [showOutline, setShowOutline] = useState(true)
+  const [showCreases, setShowCreases] = useState(true)
+  const [creaseAngleDegrees, setCreaseAngleDegrees] = useState(
+    DEFAULT_CREASE_ANGLE_DEGREES,
+  )
   const [drawingState, setDrawingState] = useState<DrawingState>({ status: 'loading' })
   const activeSectionAxis = sectionAxis(viewId)
   const axisIndex = activeSectionAxis === 'y' ? 1 : 0
@@ -120,6 +143,9 @@ export function DrawingWorkspace({
   const planeOffsetMm = activeSectionAxis
     ? clamp(offsets[activeSectionAxis], minimum, maximum)
     : undefined
+  const settingsKey = activeSectionAxis
+    ? 'section'
+    : `orthographic:outline-${showOutline}:${showCreases ? creaseAngleDegrees : 'no-creases'}`
 
   useEffect(() => {
     let cancelled = false
@@ -135,11 +161,13 @@ export function DrawingWorkspace({
             pieces,
             retainedCorePieces,
             viewId as OrthographicDrawingViewId,
+            { includeOutline: showOutline, includeCreases: showCreases, creaseAngleDegrees },
           )
       void drawingPromise.then(
         (drawing) => {
           if (!cancelled) setDrawingState({
             status: 'ready', drawing, pieces, retainedCorePieces, viewId, planeOffsetMm,
+            settingsKey,
           })
         },
         (error: unknown) => {
@@ -150,6 +178,7 @@ export function DrawingWorkspace({
             retainedCorePieces,
             viewId,
             planeOffsetMm,
+            settingsKey,
           })
         },
       )
@@ -158,7 +187,8 @@ export function DrawingWorkspace({
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [activeSectionAxis, pieces, planeOffsetMm, retainedCorePieces, viewId])
+  }, [activeSectionAxis, creaseAngleDegrees, pieces, planeOffsetMm,
+    retainedCorePieces, settingsKey, showCreases, showOutline, viewId])
 
   const currentDrawingState = useMemo((): DrawingState =>
     drawingState.status !== 'loading'
@@ -166,9 +196,10 @@ export function DrawingWorkspace({
       && drawingState.retainedCorePieces === retainedCorePieces
       && drawingState.viewId === viewId
       && drawingState.planeOffsetMm === planeOffsetMm
+      && drawingState.settingsKey === settingsKey
       ? drawingState
       : { status: 'loading' },
-  [drawingState, pieces, planeOffsetMm, retainedCorePieces, viewId])
+  [drawingState, pieces, planeOffsetMm, retainedCorePieces, settingsKey, viewId])
 
   const preview = useMemo(() => {
     if (currentDrawingState.status !== 'ready' || currentDrawingState.drawing.paths.length === 0) {
@@ -195,6 +226,11 @@ export function DrawingWorkspace({
       ...current,
       [activeSectionAxis]: clamp(value, minimum, maximum),
     }))
+  }
+
+  const updateCreaseAngle = (value: number) => {
+    if (!Number.isFinite(value)) return
+    setCreaseAngleDegrees(Math.round(clamp(value, 5, 90)))
   }
 
   const exportSvg = () => {
@@ -238,7 +274,7 @@ export function DrawingWorkspace({
         <div className="section-title">
           <span>DRAWING 01</span>
           <strong>{viewTitle}</strong>
-          <small>{drawingAxes(viewId)}</small>
+          <small>{drawingAxes(viewId, showOutline, showCreases, creaseAngleDegrees)}</small>
         </div>
         <div className="drawing-view-switch" aria-label="Drawing view">
           {DRAWING_VIEWS.map((choice) => (
@@ -281,6 +317,50 @@ export function DrawingWorkspace({
             />
           </label>
         ) : null}
+        {!activeSectionAxis ? (
+          <div className="drawing-line-controls">
+            <span>DRAWING LINES</span>
+            <button
+              type="button"
+              className={showOutline ? 'is-active' : ''}
+              aria-pressed={showOutline}
+              onClick={() => setShowOutline((current) => !current)}
+            >
+              OUTLINE {showOutline ? 'ON' : 'OFF'}
+            </button>
+            <button
+              type="button"
+              className={showCreases ? 'is-active' : ''}
+              aria-pressed={showCreases}
+              onClick={() => setShowCreases((current) => !current)}
+            >
+              CREASES {showCreases ? 'ON' : 'OFF'}
+            </button>
+            <span className="section-numeric-entry">
+              <input
+                type="number"
+                aria-label="Minimum visible crease angle"
+                min={5}
+                max={90}
+                step={1}
+                value={creaseAngleDegrees}
+                disabled={!showCreases}
+                onChange={(event) => updateCreaseAngle(event.currentTarget.valueAsNumber)}
+              />
+              <small>°</small>
+            </span>
+            <input
+              type="range"
+              aria-label="Minimum visible crease angle slider"
+              min={5}
+              max={90}
+              step={1}
+              value={creaseAngleDegrees}
+              disabled={!showCreases}
+              onChange={(event) => updateCreaseAngle(event.currentTarget.valueAsNumber)}
+            />
+          </div>
+        ) : null}
         <div className="section-paper-scale">
           <span>PAPER SCALE</span>
           <div>
@@ -316,11 +396,14 @@ export function DrawingWorkspace({
             viewBox={preview.viewBox}
             preserveAspectRatio="xMidYMid meet"
           >
-            <g className="drawing-preview-lines">
-              {preview.paths.map((path) => (
-                <path key={path.id} d={previewPath(path.points)} />
-              ))}
-            </g>
+            {preview.paths.map((path) => (
+              <g
+                key={path.id}
+                className={`drawing-preview-lines drawing-preview-lines--${path.role}`}
+              >
+                <path d={previewPath(path)} />
+              </g>
+            ))}
           </svg>
         ) : (
           <div className={`section-state ${currentDrawingState.status === 'error' ? 'is-error' : ''}`}>
@@ -329,7 +412,11 @@ export function DrawingWorkspace({
                 ? 'BUILDING DRAWING…'
                 : currentDrawingState.status === 'error'
                   ? 'DRAWING UNAVAILABLE'
-                  : 'NO OUTLINE'}
+                  : activeSectionAxis
+                    ? 'NO SECTION'
+                    : !showOutline && !showCreases
+                      ? 'NO LINES ENABLED'
+                      : 'NO DRAWING LINES'}
             </strong>
             <span>
               {currentDrawingState.status === 'error'
@@ -337,7 +424,9 @@ export function DrawingWorkspace({
                 : currentDrawingState.status === 'ready'
                   ? activeSectionAxis && planeOffsetMm !== undefined
                     ? `The ${activeSectionAxis.toUpperCase()}=${format(planeOffsetMm, 1)} mm plane does not cross the finished solid.`
-                    : 'The finished solid has no outline in this view.'
+                    : !showOutline && !showCreases
+                      ? 'Enable Outline or Creases to draw this orthographic view.'
+                      : 'The enabled line roles contain no paths in this view.'
                   : 'Resolving finished-solid union and projection.'}
             </span>
           </div>

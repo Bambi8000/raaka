@@ -4,6 +4,10 @@ import type {
 } from 'manifold-3d'
 import type { Bounds3, FrustumPiece, ScenePiece } from './types'
 import { polygonLoftMesh } from './polygonLoft'
+import {
+  visibleOrthographicCreases,
+  type Segment2,
+} from './orthographicCreases'
 
 const FRUSTUM_TRIANGLES = new Uint32Array([
   0, 2, 1,
@@ -45,6 +49,7 @@ export interface SolidKernelSectionPlane {
 export interface SolidKernelProjection {
   readonly polygons: readonly (readonly (readonly [number, number])[])[]
   readonly areaMm2: number
+  readonly creaseSegments: readonly Segment2[]
 }
 
 let kernelPromise: Promise<ManifoldToplevel> | undefined
@@ -315,7 +320,14 @@ export async function projectScenePiecesAlongAxis(
   pieces: readonly ScenePiece[],
   axis: SolidKernelProjectionAxis,
   subtractors: readonly ScenePiece[] = [],
+  creaseAngleDegrees?: number,
 ): Promise<SolidKernelProjection> {
+  if (creaseAngleDegrees !== undefined
+    && (!Number.isFinite(creaseAngleDegrees)
+      || creaseAngleDegrees <= 0
+      || creaseAngleDegrees >= 180)) {
+    throw new RangeError('Crease angle must be between 0 and 180 degrees.')
+  }
   return withSceneManifold(pieces, (result) => {
     let oriented: ManifoldSolid | undefined
     let mapPoint: (point: readonly [number, number]) => readonly [number, number]
@@ -332,11 +344,24 @@ export async function projectScenePiecesAlongAxis(
     let simplified: ReturnType<ManifoldSolid['project']> | undefined
     try {
       simplified = projection.simplify()
+      const polygons = simplified.toPolygons().map((polygon) =>
+        polygon.map((point) => mapPoint(point)),
+      )
+      let creaseSegments: readonly Segment2[] = []
+      if (creaseAngleDegrees !== undefined) {
+        const mesh = result.getMesh()
+        creaseSegments = visibleOrthographicCreases({
+          positions: copyPositions(mesh.vertProperties, mesh.numProp),
+          triangles: new Uint32Array(mesh.triVerts),
+          mergeFromVert: new Uint32Array(mesh.mergeFromVert),
+          mergeToVert: new Uint32Array(mesh.mergeToVert),
+          tolerance: mesh.tolerance,
+        }, axis, polygons, creaseAngleDegrees)
+      }
       return {
-        polygons: simplified.toPolygons().map((polygon) =>
-          polygon.map((point) => mapPoint(point)),
-        ),
+        polygons,
         areaMm2: simplified.area(),
+        creaseSegments,
       }
     } finally {
       simplified?.delete()

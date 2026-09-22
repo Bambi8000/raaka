@@ -652,6 +652,7 @@ input:focus-visible {
 .section-title > span,
 .section-title small,
 .section-plane-field > span:first-child,
+.drawing-line-controls > span:first-child,
 .section-paper-scale > span {
   color: var(--muted);
   font-size: 7px;
@@ -730,6 +731,43 @@ input:focus-visible {
 
 .section-plane-field > input[type="range"] {
   grid-column: 1 / -1;
+}
+
+.drawing-line-controls {
+  display: grid;
+  flex: 2 1 350px;
+  grid-template-columns: auto repeat(2, minmax(74px, 1fr)) auto;
+  align-content: center;
+  gap: 5px 8px;
+  min-height: 62px;
+  padding: 8px 11px;
+  border-right: 1px solid var(--ink);
+}
+
+.drawing-line-controls > button {
+  min-width: 78px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.drawing-line-controls > button.is-active {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--accent-ink);
+}
+
+.drawing-line-controls > input[type="range"] {
+  grid-column: 1 / -1;
+}
+
+.drawing-line-controls :disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .section-numeric-entry {
@@ -833,6 +871,11 @@ input:focus-visible {
 
 .drawing-preview-lines path {
   vector-effect: non-scaling-stroke;
+}
+
+.drawing-preview-lines--crease {
+  opacity: 0.72;
+  stroke-width: 1.25;
 }
 
 .section-state {

@@ -254,7 +254,7 @@ WebGL context. Startup failure or context loss produces a visible retryable
 error while project controls and saved geometry remain available.
 
 Version 0.1.34 begins measured drawing output with exact vertical sections.
-Switch from **3D view** to **Section**, choose an X or Y plane and author its
+Switch from **3D view** to **Drawings**, choose an X or Y plane and author its
 physical-model position in millimetres. RAAKA resolves the complete solid union
 and subtracts the retained upper core before drawing the cut boundary. The
 preview reports cut area and semantic path count. **Export SVG** writes only
@@ -269,6 +269,14 @@ retained core stays hidden. The SVG path set now distinguishes semantic
 `outline` and `section` roles while preserving full physical millimetres and
 independent paper scale. Plans and elevations are explicitly silhouette-only:
 visible crease extraction and hidden-line policy remain later drawing work.
+
+Version 0.1.36 adds visible crease lines to orthographic drawings. RAAKA reads
+adjacent faces from the finished boolean mesh, rejects coplanar triangulation
+diagonals below an adjustable angle threshold and clips every crease against
+nearer projected faces. Outline and crease roles can be shown independently;
+SVG writes open creases to `layer-crease` and records the threshold. Views are
+explicitly from +Z, +X or +Y. Hidden edges are omitted rather than presented as
+finished dashed-line output.
 
 ## Run locally
 
@@ -313,14 +321,14 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.35 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.36 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.
-Measured X/Y section, plan and outline-elevation SVGs are available; visible
-crease extraction, hidden-line views, Muusia routing, mould output, other
-recipes and removable/open void workflows remain planned. The current mass,
-core, ground-contact
+Measured X/Y section, plan and elevation SVGs with selectable exterior outlines
+and visible creases are available; dashed hidden-line views, Muusia routing,
+mould output, other recipes and removable/open void workflows remain planned.
+The current mass, core, ground-contact
 and static stability readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
 including seeded variation,

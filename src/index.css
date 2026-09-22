@@ -24,6 +24,7 @@
   --fuse-soft: #142c3e;
   --overlay-border: rgb(244 244 239 / 40%);
   --overlay: rgb(23 23 21 / 82%);
+  --viewport-background: #151513;
   --metric-alert: #39320c;
   --error-alert: #3c1828;
   --error-text: #ff8585;
@@ -49,6 +50,7 @@
   --fuse-soft: #dcecf8;
   --overlay-border: rgb(23 23 21 / 50%);
   --overlay: rgb(244 244 239 / 82%);
+  --viewport-background: #d9d9d4;
   --metric-alert: #fff2b4;
   --error-alert: #f7d7e7;
   --error-text: #a02323;
@@ -363,6 +365,50 @@ input:focus-visible {
   font-size: 11px;
 }
 
+.viewport-error {
+  position: absolute;
+  inset: 35% 16px auto;
+  z-index: 8;
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  background: var(--overlay);
+  border: 1px solid var(--pink);
+  box-shadow: inset 5px 0 0 var(--pink);
+  text-align: left;
+}
+
+.viewport-error strong {
+  color: var(--pink);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.viewport-error span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.viewport-error button {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.viewport-error button:hover {
+  background: var(--yellow);
+  color: var(--accent-ink);
+}
+
 .compact-objects > summary {
   padding: 14px 15px;
   border-bottom: 1px solid var(--line);
@@ -554,12 +600,14 @@ input:focus-visible {
   position: relative;
   width: 100%;
   height: 100%;
+  background: var(--viewport-background);
 }
 
 .viewport-shell canvas {
   display: block;
   width: 100%;
   height: 100%;
+  background: var(--viewport-background);
   cursor: crosshair;
   touch-action: none;
 }

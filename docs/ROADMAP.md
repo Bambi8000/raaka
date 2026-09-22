@@ -50,6 +50,8 @@ Named feature streams, durable random targets and source locks are implemented
 in 0.1.31.
 A shared parameter schema and executable recipe registry are implemented in
 0.1.32.
+Selection-only material updates, on-demand rendering, complete viewport cleanup
+and a retryable WebGL failure state are implemented in 0.1.33.
 
 ## 0.1 — foundation
 
@@ -95,6 +97,8 @@ Version 0.1.31 makes seed variation order-independent and lockable per upper
 mass or support source.
 Version 0.1.32 binds Piloti defaults, schema, normalization and generation into
 the same recipe contract future families will implement.
+Version 0.1.33 closes the first viewport resource-lifecycle audit item without
+changing model truth or project data.
 
 ## 0.1.1 — correct the baseline
 
@@ -828,6 +832,36 @@ Verification: 488 tests plus lint, strict TypeScript and production build.
 Coverage includes registry identity and status, executable Piloti dispatch,
 complete schema/default parity, default bounds and collection identity.
 
+## 0.1.33 — viewport lifecycle and failure state
+
+- [x] retain mesh and edge geometry identity across selection, Fuse-selection
+  and theme-only appearance changes
+- [x] update retained-core surface opacity and edge colour with selection
+- [x] replace the perpetual animation loop with invalidated frames and bounded
+  camera-damping continuation
+- [x] dispose model and overlay resources, current grid and ground, controls,
+  directional shadow, renderer lists, renderer state and WebGL context
+- [x] deduplicate shared geometry and materials before disposal
+- [x] catch WebGL startup failure and handle context loss with a visible alert
+  that leaves project controls available
+- [x] provide a Retry 3D action that recreates the runtime from current study
+  state
+- [x] retain Piloti recipe version 21 and recovery v4 because model and saved
+  state are unchanged
+
+Done when selection never allocates replacement geometry, an idle viewport
+does not render continuously, all owned graphics resources have one cleanup
+path, and graphics failure cannot turn the application into an unexplained
+blank panel.
+
+Verification: 495 tests plus lint, strict TypeScript and production build.
+Coverage includes geometry identity under material changes, retained-core and
+Fuse appearance, renderer startup refusal, shared-resource disposal and the
+visible retry panel. Browser inspection exercised a real WebGL startup refusal
+and repeated Retry without losing project controls. Normal WebGL appearance
+requires owner inspection on the published build because the inspection
+browser could not allocate a graphics context.
+
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 
 - [x] independent upper width and depth controls
@@ -859,7 +893,7 @@ complete schema/default parity, default bounds and collection identity.
 - [x] separate concrete/core volume and mass, with explicit material assumptions
 - [x] STL export from the finished watertight solid
 - [x] a measured millimetre round trip into Kerros
-- [ ] update selection materials without rebuilding geometry; complete unmount
+- [x] update selection materials without rebuilding geometry; complete unmount
   cleanup and provide a visible WebGL failure state
 
 The default solid estimate is approximately 1,409 kg at 1.5 m height. Weight

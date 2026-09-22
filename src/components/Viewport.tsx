@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
@@ -17,6 +17,12 @@ import type { UiTheme } from '../core/uiTheme'
 import { createFrustumGeometry } from '../geometry/frustum'
 import { polygonLoftMesh } from '../core/polygonLoft'
 import { fitDirectionalShadow, fitPerspectiveCamera } from '../geometry/view'
+import {
+  createViewportRenderer,
+  disposeObjectTree,
+  disposeViewportRuntime,
+  WEBGL_CONTEXT_FAILURE,
+} from '../geometry/viewportLifecycle'
 
 interface ViewportProps {
   readonly study: MassStudy
@@ -87,6 +93,13 @@ const VIEWPORT_PALETTES: Readonly<Record<UiTheme, ViewportPalette>> = {
 const SELECTED_COLOUR = 0xffd400
 const FUSE_SELECTION_COLOUR = 0x287bc1
 const STABILITY_WARNING_COLOUR = 0xe33b97
+const EDGE_COLOUR = 0x30302e
+
+export interface PieceVisual {
+  readonly piece: ScenePiece
+  readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>
+  readonly edges: THREE.LineSegments<THREE.EdgesGeometry, THREE.LineBasicMaterial>
+}
 
 function pieceColour(
   piece: ScenePiece,
@@ -115,16 +128,6 @@ function createGrid(theme: UiTheme): THREE.GridHelper {
   return grid
 }
 
-function disposeGrid(grid: THREE.GridHelper): void {
-  grid.geometry.dispose()
-  const materials = grid.material as THREE.Material | THREE.Material[]
-  if (Array.isArray(materials)) {
-    for (const material of materials) material.dispose()
-    return
-  }
-  materials.dispose()
-}
-
 function geometryForPiece(piece: ScenePiece): THREE.BufferGeometry {
   if (piece.kind === 'box') {
     return new THREE.BoxGeometry(...piece.size)
@@ -143,20 +146,25 @@ function geometryForPiece(piece: ScenePiece): THREE.BufferGeometry {
   return createFrustumGeometry(piece)
 }
 
-function disposeObject(object: THREE.Object3D): void {
-  object.traverse((child) => {
-    if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
-      const renderable = child as THREE.Mesh<
-        THREE.BufferGeometry,
-        THREE.Material | THREE.Material[]
-      >
-      renderable.geometry.dispose()
-      const materials = Array.isArray(renderable.material)
-        ? renderable.material
-        : [renderable.material]
-      for (const material of materials) material.dispose()
-    }
-  })
+export function applyPieceAppearance(
+  visual: PieceVisual,
+  selectedPieceId: string,
+  fuseSelectionPieceIds: ReadonlySet<string>,
+  theme: UiTheme,
+): void {
+  const { piece, mesh, edges } = visual
+  const core = piece.role === 'core'
+  const colour = pieceColour(
+    piece,
+    selectedPieceId,
+    fuseSelectionPieceIds,
+    theme,
+  )
+  mesh.material.color.set(colour)
+  mesh.material.opacity = core
+    ? (piece.id === selectedPieceId ? 0.34 : 0.2)
+    : 1
+  edges.material.color.set(core ? colour : EDGE_COLOUR)
 }
 
 function createStabilityOverlay(study: MassStudy): THREE.Group {
@@ -221,6 +229,22 @@ function createStabilityOverlay(study: MassStudy): THREE.Group {
   return overlay
 }
 
+export function ViewportFailurePanel({
+  message,
+  onRetry,
+}: {
+  readonly message: string
+  readonly onRetry: () => void
+}) {
+  return (
+    <div className="viewport-error" role="alert">
+      <strong>3D PREVIEW UNAVAILABLE</strong>
+      <span>{message}</span>
+      <button type="button" onClick={onRetry}>RETRY 3D</button>
+    </div>
+  )
+}
+
 export function Viewport({
   study,
   modelScale,
@@ -234,6 +258,8 @@ export function Viewport({
   onTranslationEnd,
   onTranslationCancel,
 }: ViewportProps) {
+  const [viewportFailure, setViewportFailure] = useState<string>()
+  const [rendererAttempt, setRendererAttempt] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
   const controlsRef = useRef<OrbitControls>(null)
@@ -246,7 +272,9 @@ export function Viewport({
   const translationObjectRef = useRef<THREE.Object3D>(null)
   const transformControlsRef = useRef<TransformControls>(null)
   const selectableRef = useRef<THREE.Mesh[]>([])
+  const pieceVisualsRef = useRef(new Map<string, PieceVisual>())
   const pieceIdsRef = useRef(new Map<THREE.Object3D, string>())
+  const requestRenderRef = useRef<() => void>(() => undefined)
   const onSelectRef = useRef(onSelect)
   const translationGizmoRef = useRef(translationGizmo)
   const onTranslationStartRef = useRef(onTranslationStart)
@@ -298,6 +326,7 @@ export function Viewport({
     const canvas = canvasRef.current
     if (!canvas) return undefined
     const pieceIds = pieceIdsRef.current
+    const pieceVisuals = pieceVisualsRef.current
 
     const palette = VIEWPORT_PALETTES[uiThemeRef.current]
     const scene = new THREE.Scene()
@@ -308,7 +337,15 @@ export function Viewport({
     camera.up.set(0, 0, 1)
     cameraRef.current = camera
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+    const rendererResult = createViewportRenderer(canvas)
+    if (rendererResult.status === 'error') {
+      sceneRef.current = null
+      cameraRef.current = null
+      setViewportFailure(rendererResult.message)
+      return undefined
+    }
+    const { renderer } = rendererResult
+    setViewportFailure(undefined)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFShadowMap
@@ -365,12 +402,47 @@ export function Viewport({
     gridRef.current = grid
     scene.add(grid)
 
+    let frame: number | undefined
+    let disposed = false
+    let contextAvailable = true
+    const requestRender = () => {
+      if (disposed || !contextAvailable || frame !== undefined) return
+      frame = requestAnimationFrame(renderFrame)
+    }
+    const renderFrame = () => {
+      frame = undefined
+      if (disposed || !contextAvailable) return
+      const cameraChanged = controls.update()
+      renderer.render(scene, camera)
+      if (cameraChanged) requestRender()
+    }
+    requestRenderRef.current = requestRender
+    const handleControlsChange = () => requestRender()
+    const handleContextLost = (event: Event) => {
+      event.preventDefault()
+      contextAvailable = false
+      if (frame !== undefined) {
+        cancelAnimationFrame(frame)
+        frame = undefined
+      }
+      setViewportFailure(WEBGL_CONTEXT_FAILURE)
+    }
+    const handleContextRestored = () => {
+      contextAvailable = true
+      setViewportFailure(undefined)
+      requestRender()
+    }
+    controls.addEventListener('change', handleControlsChange)
+    canvas.addEventListener('webglcontextlost', handleContextLost)
+    canvas.addEventListener('webglcontextrestored', handleContextRestored)
+
     const resize = () => {
       const bounds = canvas.getBoundingClientRect()
       if (bounds.width === 0 || bounds.height === 0) return
       renderer.setSize(bounds.width, bounds.height, false)
       camera.aspect = bounds.width / bounds.height
       camera.updateProjectionMatrix()
+      requestRender()
     }
     const observer = new ResizeObserver(resize)
     observer.observe(canvas)
@@ -420,6 +492,7 @@ export function Viewport({
       dragStartTarget = target
       lastEmittedValue = target.valueDesignMm
       onTranslationStartRef.current(target)
+      requestRender()
     }
     const handleGizmoObjectChange = () => {
       if (!dragStartTarget) return
@@ -432,6 +505,7 @@ export function Viewport({
       lastEmittedValue = next
       dragChanged = dragChanged || !equalValue(dragStartTarget.valueDesignMm, next)
       onTranslationChangeRef.current(dragStartTarget, next)
+      requestRender()
     }
     const handleGizmoMouseUp = () => {
       if (!dragStartTarget) return
@@ -444,11 +518,13 @@ export function Viewport({
       lastEmittedValue = undefined
       dragCancelled = false
       dragChanged = false
+      requestRender()
     }
     const handleDraggingChanged = (event: { readonly value: unknown }) => {
       gizmoDragging = event.value === true
       controls.enabled = !gizmoDragging
       if (gizmoDragging) pointerStart = undefined
+      requestRender()
     }
     const cancelGizmo = () => {
       if (!transformControls.dragging) return
@@ -457,6 +533,7 @@ export function Viewport({
       transformControls.pointerUp(null)
       controls.enabled = true
       gizmoDragging = false
+      requestRender()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || !transformControls.dragging) return
@@ -477,34 +554,35 @@ export function Viewport({
     canvas.addEventListener('pointercancel', handlePointerCancel)
     window.addEventListener('keydown', handleKeyDown)
 
-    let frame = 0
-    const render = () => {
-      controls.update()
-      renderer.render(scene, camera)
-      frame = requestAnimationFrame(render)
-    }
-    render()
+    requestRender()
 
     return () => {
-      cancelAnimationFrame(frame)
+      disposed = true
+      if (frame !== undefined) cancelAnimationFrame(frame)
+      requestRenderRef.current = () => undefined
       canvas.removeEventListener('pointerdown', rememberPointer)
       canvas.removeEventListener('pointerup', selectAtPointer)
       canvas.removeEventListener('pointercancel', handlePointerCancel)
+      canvas.removeEventListener('webglcontextlost', handleContextLost)
+      canvas.removeEventListener('webglcontextrestored', handleContextRestored)
       window.removeEventListener('keydown', handleKeyDown)
+      controls.removeEventListener('change', handleControlsChange)
       transformControls.removeEventListener('mouseDown', handleGizmoMouseDown)
       transformControls.removeEventListener('objectChange', handleGizmoObjectChange)
       transformControls.removeEventListener('mouseUp', handleGizmoMouseUp)
       transformControls.removeEventListener('dragging-changed', handleDraggingChanged)
       observer.disconnect()
-      controls.dispose()
-      transformControls.dispose()
-      disposeObject(modelRoot)
-      ground.geometry.dispose()
-      ;(ground.material as THREE.Material).dispose()
-      const activeGrid = gridRef.current
-      if (activeGrid) disposeGrid(activeGrid)
-      keyLight.shadow.dispose()
-      renderer.dispose()
+      const activeGrid = gridRef.current ?? grid
+      disposeViewportRuntime({
+        scene,
+        modelRoot,
+        ground,
+        grid: activeGrid,
+        keyLight,
+        controls,
+        transformControls,
+        renderer,
+      })
       cameraRef.current = null
       controlsRef.current = null
       keyLightRef.current = null
@@ -516,9 +594,10 @@ export function Viewport({
       translationObjectRef.current = null
       transformControlsRef.current = null
       selectableRef.current = []
+      pieceVisuals.clear()
       pieceIds.clear()
     }
-  }, [])
+  }, [rendererAttempt])
 
   useEffect(() => {
     translationGizmoRef.current = translationGizmo
@@ -527,6 +606,7 @@ export function Viewport({
     if (!object || !controls) return
     if (!translationGizmo) {
       controls.detach()
+      requestRenderRef.current()
       return
     }
     if (controls.dragging) return
@@ -556,7 +636,8 @@ export function Viewport({
       (translationGizmo.minimumDesignMm[2] - translationGizmo.valueDesignMm[2]) * modelScale
     bounded.maxZ = translationGizmo.anchorModelMm[2] +
       (translationGizmo.maximumDesignMm[2] - translationGizmo.valueDesignMm[2]) * modelScale
-  }, [modelScale, translationGizmo])
+    requestRenderRef.current()
+  }, [modelScale, rendererAttempt, translationGizmo])
 
   useEffect(() => {
     const root = modelRootRef.current
@@ -564,9 +645,10 @@ export function Viewport({
 
     for (const child of [...root.children]) {
       root.remove(child)
-      disposeObject(child)
+      disposeObjectTree(child)
     }
     selectableRef.current = []
+    pieceVisualsRef.current.clear()
     pieceIdsRef.current.clear()
 
     for (const piece of visibleStudyPieces(study)) {
@@ -613,6 +695,14 @@ export function Viewport({
       edges.position.copy(mesh.position)
       edges.renderOrder = core ? 3 : 0
       root.add(edges)
+      const visual = { piece, mesh, edges }
+      pieceVisualsRef.current.set(piece.id, visual)
+      applyPieceAppearance(
+        visual,
+        selectedPieceIdRef.current,
+        fuseSelectionPieceIdsRef.current,
+        uiThemeRef.current,
+      )
     }
     root.add(createStabilityOverlay(study))
     const keyLight = keyLightRef.current
@@ -625,25 +715,19 @@ export function Viewport({
     if (restoredFromEmpty && camera && controls) {
       fitPerspectiveCamera(camera, controls, study.bounds, false)
     }
-  }, [study])
+    requestRenderRef.current()
+  }, [rendererAttempt, study])
 
   useEffect(() => {
-    for (const mesh of selectableRef.current) {
-      const pieceId = pieceIdsRef.current.get(mesh)
-      const piece = visibleStudyPieces(studyRef.current).find(
-        ({ id }) => id === pieceId,
-      )
-      const material = mesh.material
-      if (!piece || !(material instanceof THREE.MeshStandardMaterial)) continue
-      material.color.set(
-        pieceColour(
-          piece,
-          selectedPieceId,
-          fuseSelectionPieceIdsRef.current,
-          uiTheme,
-        ),
+    for (const visual of pieceVisualsRef.current.values()) {
+      applyPieceAppearance(
+        visual,
+        selectedPieceId,
+        fuseSelectionPieceIdsRef.current,
+        uiTheme,
       )
     }
+    requestRenderRef.current()
   }, [fuseSelectionPieceIds, selectedPieceId, uiTheme])
 
   useEffect(() => {
@@ -670,9 +754,10 @@ export function Viewport({
       const nextGrid = createGrid(uiTheme)
       scene.remove(previousGrid)
       scene.add(nextGrid)
-      disposeGrid(previousGrid)
+      disposeObjectTree(previousGrid)
       gridRef.current = nextGrid
     }
+    requestRenderRef.current()
   }, [uiTheme])
 
   useEffect(() => {
@@ -682,6 +767,7 @@ export function Viewport({
     const controls = controlsRef.current
     if (!camera || !controls) return
     fitPerspectiveCamera(camera, controls, studyRef.current.bounds, false)
+    requestRenderRef.current()
   }, [modelScale])
 
   const fitView = (useHomeDirection: boolean) => {
@@ -689,40 +775,55 @@ export function Viewport({
     const controls = controlsRef.current
     if (!camera || !controls) return
     fitPerspectiveCamera(camera, controls, studyRef.current.bounds, useHomeDirection)
+    requestRenderRef.current()
+  }
+
+  const retryViewport = () => {
+    setViewportFailure(undefined)
+    setRendererAttempt((attempt) => attempt + 1)
   }
 
   return (
     <div className="viewport-shell">
       <canvas ref={canvasRef} aria-label="Interactive 3D massing viewport" />
-      {visibleStudyPieces(study).length === 0 ? (
-        <div className="viewport-empty" role="status">
-          <strong>NO PARTS VISIBLE</strong>
-          <span>Restore a part from Objects, or use Undo.</span>
-        </div>
-      ) : null}
-      <div className="viewport-controls" aria-label="Viewport controls">
-        <button type="button" onClick={() => fitView(false)}>
-          FIT
-        </button>
-        <button type="button" onClick={() => fitView(true)}>
-          HOME
-        </button>
-      </div>
-      {translationGizmo ? (
-        <div className="viewport-gizmo-status" role="status">
-          <span>MOVE {translationGizmo.axes.toUpperCase()}</span>
-          <strong>{translationGizmo.label}</strong>
-          <small>1 MM DESIGN SNAP · ESC CANCELS</small>
-        </div>
-      ) : null}
-      <div className="viewport-meta viewport-meta--left">
-        PERSPECTIVE · Z UP · MM
-      </div>
-      <div className="viewport-meta viewport-meta--right">
-        {translationGizmo
-          ? 'DRAG HANDLE TO MOVE · EMPTY SPACE TO ORBIT'
-          : 'DRAG TO ORBIT · SCROLL TO ZOOM'}
-      </div>
+      {viewportFailure ? (
+        <ViewportFailurePanel
+          message={viewportFailure}
+          onRetry={retryViewport}
+        />
+      ) : (
+        <>
+          {visibleStudyPieces(study).length === 0 ? (
+            <div className="viewport-empty" role="status">
+              <strong>NO PARTS VISIBLE</strong>
+              <span>Restore a part from Objects, or use Undo.</span>
+            </div>
+          ) : null}
+          <div className="viewport-controls" aria-label="Viewport controls">
+            <button type="button" onClick={() => fitView(false)}>
+              FIT
+            </button>
+            <button type="button" onClick={() => fitView(true)}>
+              HOME
+            </button>
+          </div>
+          {translationGizmo ? (
+            <div className="viewport-gizmo-status" role="status">
+              <span>MOVE {translationGizmo.axes.toUpperCase()}</span>
+              <strong>{translationGizmo.label}</strong>
+              <small>1 MM DESIGN SNAP · ESC CANCELS</small>
+            </div>
+          ) : null}
+          <div className="viewport-meta viewport-meta--left">
+            PERSPECTIVE · Z UP · MM
+          </div>
+          <div className="viewport-meta viewport-meta--right">
+            {translationGizmo
+              ? 'DRAG HANDLE TO MOVE · EMPTY SPACE TO ORBIT'
+              : 'DRAG TO ORBIT · SCROLL TO ZOOM'}
+          </div>
+        </>
+      )}
     </div>
   )
 }

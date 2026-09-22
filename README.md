@@ -244,6 +244,15 @@ choice or identity-bearing collection; numeric validation and controls retain
 the same range source. The other five agreed families remain explicit planned
 definitions without pretend generators or invented parameters.
 
+Version 0.1.33 completes the first viewport lifecycle pass. Selection, Fuse
+selection and theme changes update existing mesh and edge materials without
+rebuilding geometry, including retained-core colour and opacity. Rendering is
+requested only when the camera, model, material, controls or viewport change;
+camera damping schedules only the frames it still needs. Unmount and retry
+dispose owned geometry, materials, controls, shadows, renderer lists and the
+WebGL context. Startup failure or context loss produces a visible retryable
+error while project controls and saved geometry remain available.
+
 ## Run locally
 
 Requirements:
@@ -287,7 +296,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.32 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.33 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.

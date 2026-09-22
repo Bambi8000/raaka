@@ -767,6 +767,42 @@ concrete. Kerros's production `meshImport.ts` recognises it as binary STL with a
 5,342,765.66 mm³ signed volume. This verifies the sealed inner shell across the
 real handoff; it does not validate foam placement or casting in material.
 
+## Drawing pipeline
+
+Version 0.1.34 starts the drawing boundary with vertical finished-solid
+sections. `sectionScenePiecesAtPlane` receives the already model-scaled scene
+pieces used by the viewport and STL path. It unions positive pieces, subtracts
+active retained-core pieces and only then slices the result. A 90-degree exact
+Manifold rotation reuses its horizontal cross-section operation: an X plane
+maps back to drawing coordinates Y/Z, while a Y plane maps to X/Z. Z remains
+positive upward in both views. Simplification happens inside the kernel before
+polygons leave the WASM boundary, so preview triangulation diagonals are never
+drawing paths.
+
+`sectionDrawing.ts` defines path-set format `raaka.path-set` version 1. The
+contract is renderer-independent JSON-shaped data with `units: "mm"`, a
+Cartesian coordinate system, explicit plane axis and physical-model offset,
+horizontal and vertical world-axis names, measured net section area, bounds
+and paths. Every current path is a closed polyline with semantic role
+`section`; holes such as a retained core remain separate rings. Coordinates
+always describe the manufactured physical model in millimetres. Paper scale
+does not rewrite this path set.
+
+The initial SVG serializer is deliberately line-only. It creates one named
+`layer-section` group, uses no polygon fills or text strokes, inverts only the
+SVG display Y axis and derives a tightly bounded millimetre page. The selected
+paper denominator scales the physical bounds, a 10 mm paper margin and a
+0.35 mm paper stroke independently from model scale. Metadata records the
+path-set version, millimetre units and paper scale. Empty cuts are refused with
+an explicit reason instead of producing a valid-looking blank document.
+
+Section axis, plane position and paper scale are drawing-workspace state, not
+recipe geometry, recovery history or portable project data. This first slice
+therefore keeps Piloti recipe version 21 and recovery v4. Standard paper sizes,
+saved drawing sheets, plan/elevation projection, hidden-line policy,
+dimensions, hatching, annotations and the Muusia adapter remain later drawing
+work; the current SVG must not be mistaken for the RAAKA 1974 document preset.
+
 ## Interface themes
 
 ### Viewport lifecycle

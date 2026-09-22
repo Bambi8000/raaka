@@ -253,6 +253,15 @@ dispose owned geometry, materials, controls, shadows, renderer lists and the
 WebGL context. Startup failure or context loss produces a visible retryable
 error while project controls and saved geometry remain available.
 
+Version 0.1.34 begins measured drawing output with exact vertical sections.
+Switch from **3D view** to **Section**, choose an X or Y plane and author its
+physical-model position in millimetres. RAAKA resolves the complete solid union
+and subtracts the retained upper core before drawing the cut boundary. The
+preview reports cut area and semantic path count. **Export SVG** writes only
+closed section lines in a named layer at paper scales from 1:1 through 1:20;
+the underlying path set remains in full physical millimetres for the future
+Muusia adapter.
+
 ## Run locally
 
 Requirements:
@@ -296,12 +305,13 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.33 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.34 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.
-Mould output, other recipes, drawings and removable/open void workflows are
-planned. The current mass, core, ground-contact
+Measured X/Y section SVGs are available; plans, elevations, hidden-line views,
+Muusia routing, mould output, other recipes and removable/open void workflows
+remain planned. The current mass, core, ground-contact
 and static stability readings are estimates, not structural engineering
 approval. The displayed envelope is derived from every generated piece,
 including seeded variation,

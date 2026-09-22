@@ -34,6 +34,13 @@ export interface SolidKernelSection {
   readonly areaMm2: number
 }
 
+export type SolidKernelSectionAxis = 'x' | 'y' | 'z'
+
+export interface SolidKernelSectionPlane {
+  readonly axis: SolidKernelSectionAxis
+  readonly offsetMm: number
+}
+
 let kernelPromise: Promise<ManifoldToplevel> | undefined
 
 export function loadSolidKernel(): Promise<ManifoldToplevel> {
@@ -248,21 +255,48 @@ export async function sectionScenePiecesAtZ(
   pieces: readonly ScenePiece[],
   zMm: number,
 ): Promise<SolidKernelSection> {
-  if (!Number.isFinite(zMm)) {
-    throw new RangeError('Section height must be finite.')
+  return sectionScenePiecesAtPlane(pieces, { axis: 'z', offsetMm: zMm })
+}
+
+/**
+ * Slice the finished scene on a world-axis plane. Returned points use the
+ * drawing axes X/Y, X/Z or Y/Z, with the vertical Z coordinate kept positive.
+ */
+export async function sectionScenePiecesAtPlane(
+  pieces: readonly ScenePiece[],
+  plane: SolidKernelSectionPlane,
+  subtractors: readonly ScenePiece[] = [],
+): Promise<SolidKernelSection> {
+  if (!Number.isFinite(plane.offsetMm)) {
+    throw new RangeError('Section plane offset must be finite.')
   }
   return withSceneManifold(pieces, (result) => {
-    const section = result.slice(zMm)
+    let oriented: ManifoldSolid | undefined
+    const height = plane.offsetMm
+    let mapPoint: (point: readonly [number, number]) => readonly [number, number]
+    if (plane.axis === 'x') {
+      oriented = result.rotate(0, -90, 0)
+      mapPoint = ([negativeZ, y]) => [y, -negativeZ]
+    } else if (plane.axis === 'y') {
+      oriented = result.rotate(90, 0, 0)
+      mapPoint = ([x, negativeZ]) => [x, -negativeZ]
+    } else {
+      mapPoint = ([x, y]) => [x, y]
+    }
+    const section = (oriented ?? result).slice(height)
     let simplified: ReturnType<ManifoldSolid['slice']> | undefined
     try {
       simplified = section.simplify()
       return {
-        polygons: simplified.toPolygons(),
+        polygons: simplified.toPolygons().map((polygon) =>
+          polygon.map((point) => mapPoint(point)),
+        ),
         areaMm2: simplified.area(),
       }
     } finally {
       simplified?.delete()
       section.delete()
+      oriented?.delete()
     }
-  })
+  }, subtractors)
 }

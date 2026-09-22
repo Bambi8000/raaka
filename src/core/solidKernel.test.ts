@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   finishScenePieces,
   fuseScenePieces,
+  sectionScenePiecesAtPlane,
   sectionScenePiecesAtZ,
   type SolidKernelMesh,
 } from './solidKernel'
@@ -176,6 +177,41 @@ describe('solid-kernel gate', () => {
     expect(section.areaMm2).toBeCloseTo(15_000, 8)
     expect(section.polygons).toHaveLength(1)
     expect(section.polygons[0]).toHaveLength(4)
+  })
+
+  it.each([
+    ['x', 20, 80, 100],
+    ['y', -10, 120, 100],
+  ] as const)('returns a measured vertical %s section in horizontal/Z drawing coordinates', async (
+    axis,
+    offsetMm,
+    expectedWidth,
+    expectedHeight,
+  ) => {
+    const section = await sectionScenePiecesAtPlane(
+      [box('offset', [20, -10, 50], [120, 80, 100])],
+      { axis, offsetMm },
+    )
+    const points = section.polygons.flat()
+    const horizontal = points.map(([value]) => value)
+    const vertical = points.map(([, value]) => value)
+
+    expect(section.areaMm2).toBeCloseTo(expectedWidth * expectedHeight, 8)
+    expect(Math.max(...horizontal) - Math.min(...horizontal)).toBeCloseTo(expectedWidth, 8)
+    expect(Math.max(...vertical) - Math.min(...vertical)).toBeCloseTo(expectedHeight, 8)
+    expect(Math.min(...vertical)).toBeCloseTo(0, 8)
+    expect(Math.max(...vertical)).toBeCloseTo(100, 8)
+  })
+
+  it('subtracts retained-core openings from a vertical finished-solid section', async () => {
+    const section = await sectionScenePiecesAtPlane(
+      [box('outer', [0, 0, 50], [100, 100, 100])],
+      { axis: 'x', offsetMm: 0 },
+      [box('core', [0, 0, 50], [60, 60, 60])],
+    )
+
+    expect(section.areaMm2).toBeCloseTo(10_000 - 3_600, 8)
+    expect(section.polygons).toHaveLength(2)
   })
 
   it('keeps a thin positive overlap as one deterministic solid', async () => {

@@ -10,6 +10,8 @@ import { Viewport } from './components/Viewport'
 import { ObjectList } from './components/ObjectList'
 import { ControlGroup, InspectorControls, InspectorSection, RangeField } from './components/InspectorControls'
 import { CreatePanel } from './components/CreatePanel'
+import { UpperTaperActions } from './components/UpperTaperActions'
+import { applyUpperSilhouettePreset, type UpperSilhouettePreset } from './core/upperSilhouette'
 import { DrawingWorkspace } from './components/DrawingWorkspace'
 import { boundsSize } from './core/bounds'
 import { MAX_SEED } from './core/generator'
@@ -557,6 +559,12 @@ export default function App() {
   const updateModelScale = (nextModelScale: ModelScale) => {
     if (nextModelScale === modelScale) return
     replaceStudy({ ...studyState, modelScale: nextModelScale })
+  }
+
+  const updateUpperSilhouette = (preset: UpperSilhouettePreset) => {
+    const nextParameters = applyUpperSilhouettePreset(parameters, preset)
+    if (nextParameters === parameters) return
+    replaceStudy({ ...studyState, parameters: nextParameters })
   }
 
   const toggleSelectedRandomLock = () => {
@@ -1270,7 +1278,7 @@ export default function App() {
         </details>
         <div id="workflow-create" className="workflow-panel" hidden={workflow !== 'create'}>
           <CreatePanel parameters={parameters} onChange={update} onInteractionStart={beginGesture}
-            onInteractionEnd={endGesture} onEdit={() => openWorkflow('edit')} />
+            onInteractionEnd={endGesture} onSilhouette={updateUpperSilhouette} onEdit={() => openWorkflow('edit')} />
         </div>
         <div id="workflow-edit" className="workflow-panel" hidden={workflow !== 'edit'}>
         <section className="inspector-lead" aria-live="polite">
@@ -1794,6 +1802,7 @@ export default function App() {
           </div>
           {parameters.upperMassProfile === 'tapered' ? (
             <>
+              <UpperTaperActions parameters={parameters} onApply={updateUpperSilhouette} />
               <RangeField
                 label={radial ? 'Top scale' : 'Top width share'}
                 affected={affectedControls.has('upperTopWidthRatio')}
@@ -2726,7 +2735,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.37</span>
+        <span className="statusbar-end">RAAKA 0.1.38</span>
       </footer>
     </main>
   )

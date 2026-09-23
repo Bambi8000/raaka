@@ -61,6 +61,8 @@ controls are implemented in 0.1.36.
 The owner's usability feedback takes priority over further drawing features:
 Create/Edit/Make navigation, readable controls and local-first editing ship in
 0.1.37. Validate the creation flow before adding more control surfaces.
+Symmetric taper actions and visible top centering follow the owner's first
+creation feedback in 0.1.38.
 
 ## 0.1 — foundation
 
@@ -1003,6 +1005,29 @@ Usability follow-ups after owner feedback:
 - [ ] consider direct taper/size handles and illustrated local help
 - [ ] verify a first-time-user path from a new study to a saved quarter-scale
   test model with no tutorial required
+
+## 0.1.38 — centered water-tower silhouettes
+
+- [x] start new studies without the hidden 120 mm top drift
+- [x] offer illustrated Narrow top and Water tower actions in Create and the
+  shared Upper shape editor, with equal ratios and zero X/Y drift
+- [x] show existing drift and provide Center top without resetting custom size
+- [x] apply each action in one undoable change and leave base placement, legs,
+  variation, division choice and independent part settings intact; explain
+  that stacked level bases still follow the shared profile
+- [x] keep project/recovery contracts unchanged and preserve authored offsets
+
+Done when a hexagonal or octagonal mass can widen evenly around its base centre,
+the bearing face and support geometry do not move, and Undo restores the previous
+ratios and both drift values together. The action describes a shared upper
+profile, not a globally symmetric arrangement or a separate water-tower recipe.
+
+Validation: 550 tests, lint, strict TypeScript and the production build. Geometry
+fixtures cover all three plans, equal top/base centres, uniform widening,
+unchanged bearings and legs, retained local settings and the stacked-level
+dependency. Isolated Chrome checks cover a recovered shifted study, both preset
+actions in Create/Edit, Center top, one-step Undo/Redo, repeated-click no-ops,
+recovery, light/dark presentation and the 390 px layout.
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

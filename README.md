@@ -12,6 +12,15 @@ carried by repeated faceted funnel supports. Its parameters update a live
 Three.js view, every object is selectable, and the inspector reports the solid
 volume, approximate concrete mass and ground contact area.
 
+Start in **Create**: choose a visual plan shape, use numbered buttons for the
+leg grid, and set the main proportions. Selecting a piece opens **Edit**, with
+its own settings before collapsible shared controls. Selecting a leg starts in
+**This leg**; the first edit creates its local settings automatically, and
+**Use shared** restores inheritance. **Make** holds model scale, retained core,
+material estimates and STL/SVG output. Save/Open and Undo/Redo stay available
+throughout. Larger text, exact position fields and progressive disclosure form
+the first usability pass in 0.1.37; workflow choices do not change project data.
+
 Version 0.1.2 adds validated project files, automatic local recovery and a
 100-step undo/redo history. Use **Save project** for a portable `.raaka.json`
 file and **Open** to restore it. One slider drag is one undo step; direct seed
@@ -321,7 +330,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.36 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.37 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.

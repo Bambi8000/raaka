@@ -678,7 +678,31 @@ sidebar breakpoint. A sticky selection label keeps the target visible while
 scrolling through controls. Yellow field borders and SELECTED labels supplement
 colour, and sliders expose their current influence through accessible text.
 
-### Direct translation
+### Creation workflow and progressive disclosure
+
+Version 0.1.37 adds transient Create/Edit/Make navigation. `CreatePanel` writes
+the same typed parameter updates and history gestures as the detailed editor;
+it introduces no new recipe defaults or geometry transformations. All three
+workflow panels remain mounted, with native `hidden` removing inactive panels
+from interaction and accessibility. The viewport remains mounted across
+navigation. Selecting a part opens Edit; selecting the retained core opens Make.
+
+`InspectorSection` uses native details/summary with local open state. The edit
+context is keyed by semantic selection so local sections begin open for a new
+target while unrelated rerenders retain disclosure choices. Selected copy and
+mass-part controls precede shared groups. `RangeField` also supports exact
+number-only entry and discrete count buttons, sharing validation, scope and
+the existing one-gesture history boundary with sliders.
+
+Selected-leg scope now starts local. A first numeric, proportion or lean edit
+writes all three override arrays from current inherited values in one study
+replacement; selecting the leg alone creates no model change. Use shared removes
+the same arrays. Geometry and project contracts are unchanged: Piloti remains
+version 21 and recovery remains `raaka.recovery.v4`. The compact warning entry
+reads the existing support/radial layout, stability, core and Fuse analysis
+before linking to the full Make panel.
+
+### Direct translation handles
 
 Version 0.1.23 adds `translationGizmo.ts` as the pure boundary between semantic
 selection and viewport interaction. It derives one target from the generated

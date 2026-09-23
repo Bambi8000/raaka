@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { ControlGroup, InspectorControls, RangeField } from './InspectorControls'
+import { ControlGroup, InspectorControls, InspectorSection, RangeField } from './InspectorControls'
 
 describe('inspector field filtering', () => {
   it.each([false, true])('omits irrelevant fields unless Show all is %s', (showAll) => {
@@ -51,5 +51,65 @@ describe('inspector field filtering', () => {
 
     expect(html).toContain('aria-description="Changes mass only."')
     expect(html).not.toContain('SELECTED')
+  })
+
+  it('offers discrete counts as named pressed choices without a slider or number field', () => {
+    const html = renderToStaticMarkup(
+      <RangeField label="Columns (X)" affected={true} presentation="choices"
+        value={3} minimum={1} maximum={6} step={1}
+        onChange={() => {}} onInteractionStart={() => {}} onInteractionEnd={() => {}} />,
+    )
+
+    expect(html).toContain('role="group" aria-label="Columns (X)"')
+    expect(html.match(/<button /g)).toHaveLength(6)
+    expect(html).toContain('aria-label="Columns (X): 3" aria-pressed="true"')
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1)
+    expect(html).not.toContain('<input')
+  })
+
+  it('labels exact-entry controls directly and retains limits, units and descriptions', () => {
+    const html = renderToStaticMarkup(
+      <RangeField label="Upper offset X" affected={true} presentation="number"
+        ariaDescription="Moves the upper mass in design millimetres."
+        value={60} minimum={-300} maximum={300} step={5} suffix=" mm"
+        onChange={() => {}} onInteractionStart={() => {}} onInteractionEnd={() => {}} />,
+    )
+
+    const labelTarget = /<label for="([^"]+)"/.exec(html)?.[1]
+    expect(labelTarget).toBeDefined()
+    expect(html).toContain(`<input id="${labelTarget}" type="number"`)
+    expect(html).toContain('aria-label="Upper offset X numeric value"')
+    expect(html).toContain('aria-description="Moves the upper mass in design millimetres."')
+    expect(html).toContain('min="-300" max="300" step="1" value="60"')
+    expect(html).toContain('> mm</span>')
+    expect(html).not.toContain('type="range"')
+  })
+
+  it.each(['number', 'choices'] as const)('filters unrelated %s controls before rendering', (presentation) => {
+    const html = renderToStaticMarkup(
+      <InspectorControls showAll={false}>
+        <RangeField label="Unrelated" affected={false} presentation={presentation}
+          value={3} minimum={1} maximum={6} step={1}
+          onChange={() => {}} onInteractionStart={() => {}} onInteractionEnd={() => {}} />
+      </InspectorControls>,
+    )
+    expect(html).toBe('')
+  })
+
+  it('starts optional sections closed and omits irrelevant sections entirely', () => {
+    const html = renderToStaticMarkup(<>
+      <InspectorSection title="Placement" description="Exact X and Y offsets.">
+        <button>Move</button>
+      </InspectorSection>
+      <InspectorSection title="Shape" defaultOpen><button>Form</button></InspectorSection>
+      <InspectorSection title="Unrelated" visible={false}><button>Hidden</button></InspectorSection>
+    </>)
+
+    expect(html).toContain('<details class="inspector-section"><summary>')
+    expect(html).toContain('Exact X and Y offsets.')
+    expect(html).toContain('<details class="inspector-section" open="">')
+    expect(html).toContain('<button>Move</button>')
+    expect(html).not.toContain('Unrelated')
+    expect(html).not.toContain('Hidden')
   })
 })

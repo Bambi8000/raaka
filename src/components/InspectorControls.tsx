@@ -27,6 +27,28 @@ export function ControlGroup({ visible, children }: { visible: boolean; children
   return visible ? children : null
 }
 
+/** Native disclosure state is local to the workspace, never a study edit. */
+export function InspectorSection({
+  title, description, defaultOpen = false, visible = true, children,
+}: {
+  title: string
+  description?: string
+  defaultOpen?: boolean
+  visible?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  if (!visible) return null
+  return <details className="inspector-section" open={open}
+    onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <summary>
+      <span className="inspector-section-heading">{title}</span>
+      {description ? <span className="inspector-section-description">{description}</span> : null}
+    </summary>
+    <div className="inspector-section-content">{children}</div>
+  </details>
+}
+
 interface RangeFieldProps {
   readonly label: string
   readonly value: number
@@ -39,6 +61,7 @@ interface RangeFieldProps {
   /** Keep a contextual field visible without claiming that it reshapes the selection. */
   readonly visible?: boolean
   readonly ariaDescription?: string
+  readonly presentation?: 'slider' | 'number' | 'choices'
   readonly onChange: (value: number) => void
   readonly onInteractionStart: () => void
   readonly onInteractionEnd: () => void
@@ -55,15 +78,48 @@ export function RangeField({
 }: RangeFieldProps) {
   const showAll = useContext(ShowAllControls)
   if (!showAll && !visible) return null
+  if (props.presentation === 'choices') return <ChoiceField affected={affected} {...props} />
   return <VisibleRangeField affected={affected} {...props} />
+}
+
+function fieldDescription(affected: boolean, description?: string): string {
+  return description ?? (affected
+    ? 'Affects the selected part or its live Fuse sources.'
+    : 'Does not affect the selected part in the current study.')
+}
+
+function ChoiceField({
+  label, value, minimum, maximum, step, affected, ariaDescription,
+  onChange, onInteractionStart, onInteractionEnd,
+}: RangeFieldProps) {
+  const choices = Array.from({ length: Math.floor((maximum - minimum) / step) + 1 },
+    (_, index) => minimum + index * step)
+  return <div className={`range-field control-choices ${affected ? 'affects-selection' : 'other-controls'}`}
+    role="group" aria-label={label} aria-description={fieldDescription(affected, ariaDescription)}>
+    <span className="field-heading">
+      <span>{label}</span>
+      {affected ? <small className="field-impact" aria-hidden="true">SELECTED</small> : null}
+    </span>
+    <div className="field-choices">
+      {choices.map((choice) => <button key={choice} type="button"
+        aria-label={`${label}: ${choice}`} aria-pressed={choice === value}
+        onClick={() => {
+          if (choice === value) return
+          onInteractionStart()
+          onChange(choice)
+          onInteractionEnd()
+        }}>{choice}</button>)}
+    </div>
+  </div>
 }
 
 function VisibleRangeField({
   label, value, minimum, maximum, step, suffix = '', display = 'raw', affected,
-  ariaDescription,
+  ariaDescription, presentation = 'slider',
   onChange, onInteractionStart, onInteractionEnd,
 }: RangeFieldProps) {
   const rangeId = useId()
+  const numberId = useId()
   const messageId = useId()
   const displayScale = display === 'percent' ? 100 : 1
   const unit = display === 'percent' ? '%' : suffix
@@ -123,16 +179,20 @@ function VisibleRangeField({
     event.currentTarget.blur()
   }
   return (
-    <div className={`range-field ${affected ? 'affects-selection' : 'other-controls'}`}>
+    <div className={`range-field control-${presentation} ${affected ? 'affects-selection' : 'other-controls'}`}
+      role={presentation === 'number' ? 'group' : undefined}
+      aria-label={presentation === 'number' ? label : undefined}>
       <span className="field-heading">
-        <label htmlFor={rangeId}>
+        <label htmlFor={presentation === 'number' ? numberId : rangeId}>
           {label}
           {affected ? <small className="field-impact" aria-hidden="true">SELECTED</small> : null}
         </label>
         <span className="numeric-entry">
           <input
+            id={numberId}
             type="number"
             aria-label={`${label} numeric value`}
+            aria-description={fieldDescription(affected, ariaDescription)}
             aria-describedby={message ? messageId : undefined}
             aria-invalid={message
               && message !== 'EDIT CANCELLED'
@@ -162,15 +222,13 @@ function VisibleRangeField({
           {unit ? <span aria-hidden="true">{unit}</span> : null}
         </span>
       </span>
-      <input id={rangeId} type="range" aria-label={label}
-        aria-description={ariaDescription ?? (affected
-          ? 'Affects the selected part or its live Fuse sources.'
-          : 'Does not affect the selected part in the current study.')}
+      {presentation === 'slider' ? <input id={rangeId} type="range" aria-label={label}
+        aria-description={fieldDescription(affected, ariaDescription)}
         min={minimum} max={maximum} step={inputStep} value={value}
         onPointerDown={onInteractionStart} onPointerUp={onInteractionEnd}
         onPointerCancel={onInteractionEnd} onKeyDown={beginKeyboardGesture}
         onKeyUp={endKeyboardGesture} onBlur={onInteractionEnd}
-        onChange={(event) => onChange(event.currentTarget.valueAsNumber)} />
+        onChange={(event) => onChange(event.currentTarget.valueAsNumber)} /> : null}
       {message ? <small id={messageId} className="numeric-entry-message" role="status">
         {message}
       </small> : null}

@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.36, the
+This document describes the product direction. In version 0.1.37, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -46,6 +46,31 @@ The constraint is the identity: RAAKA is not a general-purpose modeller. Its
 primary geometry is made from planes, prisms, wedges, facets and explicit
 boolean relationships. This produces a coherent visual language and makes the
 result legible to later mould and drawing systems.
+
+## Creation workflow
+
+Version 0.1.37 starts in **Create**, a short composition panel with visual
+Rectangle/Hexagon/Octagon choices, exact design height, numbered column/row
+choices and a few silhouette proportions. Seed exploration is available as
+**Next variation**. The five planned recipes sit in a closed disclosure.
+
+Selecting an object opens **Edit**. Copy placement, independent mass tops and
+local leg settings come first; shared dimensions, splitting, placement and
+variation are separate collapsible groups. A selected leg starts in **This
+leg**, with inherited values already editable. Its first edit snapshots lean,
+size and placement as one undoable local change. **All legs** explicitly edits
+shared lean; **Use shared** removes the selected override. Foot flare and
+bearing scale remain shared support-family controls. **Show all** restores
+unfiltered groups within Edit without changing the model.
+
+**Make** collects physical model scale, retained-core intent, material densities,
+estimates and output actions. Compact physical height, nominal mass and ground
+contact remain visible during form finding; existing layout, stability, core
+and Fuse warnings link to Make. Save/Open and Undo/Redo stay outside these
+workflow choices. Position and density use exact number fields; continuous
+proportions keep sliders. The larger typography and controls preserve the
+grey/white/yellow visual identity. Navigation and disclosures are workspace
+state, never saved geometry or undo steps.
 
 ## Physical scale
 
@@ -512,7 +537,7 @@ The interface is a working drawing surface:
 - yellow marks selection and immediate attention;
 - magenta marks voids and destructive geometry;
 - blue marks cores, guides and constructive secondary geometry;
-- sharp borders, dense labels and visible coordinate grids replace soft cards;
+- sharp borders, readable labels and visible coordinate grids replace soft cards;
 - all product language is English except the name RAAKA.
 
 A future drawing preset, provisionally named **RAAKA 1974**, carries title

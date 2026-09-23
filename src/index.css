@@ -2,7 +2,9 @@
   color: #f1f1eb;
   background: #11110f;
   color-scheme: dark;
-  font-family: Inter, "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-family: Inter, system-ui, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
   font-synthesis: none;
   text-rendering: geometricPrecision;
   --ink: #f1f1eb;
@@ -81,7 +83,8 @@ button {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+summary:focus-visible {
   outline: 3px solid var(--yellow);
   outline-offset: -3px;
 }
@@ -90,10 +93,10 @@ input:focus-visible {
   display: grid;
   grid-template:
     "top top top" 62px
-    "tools tools tools" 42px
+    "tools tools tools" 48px
     "left work right" minmax(0, 1fr)
-    "status status status" 28px /
-    236px minmax(420px, 1fr) 314px;
+    "status status status" 30px /
+    224px minmax(320px, 1fr) 380px;
   width: 100%;
   height: 100%;
   background: var(--paper);
@@ -141,7 +144,7 @@ input:focus-visible {
 .statusbar,
 .recipe-card small,
 .object-list small {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -161,7 +164,7 @@ input:focus-visible {
 }
 
 .project-name strong {
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.06em;
 }
 
@@ -171,12 +174,12 @@ input:focus-visible {
 
 .button {
   align-self: stretch;
-  min-width: 112px;
-  padding: 0 18px;
+  min-width: 102px;
+  padding: 0 14px;
   border: 0;
   border-left: 1px solid var(--ink);
   background: transparent;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.09em;
   cursor: pointer;
@@ -199,7 +202,7 @@ input:focus-visible {
 .button--primary span {
   display: block;
   margin-top: 2px;
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .button--drawing {
@@ -214,7 +217,7 @@ input:focus-visible {
 .button--drawing span {
   display: block;
   margin-top: 2px;
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .button:disabled {
@@ -244,7 +247,7 @@ input:focus-visible {
 .project-state > span,
 .seed-field span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.12em;
 }
@@ -253,7 +256,7 @@ input:focus-visible {
   padding: 3px 5px;
   border: 1px solid var(--ink);
   background: var(--paper);
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.1em;
 }
 
@@ -265,7 +268,7 @@ input:focus-visible {
 .project-state small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   text-overflow: ellipsis;
 }
 
@@ -285,13 +288,13 @@ input:focus-visible {
 
 .seed-field input {
   width: 104px;
-  height: 26px;
+  height: 36px;
   padding: 0 7px;
   border: 1px solid var(--line);
   border-radius: 0;
   background: var(--paper);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
+  font-size: 16px;
 }
 
 .study-toolbar-actions {
@@ -305,7 +308,7 @@ input:focus-visible {
   border: 0;
   border-left: 1px solid var(--ink);
   background: transparent;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -339,6 +342,7 @@ input:focus-visible {
 }
 
 .panel {
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   background: var(--panel);
@@ -352,6 +356,7 @@ input:focus-visible {
 .right-panel {
   grid-area: right;
   border-left: 1px solid var(--ink);
+  overscroll-behavior: contain;
 }
 
 .compact-objects {
@@ -377,7 +382,7 @@ input:focus-visible {
 
 .viewport-empty span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .viewport-error {
@@ -401,7 +406,7 @@ input:focus-visible {
 
 .viewport-error span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.45;
 }
 
@@ -413,7 +418,7 @@ input:focus-visible {
   border-radius: 0;
   background: var(--paper);
   color: var(--ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -425,16 +430,16 @@ input:focus-visible {
 }
 
 .compact-objects > summary {
-  padding: 14px 15px;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--line);
   background: var(--paper);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
 }
 
 .panel-section {
-  padding: 15px;
+  padding: 18px;
   border-bottom: 1px solid var(--ink);
 }
 
@@ -448,12 +453,12 @@ input:focus-visible {
 .section-heading > span {
   color: var(--muted);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .section-heading h2 {
   margin: 0;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 950;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -466,7 +471,7 @@ input:focus-visible {
 
 .recipe-card {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 22px 1fr auto;
   align-items: center;
   min-height: 42px;
   padding: 0 9px;
@@ -478,11 +483,11 @@ input:focus-visible {
 .recipe-card > span {
   color: var(--muted);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .recipe-card strong {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -513,7 +518,7 @@ input:focus-visible {
   margin-top: 18px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .removed-parts summary {
@@ -524,7 +529,7 @@ input:focus-visible {
 .removed-parts p,
 .empty-study {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -538,10 +543,10 @@ input:focus-visible {
 
 .removed-parts button,
 .inactive-fuse {
-  min-height: 28px;
+  min-height: 36px;
   border: 1px solid var(--line);
   background: var(--paper);
-  font-size: 9px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -557,11 +562,11 @@ input:focus-visible {
 
 .object-list button {
   display: grid;
-  grid-template-columns: 10px 1fr auto;
-  gap: 7px;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 2px 7px;
   align-items: center;
-  min-height: 29px;
-  padding: 0 7px;
+  min-height: 52px;
+  padding: 7px;
   border: 0;
   background: transparent;
   text-align: left;
@@ -583,11 +588,25 @@ input:focus-visible {
 }
 
 .object-list button > span:nth-child(2) {
-  overflow: hidden;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 720;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.object-list button > .role-dot {
+  grid-row: 1 / span 2;
+}
+
+.object-list button > small {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.object-list button.is-selected > small {
+  color: inherit;
 }
 
 .role-dot {
@@ -655,13 +674,13 @@ input:focus-visible {
 .drawing-line-controls > span:first-child,
 .section-paper-scale > span {
   color: var(--muted);
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.1em;
 }
 
 .section-title strong {
-  font-size: 13px;
+  font-size: 15px;
   letter-spacing: 0.08em;
 }
 
@@ -678,7 +697,7 @@ input:focus-visible {
   border-left: 1px solid var(--line);
   background: transparent;
   color: var(--ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -692,13 +711,13 @@ input:focus-visible {
 }
 
 .drawing-view-switch button span {
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 950;
 }
 
 .drawing-view-switch button small {
   color: var(--muted);
-  font-size: 6px;
+  font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.06em;
 }
@@ -746,10 +765,11 @@ input:focus-visible {
 
 .drawing-line-controls > button {
   min-width: 78px;
+  min-height: 36px;
   border: 1px solid var(--line);
   background: transparent;
   color: var(--ink);
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 950;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -789,14 +809,14 @@ input:focus-visible {
   background: transparent;
   color: var(--ink);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
+  font-size: 16px;
   text-align: right;
 }
 
 .section-numeric-entry small {
   padding-right: 6px;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .section-paper-scale {
@@ -812,7 +832,7 @@ input:focus-visible {
 .section-paper-scale > div {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  min-height: 26px;
+  min-height: 36px;
   border: 1px solid var(--line);
 }
 
@@ -822,7 +842,7 @@ input:focus-visible {
   border: 0;
   background: var(--blue);
   color: var(--accent-on-colour);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -831,7 +851,7 @@ input:focus-visible {
 .section-export span {
   display: block;
   margin-top: 3px;
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .section-export:disabled {
@@ -898,13 +918,13 @@ input:focus-visible {
 }
 
 .section-state strong {
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.08em;
 }
 
 .section-state span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -924,7 +944,7 @@ input:focus-visible {
   padding: 6px 8px;
   border-left: 1px solid var(--line);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.05em;
 }
@@ -961,12 +981,12 @@ input:focus-visible {
 
 .viewport-controls button {
   min-width: 56px;
-  height: 31px;
+  height: 38px;
   padding: 0 10px;
   border: 0;
   border-left: 1px solid var(--line);
   background: transparent;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.1em;
   cursor: pointer;
@@ -999,13 +1019,13 @@ input:focus-visible {
 .viewport-gizmo-status span,
 .viewport-gizmo-status small {
   color: var(--muted);
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.09em;
 }
 
 .viewport-gizmo-status strong {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.06em;
 }
 
@@ -1028,8 +1048,7 @@ input:focus-visible {
 }
 
 .inspector-lead {
-  min-height: 116px;
-  padding: 17px 15px;
+  padding: 20px 18px;
   border-bottom: 1px solid var(--ink);
   background: var(--paper);
 }
@@ -1039,7 +1058,7 @@ input:focus-visible {
 }
 
 .inspector-lead h1 {
-  margin: 14px 0 3px;
+  margin: 8px 0 3px;
   font-size: 29px;
   font-weight: 950;
   letter-spacing: -0.045em;
@@ -1048,14 +1067,14 @@ input:focus-visible {
 .inspector-lead p {
   margin: 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
 }
 
 .inspector-lead p.selection-help {
   margin-top: 10px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 400;
   letter-spacing: normal;
   line-height: 1.5;
@@ -1076,12 +1095,12 @@ input:focus-visible {
 }
 
 .inspector-actions button {
-  min-height: 28px;
+  min-height: 38px;
   padding: 0 10px;
   border: 1px solid var(--ink);
-  background: var(--yellow);
-  color: var(--accent-ink);
-  font-size: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -1117,7 +1136,7 @@ input:focus-visible {
 .fuse-builder > span,
 .fuse-builder > strong {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
 }
 
@@ -1128,7 +1147,7 @@ input:focus-visible {
 
 .fuse-builder > small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1138,11 +1157,11 @@ input:focus-visible {
 }
 
 .fuse-builder button {
-  min-height: 27px;
+  min-height: 36px;
   padding: 0 9px;
   border: 1px solid var(--ink);
   background: var(--paper);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.07em;
   cursor: pointer;
@@ -1161,7 +1180,7 @@ input:focus-visible {
 
 .controls-section {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .controls-section .section-heading {
@@ -1188,14 +1207,13 @@ input:focus-visible {
 
 .range-field {
   display: grid;
-  gap: 7px;
-  padding: 9px 10px;
+  gap: 10px;
+  padding: 10px 9px;
   border-left: 3px solid transparent;
 }
 
 .range-field.affects-selection {
-  border-color: var(--yellow);
-  background: var(--paper);
+  border-color: color-mix(in srgb, var(--yellow) 55%, transparent);
 }
 
 .range-field.other-controls {
@@ -1207,12 +1225,12 @@ input:focus-visible {
 }
 
 .field-impact {
-  display: inline-block;
+  display: none;
   margin-left: 6px;
   padding: 2px 3px;
   background: var(--yellow);
   color: var(--accent-ink);
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 0.05em;
 }
 
@@ -1221,27 +1239,27 @@ input:focus-visible {
   padding: 2px 4px;
   background: var(--yellow);
   color: var(--accent-ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .selection-context {
   position: sticky;
-  top: 0;
+  top: 72px;
   z-index: 2;
   display: flex;
   gap: 8px;
   align-items: baseline;
-  padding: 10px 15px;
+  padding: 12px 18px;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
   box-shadow: inset 3px 0 var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .selection-context > span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .selection-context > strong {
@@ -1252,12 +1270,12 @@ input:focus-visible {
 
 .selection-context > button {
   flex-shrink: 0;
-  min-height: 32px;
+  min-height: 38px;
   padding: 6px 9px;
   border: 1px solid var(--line);
   background: var(--paper);
   color: var(--ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 850;
 }
 
@@ -1283,7 +1301,7 @@ input:focus-visible {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 760;
 }
 
@@ -1295,7 +1313,7 @@ input:focus-visible {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  min-height: 26px;
+  min-height: 38px;
   border: 1px solid var(--line);
   background: var(--panel);
 }
@@ -1306,15 +1324,15 @@ input:focus-visible {
 }
 
 .numeric-entry input {
-  width: 64px;
+  width: 78px;
   min-width: 0;
-  padding: 5px 4px 5px 7px;
+  padding: 7px 4px 7px 8px;
   border: 0;
   outline: 0;
   background: transparent;
   color: var(--ink);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
+  font-size: 16px;
   font-weight: 750;
   text-align: right;
 }
@@ -1331,13 +1349,13 @@ input:focus-visible {
   padding-right: 7px;
   color: var(--muted);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 750;
 }
 
 .numeric-entry-message {
   color: var(--pink);
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.05em;
   line-height: 1.35;
@@ -1345,9 +1363,9 @@ input:focus-visible {
 
 input[type="range"] {
   width: 100%;
-  height: 12px;
+  height: 24px;
   margin: 0;
-  accent-color: var(--yellow);
+  accent-color: var(--concrete);
   cursor: ew-resize;
 }
 
@@ -1359,13 +1377,13 @@ input[type="range"] {
 .model-scale-heading {
   display: grid;
   gap: 3px;
-  padding: 8px 9px;
+  padding: 12px;
   border-bottom: 1px solid var(--ink);
 }
 
 .model-scale-heading > span,
 .model-scale-summary > span {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.1em;
 }
@@ -1373,7 +1391,7 @@ input[type="range"] {
 .model-scale-heading small,
 .model-scale-summary small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1383,12 +1401,12 @@ input[type="range"] {
 }
 
 .model-scale-presets button {
-  min-height: 34px;
+  min-height: 44px;
   border: 0;
   border-left: 1px solid var(--ink);
   background: transparent;
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -1406,7 +1424,7 @@ input[type="range"] {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 3px 10px;
-  padding: 8px 9px;
+  padding: 12px;
   border-top: 1px solid var(--ink);
 }
 
@@ -1425,15 +1443,15 @@ input[type="range"] {
 .control-subsection {
   display: grid;
   gap: 4px;
-  margin: 2px -15px 0;
-  padding: 11px 15px 0 20px;
+  margin: 2px -18px 0;
+  padding: 14px 18px 0 21px;
   border-top: 1px solid var(--ink);
   box-shadow: inset 3px 0 0 var(--line);
 }
 
 .control-subsection span,
 .lean-readout > span {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.1em;
 }
@@ -1443,25 +1461,26 @@ input[type="range"] {
 .offset-scope-switch small,
 .offset-inheritance small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
 .offset-scope-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   border: 1px solid var(--ink);
 }
 
 .offset-scope-switch button {
   display: grid;
   gap: 3px;
-  min-height: 47px;
-  padding: 8px;
+  min-height: 54px;
+  padding: 10px;
   border: 0;
   border-left: 1px solid var(--ink);
   background: var(--paper);
   text-align: left;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
@@ -1472,6 +1491,10 @@ input[type="range"] {
 .offset-scope-switch button.is-active {
   background: var(--yellow);
   color: var(--accent-ink);
+}
+
+.offset-scope-switch button.is-active small {
+  color: inherit;
 }
 
 .retained-core-switch button:nth-child(2).is-active {
@@ -1489,7 +1512,7 @@ input[type="range"] {
 .offset-scope-switch span,
 .offset-inheritance > span,
 .offset-override-heading > span {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.08em;
 }
@@ -1513,12 +1536,13 @@ input[type="range"] {
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: stretch;
+  min-height: 38px;
   padding: 0 9px;
   border: 0;
   border-left: 1px solid var(--ink);
   background: var(--yellow);
   color: var(--accent-ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.07em;
   cursor: pointer;
@@ -1528,7 +1552,7 @@ input[type="range"] {
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  min-height: 28px;
+  min-height: 38px;
   border: 1px solid var(--ink);
   background: var(--paper);
 }
@@ -1541,7 +1565,7 @@ input[type="range"] {
 .offset-override-heading button {
   grid-column: auto;
   grid-row: auto;
-  min-height: 28px;
+  min-height: 38px;
   background: transparent;
 }
 
@@ -1569,7 +1593,7 @@ input[type="range"] {
 }
 
 .shape-readout span {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.1em;
 }
@@ -1585,7 +1609,7 @@ input[type="range"] {
 .shape-readout small {
   grid-column: 1;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1640,15 +1664,15 @@ input[type="range"] {
 }
 
 .metrics-grid div {
-  min-height: 58px;
-  padding: 8px;
+  min-height: 76px;
+  padding: 11px;
   background: var(--paper);
 }
 
 .metrics-grid dt {
   margin-bottom: 8px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1657,7 +1681,7 @@ input[type="range"] {
 .metrics-grid dd {
   margin: 0;
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
@@ -1707,13 +1731,13 @@ input[type="range"] {
 .layout-advisories strong,
 .layout-advisories span {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.06em;
 }
 
 .layout-advisories small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1722,7 +1746,7 @@ input[type="range"] {
   padding-left: 9px;
   border-left: 3px solid var(--yellow);
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -1735,6 +1759,8 @@ input[type="range"] {
   border-top: 1px solid var(--ink);
   background: var(--statusbar);
   color: var(--statusbar-ink);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .statusbar span {
@@ -1805,14 +1831,454 @@ input[type="range"] {
   margin-left: auto;
 }
 
-@media (max-width: 980px) {
+.inspector-actions button:hover:not(:disabled) {
+  outline: 1px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.workflow-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  height: 72px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.workflow-nav button {
+  display: grid;
+  align-content: center;
+  gap: 0;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workflow-nav button:first-child {
+  border-left: 0;
+}
+
+.workflow-nav button > span {
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+}
+
+.workflow-nav button strong {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.workflow-nav button small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workflow-nav button:hover {
+  background: var(--hover);
+}
+
+.workflow-nav button[aria-pressed="true"] {
+  background: var(--yellow);
+  color: var(--accent-ink);
+}
+
+.workflow-nav button[aria-pressed="true"] > span,
+.workflow-nav button[aria-pressed="true"] small {
+  color: inherit;
+}
+
+.workflow-panel {
+  min-width: 0;
+}
+
+.workflow-panel[hidden] {
+  display: none;
+}
+
+.workflow-intro {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.workflow-intro h1,
+.workflow-intro h2 {
+  margin: 2px 0 6px;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+}
+
+.workflow-intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.create-group {
+  display: grid;
+  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.create-group-heading {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.create-group-heading h2,
+.create-group-heading h3,
+.create-group-heading strong {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.create-group-heading p,
+.create-group-heading small,
+.create-group > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.create-group .range-field {
+  padding: 6px 0;
+  border-left: 0;
+}
+
+.create-panel .range-field.other-controls,
+.create-panel .range-field.other-controls .numeric-entry input:not([aria-invalid="true"]) {
+  color: var(--ink);
+}
+
+.quick-shapes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.quick-shape {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 4px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.quick-shape:hover {
+  border-color: var(--ink);
+  background: var(--hover);
+}
+
+.quick-shape strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.quick-shape small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.quick-shape[aria-pressed="true"] small {
+  color: inherit;
+}
+
+.quick-shape[aria-pressed="true"],
+.quick-shape.is-active {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--accent-ink);
+}
+
+.shape-icon {
+  display: block;
+  width: 44px;
+  height: 36px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: miter;
+}
+
+.quick-counts {
+  display: grid;
+  gap: 6px;
+}
+
+.quick-counts .control-choices {
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-counts .field-heading {
+  font-size: 14px;
+}
+
+.quick-counts .field-choices button {
+  padding-inline: 2px;
+}
+
+.field-choices {
+  display: flex;
+  gap: 4px;
+}
+
+.field-choices button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.field-choices button:hover {
+  background: var(--hover);
+}
+
+.field-choices button[aria-pressed="true"] {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--accent-ink);
+}
+
+.control-number {
+  border-bottom: 1px solid var(--line);
+}
+
+.control-number .numeric-entry {
+  background: var(--paper);
+}
+
+.range-field input[type="range"]:focus-visible {
+  accent-color: var(--yellow);
+}
+
+.workflow-next {
+  display: grid;
+  gap: 12px;
+  padding: 20px 18px;
+}
+
+.workflow-next p,
+.workflow-next small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.workflow-next-button {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 14px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.workflow-next-button:hover {
+  background: var(--hover);
+}
+
+.subtle-button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.subtle-button:hover {
+  border-color: var(--ink);
+  background: var(--hover);
+}
+
+.workflow-readout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 3px 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 12px;
+}
+
+.workflow-readout strong {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  min-width: 0;
+  font-size: 14px;
+  text-align: right;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+
+.workflow-readout small,
+.workflow-readout p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.workflow-readout .is-warning {
+  padding-left: 9px;
+  border-left: 3px solid var(--yellow);
+}
+
+.workflow-readout > button {
+  grid-column: 1 / -1;
+  min-height: 36px;
+  margin-top: 4px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--yellow);
+  background: var(--metric-alert);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workflow-readout > button:hover {
+  border-color: var(--yellow);
+}
+
+.inspector-section {
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector-section > summary {
+  position: relative;
+  padding: 17px 18px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.inspector-section > summary:hover,
+.recipe-disclosure > summary:hover,
+.selection-details > summary:hover {
+  background: var(--hover);
+}
+
+.inspector-section-heading {
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.inspector-section-description {
+  display: block;
+  margin: 4px 0 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.inspector-section[open] > summary {
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 3px 0 var(--ink);
+}
+
+.inspector-section-content {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.inspector-section-content > .panel-section {
+  margin: -18px;
+  border-bottom: 0;
+}
+
+.inspector-section-content .control-subsection:first-child {
+  margin-top: -18px;
+}
+
+.recipe-disclosure,
+.selection-details {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.recipe-disclosure > summary,
+.selection-details > summary {
+  padding: 12px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recipe-disclosure .recipe-list {
+  padding-bottom: 12px;
+}
+
+.recipe-disclosure p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.recipe-disclosure p strong {
+  color: var(--ink);
+}
+
+.selection-details[open] {
+  padding-bottom: 4px;
+}
+
+.selection-details .selection-help {
+  margin-top: 0;
+  font-size: 13px;
+}
+
+@media (max-width: 1140px) {
   .app-shell {
     grid-template:
       "top top" 62px
-      "tools tools" 42px
+      "tools tools" 48px
       "work right" minmax(0, 1fr)
-      "status status" 28px /
-      minmax(360px, 1fr) 290px;
+      "status status" 30px /
+      minmax(300px, 1fr) 370px;
   }
 
   .left-panel {
@@ -1833,7 +2299,7 @@ input[type="range"] {
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 760px) {
   html,
   body,
   #root {
@@ -1843,11 +2309,11 @@ input[type="range"] {
   .app-shell {
     grid-template:
       "top" 56px
-      "tools" 105px
-      "work" 58vh
+      "tools" 120px
+      "work" minmax(300px, 45svh)
       "right" auto
-      "status" 28px /
-      1fr;
+      "status" 30px /
+      minmax(0, 1fr);
     min-height: 100%;
     height: auto;
   }
@@ -1883,35 +2349,37 @@ input[type="range"] {
     flex: 1 1 0;
     min-width: 0;
     padding: 0 7px;
-    font-size: 8px;
+    font-size: 12px;
   }
 
   .study-toolbar {
     position: relative;
     flex-wrap: wrap;
+    align-content: flex-start;
     overflow: hidden;
   }
 
   .project-state {
     flex: 1 1 180px;
     min-width: 180px;
-    height: 42px;
+    height: 46px;
   }
 
   .project-state small {
     position: absolute;
-    top: 84px;
+    top: 92px;
     left: 0;
     width: 100%;
-    height: 21px;
-    padding: 4px 14px 0;
+    height: 28px;
+    padding: 4px 10px 0;
     border-top: 1px solid var(--line);
     background: var(--paper);
     text-overflow: ellipsis;
   }
 
   .seed-field {
-    height: 42px;
+    height: 46px;
+    padding: 0 8px;
   }
 
   .seed-field input {
@@ -1921,7 +2389,7 @@ input[type="range"] {
   .study-toolbar-actions {
     order: 3;
     width: 100%;
-    height: 42px;
+    height: 46px;
     border-top: 1px solid var(--ink);
   }
 
@@ -1930,15 +2398,68 @@ input[type="range"] {
     flex: 1 1 0;
     min-width: 0;
     padding: 0 5px;
-    font-size: 8px;
+    font-size: 12px;
   }
 
   .panel {
     overflow: visible;
   }
 
+  .section-workspace {
+    overflow-y: auto;
+    grid-template-rows: auto minmax(220px, 1fr);
+  }
+
+  .section-sheet {
+    min-height: 200px;
+  }
+
+  .drawing-line-controls {
+    flex-basis: 100%;
+    grid-template-columns: auto 1fr 1fr auto;
+    gap: 5px;
+    padding-inline: 6px;
+  }
+
+  .drawing-line-controls > button {
+    min-width: 0;
+    font-size: 10px;
+  }
+
+  .section-numeric-entry input {
+    width: 56px;
+  }
+
+  .viewport-gizmo-status {
+    top: 62px;
+    max-width: calc(100% - 28px);
+  }
+
+  .viewport-meta {
+    max-width: calc(100% - 28px);
+    font-size: 10px;
+  }
+
+  .viewport-meta--right {
+    bottom: 46px;
+  }
+
+  .workflow-readout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workflow-readout strong {
+    text-align: left;
+  }
+
+  .quick-counts .control-choices {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
   .statusbar {
     gap: 12px;
+    font-size: 10px;
   }
 
   .statusbar > span:nth-child(4),

@@ -8,7 +8,8 @@ import {
 } from 'react'
 import { Viewport } from './components/Viewport'
 import { ObjectList } from './components/ObjectList'
-import { ControlGroup, InspectorControls, RangeField } from './components/InspectorControls'
+import { ControlGroup, InspectorControls, InspectorSection, RangeField } from './components/InspectorControls'
+import { CreatePanel } from './components/CreatePanel'
 import { DrawingWorkspace } from './components/DrawingWorkspace'
 import { boundsSize } from './core/bounds'
 import { MAX_SEED } from './core/generator'
@@ -58,6 +59,7 @@ import {
   toggleRandomLockForTarget,
 } from './core/randomLocks'
 import { PILOTI_RECIPE, RECIPE_DEFINITIONS } from './core/recipes'
+import { RETAINED_CORE_ID } from './core/retainedCore'
 import type {
   MassStudy,
   ModelScale,
@@ -79,6 +81,7 @@ interface Notice {
 type ProjectOrigin = 'DEFAULT' | 'RECOVERED' | 'SAVED'
 type SupportEditScope = 'shared' | 'selected'
 type WorkspaceMode = 'model' | 'drawing'
+type Workflow = 'create' | 'edit' | 'make'
 
 interface PilotiStudyState {
   readonly parameters: PilotiParameters
@@ -235,7 +238,9 @@ export default function App() {
     return preferredSelection(ids)
   })
   const [supportEditScope, setSupportEditScope] =
-    useState<SupportEditScope>('shared')
+    useState<SupportEditScope>('selected')
+  const [workflow, setWorkflow] = useState<Workflow>('create')
+  const inspectorRef = useRef<HTMLElement>(null)
   const [showAllControls, setShowAllControls] = useState(false)
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('model')
   const [drawingWorkspaceOpened, setDrawingWorkspaceOpened] = useState(false)
@@ -468,6 +473,20 @@ export default function App() {
     parameters.partCopies.length < PILOTI_PART_COPY_LIMIT
   const projectStatus: ProjectOrigin | 'UNSAVED' =
     projectJson === baselineJson ? projectOrigin : 'UNSAVED'
+  const layout = study.supportLayout
+  const hasModelWarnings = study.stability.status !== 'inside'
+    || study.retainedCore.status === 'paused'
+    || fuseRenderStatus === 'error'
+    || (currentFuseRenderState?.status === 'ready' && currentFuseRenderState.dormantFuseGroupIds.length > 0)
+    || (layout !== undefined && (
+      layout.adjacentRowOverlapMm > 0 || layout.adjacentColumnOverlapMm > 0
+      || (parameters.shoulderMode === 'shared' && layout.adjacentColumnGapMm > 0)
+      || layout.nonAdjacentBearingOverlapMm > 0 || layout.bearingOverhangMm > 0
+      || layout.sideBearingOverhangMm > 0
+    ))
+    || (study.radialLayout !== undefined && (
+      study.radialLayout.bearingOverhangMm > 0 || study.radialLayout.shoulderOverlapMm2 > 0
+    ))
 
   const persistRecovery = (nextStudy: PilotiStudyState) => {
     try {
@@ -504,15 +523,19 @@ export default function App() {
     }
   }
 
+  const openWorkflow = (next: Workflow) => {
+    setWorkflow(next)
+    inspectorRef.current?.scrollTo({ top: 0 })
+  }
+
   const selectPiece = (pieceId: string) => {
     const owningFuse = parameters.fuseGroups.find((group) =>
       study.pieces.some((piece) => piece.id === group.id) && group.pieceIds.includes(pieceId),
     )
     const semanticPieceId = owningFuse?.id ?? pieceId
     setSelectedPieceId(semanticPieceId)
-    if (supportIdForPiece(semanticPieceId) === undefined) {
-      setSupportEditScope('shared')
-    }
+    setSupportEditScope(supportIdForPiece(semanticPieceId) ? 'selected' : 'shared')
+    openWorkflow(semanticPieceId === RETAINED_CORE_ID ? 'make' : 'edit')
   }
 
   const replaceStudy = (nextStudy: PilotiStudyState) => {
@@ -769,6 +792,7 @@ export default function App() {
     setSelectedPieceId('upper-mass')
     setFuseSelectionPieceIds([])
     setSupportEditScope('shared')
+    openWorkflow('create')
     replaceStudy(DEFAULT_STUDY)
     setNotice({ kind: 'info', text: 'Defaults restored. Undo is available.' })
   }
@@ -913,24 +937,11 @@ export default function App() {
     })
   }
 
-  const createSelectedSupportOverride = () => {
-    if (selectedSupportId === undefined || hasSelectedSupportOverride) return
-    replaceSelectedSupportOverride(
-      selectedSupportId,
-      {
-        footOffsetXMm: parameters.footOffsetXMm,
-        footOffsetYMm: parameters.footOffsetYMm,
-      },
-      { widthScale: 1, depthScale: 1 },
-      { positionXMm: 0, positionYMm: 0 },
-    )
-  }
-
   const updateSelectedFootOffset = (
     axis: 'footOffsetXMm' | 'footOffsetYMm',
     value: number,
   ) => {
-    if (selectedSupportId === undefined || !hasSelectedSupportOverride) return
+    if (selectedSupportId === undefined) return
     replaceSelectedSupportOverride(
       selectedSupportId,
       {
@@ -952,7 +963,7 @@ export default function App() {
     axis: 'widthScale' | 'depthScale',
     value: number,
   ) => {
-    if (selectedSupportId === undefined || !hasSelectedSupportOverride) return
+    if (selectedSupportId === undefined) return
     replaceSelectedSupportOverride(
       selectedSupportId,
       {
@@ -974,7 +985,7 @@ export default function App() {
     axis: 'positionXMm' | 'positionYMm',
     value: number,
   ) => {
-    if (selectedSupportId === undefined || !hasSelectedSupportOverride) return
+    if (selectedSupportId === undefined) return
     replaceSelectedSupportOverride(
       selectedSupportId,
       {
@@ -1075,7 +1086,7 @@ export default function App() {
               update('seed', (parameters.seed + 1) % (MAX_SEED + 1))
             }
           >
-            NEXT SEED
+            NEXT VARIATION
           </button>
           <button
             type="button"
@@ -1177,15 +1188,13 @@ export default function App() {
             <h2>Recipe</h2>
           </div>
           <div className="recipe-list">
-            {RECIPE_DEFINITIONS.map((recipe, index) => (
+            {RECIPE_DEFINITIONS.filter((recipe) => recipe.status === 'active').map((recipe, index) => (
               <button
                 type="button"
                 key={recipe.id}
                 className={`recipe-card ${recipe.id === 'piloti' ? 'is-active' : ''}`}
                 disabled={recipe.status !== 'active'}
-                title={recipe.status === 'active'
-                  ? recipe.description
-                  : `${recipe.description} ${recipe.unavailableReason}`}
+                title={recipe.description}
               >
                 <span>{String(index + 1).padStart(2, '0')}</span>
                 <strong>{recipe.name}</strong>
@@ -1193,6 +1202,12 @@ export default function App() {
               </button>
             ))}
           </div>
+          <details className="recipe-disclosure">
+            <summary>Planned recipes</summary>
+            {RECIPE_DEFINITIONS.filter((recipe) => recipe.status !== 'active').map((recipe) => (
+              <p key={recipe.id}><strong>{recipe.name}</strong> — {recipe.description}</p>
+            ))}
+          </details>
         </section>
 
         {objectList}
@@ -1228,11 +1243,36 @@ export default function App() {
         ) : null}
       </section>
 
-      <aside className="right-panel panel">
+      <aside className="right-panel panel" ref={inspectorRef}>
+        <nav className="workflow-nav" aria-label="Creation workflow">
+          {([
+            ['create', '01', 'Create', 'Shape & layout'],
+            ['edit', '02', 'Edit', 'Selected piece'],
+            ['make', '03', 'Make', 'Scale & export'],
+          ] as const).map(([id, number, label, description]) => (
+            <button type="button" key={id} aria-pressed={workflow === id}
+              aria-controls={`workflow-${id}`} onClick={() => openWorkflow(id)}>
+              <span>{number}</span><strong>{label}</strong><small>{description}</small>
+            </button>
+          ))}
+        </nav>
+        <div className="workflow-readout">
+          <span>MODEL 1:{modelScaleDenominator}</span>
+          <strong>{formatNumber(study.heightMm)} mm tall · ≈ {formatNumber(study.estimatedMassKg)} kg</strong>
+          <small>Nominal mass · {formatNumber(study.groundContactMm2 / 1_000_000, 3)} m² contact</small>
+          {hasModelWarnings ? (
+            <button type="button" onClick={() => openWorkflow('make')}>Review model warnings →</button>
+          ) : null}
+        </div>
         <details className="compact-objects">
           <summary>OBJECTS · {visiblePieces.length} VISIBLE · {parameters.removedPartIds.length} REMOVED</summary>
           {objectList}
         </details>
+        <div id="workflow-create" className="workflow-panel" hidden={workflow !== 'create'}>
+          <CreatePanel parameters={parameters} onChange={update} onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture} onEdit={() => openWorkflow('edit')} />
+        </div>
+        <div id="workflow-edit" className="workflow-panel" hidden={workflow !== 'edit'}>
         <section className="inspector-lead" aria-live="polite">
           <span className="eyebrow">SELECTED OBJECT</span>
           <h1>
@@ -1307,6 +1347,7 @@ export default function App() {
               </button>
             ) : null}
           </div>
+          <details className="selection-details"><summary>Selection & movement help</summary>
           {selectedRandomLockTarget ? (
             <p className="selection-help">
               <span>SEED VARIATION</span>{' '}
@@ -1340,6 +1381,7 @@ export default function App() {
           ) : selectedFuseGroup ? (
             <p className="selection-help gizmo-help"><span>MOVE GIZMO</span> Unfuse to move individual source parts.</p>
           ) : null}
+          </details>
           {validFuseSelectionPieceIds.length > 0 ? (
             <div className="fuse-builder" aria-live="polite">
               <span>FUSE SET</span>
@@ -1383,26 +1425,468 @@ export default function App() {
             {allControlsVisible ? 'SHOW RELEVANT' : 'SHOW ALL'}
           </button>
         </div>
-        <InspectorControls showAll={allControlsVisible}>
+        <InspectorControls key={selectedPieceId} showAll={allControlsVisible}>
         <section className="panel-section controls-section">
           <div className="section-heading">
             <span>03</span>
             <h2>{allControlsVisible ? 'All controls' : 'Relevant controls'}</h2>
           </div>
           {relevantControls.size === 0 ? <p className="selection-help">No active part to filter. Composition controls remain available; select or restore a part to focus the inspector.</p> : null}
-          <ControlGroup visible={canShowControls('planShape')}>
+          <InspectorSection title="Copy position" description="Translation belongs to this copy; shape follows its source" visible={selectedPartCopy !== undefined} defaultOpen={true}>
+          {selectedPartCopy ? (
+            <>
+              <div className="control-subsection">
+                <span>COPY POSITION</span>
+                <small>
+                  Source{' '}
+                  {selectedPartCopy.sourceId === 'upper-mass' || massPartAddress(selectedPartCopy.sourceId)
+                    ? partLabel(selectedPartCopy.sourceId).toUpperCase()
+                    : formatSupportId(selectedPartCopy.sourceId)}{' '}
+                  supplies the live shape. This copy owns its translation.
+                </small>
+              </div>
+              <RangeField
+                label="Copy offset X"
+                presentation="number"
+                affected={true}
+                value={selectedPartCopy.offsetXMm}
+                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
+                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  updateSelectedPartCopyOffset('offsetXMm', value)
+                }
+              />
+              <RangeField
+                label="Copy offset Y"
+                presentation="number"
+                affected={true}
+                value={selectedPartCopy.offsetYMm}
+                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
+                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  updateSelectedPartCopyOffset('offsetYMm', value)
+                }
+              />
+              <RangeField
+                label="Copy offset Z"
+                presentation="number"
+                affected={true}
+                value={selectedPartCopy.offsetZMm}
+                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
+                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  updateSelectedPartCopyOffset('offsetZMm', value)
+                }
+              />
+              <div className="shape-readout">
+                <span>COPY OFFSET</span>
+                <strong>
+                  {formatNumber(selectedPartCopy.offsetXMm)} ·{' '}
+                  {formatNumber(selectedPartCopy.offsetYMm)} ·{' '}
+                  {formatNumber(selectedPartCopy.offsetZMm)} MM
+                </strong>
+                <small>X · Y · Z in design millimetres.</small>
+              </div>
+            </>
+          ) : null}
+          </InspectorSection>
+          <InspectorSection title="This mass part" description="Shape this part independently" visible={activeMassProfile !== undefined} defaultOpen={true}>
+          {activeMassProfile ? (
+            <div className="mass-part-editor">
+              <div className="control-subsection">
+                <span>{partLabel(activeMassProfile.partId).toUpperCase()} · {selectedMassOverride ? 'INDEPENDENT TOP' : 'SHARED PROFILE'}</span>
+                <small>Only this part and its live copies change. The bottom face remains driven by the current division; dimensions are design millimetres.</small>
+              </div>
+              <div className="offset-scope-switch affects-selection" aria-label="Selected mass part profile">
+                {(['block', 'tapered'] as const).map((profile) => (
+                  <button key={profile} type="button" className={activeMassProfile.profile === profile ? 'is-active' : ''}
+                    aria-pressed={activeMassProfile.profile === profile} onClick={() => updateMassPart({ profile })}>
+                    {profile === 'block' ? 'PART BLOCK' : 'PART TAPERED'}
+                  </button>
+                ))}
+              </div>
+              {activeMassProfile.profile === 'tapered' ? (
+                <>
+                  {([
+                    ['topWidthRatio', 'Part top width share', 0.01, ''],
+                    ['topDepthRatio', 'Part top depth share', 0.01, ''],
+                    ['topOffsetXMm', 'Part top drift X', 1, ' mm'],
+                    ['topOffsetYMm', 'Part top drift Y', 1, ' mm'],
+                  ] as const).filter(([key]) => !radial || key !== 'topDepthRatio').map(([key, label, step, suffix]) => (
+                    <RangeField key={key} label={radial && key === 'topWidthRatio' ? 'Part top scale' : label} affected={true} value={activeMassProfile[key]}
+                      minimum={MASS_PART_RULES[key].minimum} maximum={MASS_PART_RULES[key].maximum}
+                      step={step} suffix={suffix}
+                      presentation={suffix ? 'number' : 'slider'}
+                      display={key === 'topWidthRatio' || key === 'topDepthRatio' ? 'percent' : 'raw'}
+                      onInteractionStart={beginGesture} onInteractionEnd={endGesture}
+                      onChange={(value) => updateMassPart({ [key]: value })} />
+                  ))}
+                  <p className="selection-help">Negative / positive drift leans the top towards −X / +X or −Y / +Y. Use opposite signs on neighbouring parts.</p>
+                </>
+              ) : null}
+              <button type="button" className="subtle-button" disabled={!selectedMassOverride}
+                onClick={() => update('massPartOverrides', parameters.massPartOverrides.filter((entry) => entry.partId !== selectedMassPartId))}>
+                USE SHARED PROFILE
+              </button>
+            </div>
+          ) : null}
+          </InspectorSection>
+          <InspectorSection title={activeSupportEditScope === 'selected' ? 'This leg' : 'All legs · lean'} description={activeSupportEditScope === 'selected' ? 'Local size, position and foot lean' : 'Shared foot offsets; copies follow their source'} visible={showLegEditor} defaultOpen={true}>
+          <ControlGroup visible={showLegEditor}>
           <div className="control-subsection">
-            <span>PLAN SHAPE</span>
-            <small>Rectangle uses the support grid. Hexagon and Octagon use one leg per side. Each layout retains its own part edits.</small>
+            <span>LEG EDIT SCOPE</span>
+            <small>{!allControlsVisible && selectedSupportId && !selectedStem
+              ? 'Position and size move or resize the whole leg. Select its stem to change foot lean.'
+              : centeredFeet
+              ? 'Foot offsets lean. Position moves the whole leg and realigns its outward direction.'
+              : 'Foot offsets lean. Position moves the complete leg.'}</small>
           </div>
-          <div className={`offset-scope-switch plan-shape-switch ${affectedControls.has('planShape') ? 'affects-selection' : 'other-controls'}`} aria-label="Piloti plan shape">
-            {(['rectangle', 'hexagon', 'octagon'] as const).map((shape) => (
-              <button type="button" key={shape} aria-pressed={parameters.planShape === shape}
-                className={parameters.planShape === shape ? 'is-active' : ''}
-                onClick={() => update('planShape', shape)}><span>{shape.toUpperCase()}</span></button>
-            ))}
+          <div className="offset-scope-switch" aria-label="Leg edit scope">
+            <button
+              type="button"
+              className={activeSupportEditScope === 'shared' ? 'is-active' : ''}
+              aria-pressed={activeSupportEditScope === 'shared'}
+              onClick={() => setSupportEditScope('shared')}
+            >
+              <span>All legs</span>
+              <small>Shared lean</small>
+            </button>
+            <button
+              type="button"
+              className={activeSupportEditScope === 'selected' ? 'is-active' : ''}
+              aria-pressed={activeSupportEditScope === 'selected'}
+              disabled={selectedSupportId === undefined}
+              onClick={() => setSupportEditScope('selected')}
+            >
+              <span>This leg</span>
+              <small>
+                {selectedSupportId
+                  ? formatSupportId(selectedSupportId)
+                  : 'SELECT A LEG'}
+              </small>
+            </button>
+          </div>
+          {!allControlsVisible && activeSupportEditScope === 'shared' && hasSelectedSupportOverride ? (
+            <p className="selection-help">This leg uses its own settings. Choose This leg to edit them; shared foot sliders do not affect this leg.</p>
+          ) : !allControlsVisible && activeSupportEditScope === 'shared' && selectedSupportId && !selectedStem ? (
+            <p className="selection-help">Choose This leg to edit its position and size. Shared dimensions are in Shared leg shape below.</p>
+          ) : null}
+          {activeSupportEditScope === 'selected' && !hasSelectedSupportOverride ? (
+            <p className="selection-help">This leg currently follows shared settings. Your first edit makes it independent; Use shared reconnects it.</p>
+          ) : null}
+          <>
+              {activeSupportEditScope === 'selected' && selectedSupportId ? (
+                <div className="offset-override-heading">
+                  <span>{formatSupportId(selectedSupportId)}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      replaceSelectedSupportOverride(selectedSupportId)
+                    }
+                    disabled={!hasSelectedSupportOverride}
+                  >
+                    USE SHARED
+                  </button>
+                </div>
+              ) : null}
+              <RangeField
+                label={
+                  centeredFeet
+                    ? activeSupportEditScope === 'selected' ? 'Selected radial offset' : 'Radial foot offset'
+                    : activeSupportEditScope === 'selected'
+                    ? 'Selected foot X'
+                    : 'Foot offset X'
+                }
+                affected={activeSupportEditScope === 'selected'
+                  ? selectedPieceId.startsWith('support-')
+                  : affectedControls.has('footOffsetXMm')}
+                value={activeFootOffsetX}
+                minimum={-300}
+                maximum={300}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  activeSupportEditScope === 'selected'
+                    ? updateSelectedFootOffset('footOffsetXMm', value)
+                    : update('footOffsetXMm', value)
+                }
+              />
+              <RangeField
+                label={
+                  centeredFeet
+                    ? activeSupportEditScope === 'selected' ? 'Selected tangential offset' : 'Tangential foot offset'
+                    : activeSupportEditScope === 'selected'
+                    ? 'Selected foot Y'
+                    : 'Foot offset Y'
+                }
+                affected={activeSupportEditScope === 'selected'
+                  ? selectedPieceId.startsWith('support-')
+                  : affectedControls.has('footOffsetYMm')}
+                value={activeFootOffsetY}
+                minimum={-300}
+                maximum={300}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) =>
+                  activeSupportEditScope === 'selected'
+                    ? updateSelectedFootOffset('footOffsetYMm', value)
+                    : update('footOffsetYMm', value)
+                }
+              />
+              {activeSupportEditScope === 'selected' ? (
+                <>
+                  <RangeField
+                    label="Selected position X"
+                    presentation="number"
+                    affected={true}
+                    value={activeSupportPositionX}
+                    minimum={-300}
+                    maximum={300}
+                    step={1}
+                    suffix=" mm"
+                    onInteractionStart={beginGesture}
+                    onInteractionEnd={endGesture}
+                    onChange={(value) =>
+                      updateSelectedSupportPosition('positionXMm', value)
+                    }
+                  />
+                  <RangeField
+                    label="Selected position Y"
+                    presentation="number"
+                    affected={true}
+                    value={activeSupportPositionY}
+                    minimum={-300}
+                    maximum={300}
+                    step={1}
+                    suffix=" mm"
+                    onInteractionStart={beginGesture}
+                    onInteractionEnd={endGesture}
+                    onChange={(value) =>
+                      updateSelectedSupportPosition('positionYMm', value)
+                    }
+                  />
+                  <div className="shape-readout">
+                    <span>SELECTED POSITION</span>
+                    <strong>
+                      X {formatNumber(activeSupportPositionX)} · Y{' '}
+                      {formatNumber(activeSupportPositionY)} MM
+                    </strong>
+                    <small>{centeredFeet
+                      ? 'World X/Y placement. The outward foot direction follows this leg’s new position.'
+                      : 'Translation from the generated support position.'}</small>
+                  </div>
+                  <RangeField
+                    label="Selected width scale"
+                    affected={true}
+                    value={activeSupportWidthScale}
+                    minimum={0.55}
+                    maximum={1.45}
+                    step={0.01}
+                    display="percent"
+                    onInteractionStart={beginGesture}
+                    onInteractionEnd={endGesture}
+                    onChange={(value) =>
+                      updateSelectedSupportSize('widthScale', value)
+                    }
+                  />
+                  <RangeField
+                    label="Selected depth scale"
+                    affected={true}
+                    value={activeSupportDepthScale}
+                    minimum={0.55}
+                    maximum={1.45}
+                    step={0.01}
+                    display="percent"
+                    onInteractionStart={beginGesture}
+                    onInteractionEnd={endGesture}
+                    onChange={(value) =>
+                      updateSelectedSupportSize('depthScale', value)
+                    }
+                  />
+                  <div className="shape-readout">
+                    <span>SELECTED SIZE</span>
+                    <strong>
+                      {formatNumber(activeSupportWidthScale * 100)} ×{' '}
+                      {formatNumber(activeSupportDepthScale * 100)}%
+                    </strong>
+                    <small>Width × depth relative to the shared leg.</small>
+                  </div>
+                </>
+              ) : null}
+          </>
+          <ControlGroup visible={showFootReadout}>
+          <div
+            className="lean-readout"
+            aria-label={`${activeSupportEditScope} leg lean result`}
+          >
+            <span>
+              {activeSupportEditScope === 'selected'
+                ? hasSelectedSupportOverride
+                  ? 'SELECTED LEAN'
+                  : 'INHERITED LEAN'
+                : 'SHARED LEAN'}
+            </span>
+            <strong>{authoredLeanAngleDeg.toFixed(1)}°</strong>
+            <small>
+              {formatNumber(footOffsetMm, 1)} MM DESIGN OFFSET ·{' '}
+              {footDirectionDeg === undefined
+                ? 'NO DIRECTION'
+                : `${footDirectionDeg.toFixed(0)}° ${centeredFeet ? 'FROM OUTWARD · CCW' : 'FOOT DIRECTION'}`}
+            </small>
+            <small>
+              {formatNumber(footOffsetMm * modelScale, 1)} MM MODEL OFFSET AT
+              1:{modelScaleDenominator}
+            </small>
+            <small>
+              {activeSupportEditScope === 'selected'
+                ? hasSelectedSupportOverride
+                  ? 'This leg uses selected lean, position and size values.'
+                  : 'The first edit separates this leg from shared settings.'
+                : 'Seeded asymmetry adds per-leg variation.'}
+            </small>
           </div>
           </ControlGroup>
+          </ControlGroup>
+          </InspectorSection>
+          <InspectorSection title="Upper shape" description="Shared profile; independent part tops keep their own shape" visible={canShowControls('upperMassProfile', 'upperTopWidthRatio', 'upperTopDepthRatio', 'upperTopOffsetXMm', 'upperTopOffsetYMm')} defaultOpen={!activeMassProfile && !selectedPartCopy}>
+          <ControlGroup visible={canShowControls('upperMassProfile', 'upperTopWidthRatio', 'upperTopDepthRatio', 'upperTopOffsetXMm', 'upperTopOffsetYMm')}>
+          <div className="control-subsection">
+            <span>{activeDivision === 'whole' ? 'UPPER MASS PROFILE' : 'SHARED UPPER MASS PROFILE'}</span>
+            <small>The bottom bearing face stays fixed. Independent part tops keep their own profile.</small>
+          </div>
+          <div className={`offset-scope-switch ${affectedControls.has('upperMassProfile') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass profile">
+            <button
+              type="button"
+              className={parameters.upperMassProfile === 'block' ? 'is-active' : ''}
+              aria-pressed={parameters.upperMassProfile === 'block'}
+              onClick={() => update('upperMassProfile', 'block')}
+            >
+              <span>BLOCK</span>
+              <small>PARALLEL SIDES</small>
+            </button>
+            <button
+              type="button"
+              className={
+                parameters.upperMassProfile === 'tapered' ? 'is-active' : ''
+              }
+              aria-pressed={parameters.upperMassProfile === 'tapered'}
+              onClick={() => update('upperMassProfile', 'tapered')}
+            >
+              <span>TAPERED</span>
+              <small>LOFTED TOP</small>
+            </button>
+          </div>
+          {parameters.upperMassProfile === 'tapered' ? (
+            <>
+              <RangeField
+                label={radial ? 'Top scale' : 'Top width share'}
+                affected={affectedControls.has('upperTopWidthRatio')}
+                value={parameters.upperTopWidthRatio}
+                minimum={0.45}
+                maximum={1.25}
+                step={0.01}
+                display="percent"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopWidthRatio', value)}
+              />
+              {!radial ? <RangeField
+                label="Top depth share"
+                affected={affectedControls.has('upperTopDepthRatio')}
+                value={parameters.upperTopDepthRatio}
+                minimum={0.45}
+                maximum={1.25}
+                step={0.01}
+                display="percent"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopDepthRatio', value)}
+              /> : null}
+              <RangeField
+                label="Top drift X"
+                presentation="number"
+                affected={affectedControls.has('upperTopOffsetXMm')}
+                value={parameters.upperTopOffsetXMm}
+                minimum={-400}
+                maximum={400}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopOffsetXMm', value)}
+              />
+              <RangeField
+                label="Top drift Y"
+                presentation="number"
+                affected={affectedControls.has('upperTopOffsetYMm')}
+                value={parameters.upperTopOffsetYMm}
+                minimum={-400}
+                maximum={400}
+                step={1}
+                suffix=" mm"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('upperTopOffsetYMm', value)}
+              />
+            </>
+          ) : null}
+          </ControlGroup>
+          </InspectorSection>
+          <InspectorSection title="Move upper mass" description="Shared X/Y placement; use the handles in the view or enter millimetres" visible={canShowControls('upperOffsetXMm', 'upperOffsetYMm')} defaultOpen={false}>
+          <ControlGroup visible={canShowControls('upperOffsetXMm', 'upperOffsetYMm')}>
+          <div className="control-subsection">
+            <span>UPPER MASS PLACEMENT</span>
+            <small>
+              {parameters.upperFootprintMode === 'linked'
+                ? 'Shoulder tops follow X/Y; stems and feet stay fixed.'
+                : 'Independent cantilever in design millimetres.'}
+            </small>
+          </div>
+          <RangeField
+            label="Upper offset X"
+            presentation="number"
+            affected={affectedControls.has('upperOffsetXMm')}
+            value={parameters.upperOffsetXMm}
+            minimum={-400}
+            maximum={400}
+            step={1}
+            suffix=" mm"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('upperOffsetXMm', value)}
+          />
+          <RangeField
+            label="Upper offset Y"
+            presentation="number"
+            affected={affectedControls.has('upperOffsetYMm')}
+            value={parameters.upperOffsetYMm}
+            minimum={-400}
+            maximum={400}
+            step={1}
+            suffix=" mm"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('upperOffsetYMm', value)}
+          />
+          </ControlGroup>
+          </InspectorSection>
+          <InspectorSection title="Split & stack" description="Divide the upper mass into editable parts or levels" visible={canShowControls(radial ? 'polygonMassDivision' : 'upperMassDivision')} defaultOpen={activeDivision !== 'whole'}>
           <ControlGroup visible={canShowControls(radial ? 'polygonMassDivision' : 'upperMassDivision')}>
           <div className="control-subsection">
             <span>UPPER MASS DIVISION</span>
@@ -1460,6 +1944,7 @@ export default function App() {
               />
               <RangeField
                 label="Step offset X"
+                presentation="number"
                 affected={affectedControls.has('upperStepOffsetXMm')}
                 visible={relevantControls.has('upperStepOffsetXMm')}
                 value={parameters.upperStepOffsetXMm}
@@ -1473,6 +1958,7 @@ export default function App() {
               />
               <RangeField
                 label="Step offset Y"
+                presentation="number"
                 affected={affectedControls.has('upperStepOffsetYMm')}
                 visible={relevantControls.has('upperStepOffsetYMm')}
                 value={parameters.upperStepOffsetYMm}
@@ -1495,111 +1981,24 @@ export default function App() {
               </div>
             </ControlGroup>
           ) : null}
-          {activeMassProfile ? (
-            <div className="mass-part-editor">
-              <div className="control-subsection">
-                <span>{partLabel(activeMassProfile.partId).toUpperCase()} · {selectedMassOverride ? 'INDEPENDENT TOP' : 'SHARED PROFILE'}</span>
-                <small>Only this part and its live copies change. The bottom face remains driven by the current division; dimensions are design millimetres.</small>
-              </div>
-              <div className="offset-scope-switch affects-selection" aria-label="Selected mass part profile">
-                {(['block', 'tapered'] as const).map((profile) => (
-                  <button key={profile} type="button" className={activeMassProfile.profile === profile ? 'is-active' : ''}
-                    aria-pressed={activeMassProfile.profile === profile} onClick={() => updateMassPart({ profile })}>
-                    {profile === 'block' ? 'PART BLOCK' : 'PART TAPERED'}
-                  </button>
-                ))}
-              </div>
-              {activeMassProfile.profile === 'tapered' ? (
-                <>
-                  {([
-                    ['topWidthRatio', 'Part top width share', 0.01, ''],
-                    ['topDepthRatio', 'Part top depth share', 0.01, ''],
-                    ['topOffsetXMm', 'Part top drift X', 1, ' mm'],
-                    ['topOffsetYMm', 'Part top drift Y', 1, ' mm'],
-                  ] as const).filter(([key]) => !radial || key !== 'topDepthRatio').map(([key, label, step, suffix]) => (
-                    <RangeField key={key} label={radial && key === 'topWidthRatio' ? 'Part top scale' : label} affected={true} value={activeMassProfile[key]}
-                      minimum={MASS_PART_RULES[key].minimum} maximum={MASS_PART_RULES[key].maximum}
-                      step={step} suffix={suffix}
-                      display={key === 'topWidthRatio' || key === 'topDepthRatio' ? 'percent' : 'raw'}
-                      onInteractionStart={beginGesture} onInteractionEnd={endGesture}
-                      onChange={(value) => updateMassPart({ [key]: value })} />
-                  ))}
-                  <p className="selection-help">Negative / positive drift leans the top towards −X / +X or −Y / +Y. Use opposite signs on neighbouring parts.</p>
-                </>
-              ) : null}
-              <button type="button" className="subtle-button" disabled={!selectedMassOverride}
-                onClick={() => update('massPartOverrides', parameters.massPartOverrides.filter((entry) => entry.partId !== selectedMassPartId))}>
-                USE SHARED PROFILE
-              </button>
-            </div>
-          ) : null}
-          {selectedPartCopy ? (
-            <>
-              <div className="control-subsection">
-                <span>COPY POSITION</span>
-                <small>
-                  Source{' '}
-                  {selectedPartCopy.sourceId === 'upper-mass' || massPartAddress(selectedPartCopy.sourceId)
-                    ? partLabel(selectedPartCopy.sourceId).toUpperCase()
-                    : formatSupportId(selectedPartCopy.sourceId)}{' '}
-                  supplies the live shape. This copy owns its translation.
-                </small>
-              </div>
-              <RangeField
-                label="Copy offset X"
-                affected={true}
-                value={selectedPartCopy.offsetXMm}
-                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
-                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
-                step={1}
-                suffix=" mm"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) =>
-                  updateSelectedPartCopyOffset('offsetXMm', value)
-                }
-              />
-              <RangeField
-                label="Copy offset Y"
-                affected={true}
-                value={selectedPartCopy.offsetYMm}
-                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
-                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
-                step={1}
-                suffix=" mm"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) =>
-                  updateSelectedPartCopyOffset('offsetYMm', value)
-                }
-              />
-              <RangeField
-                label="Copy offset Z"
-                affected={true}
-                value={selectedPartCopy.offsetZMm}
-                minimum={PILOTI_PART_COPY_OFFSET_MM.minimum}
-                maximum={PILOTI_PART_COPY_OFFSET_MM.maximum}
-                step={1}
-                suffix=" mm"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) =>
-                  updateSelectedPartCopyOffset('offsetZMm', value)
-                }
-              />
-              <div className="shape-readout">
-                <span>COPY OFFSET</span>
-                <strong>
-                  {formatNumber(selectedPartCopy.offsetXMm)} ·{' '}
-                  {formatNumber(selectedPartCopy.offsetYMm)} ·{' '}
-                  {formatNumber(selectedPartCopy.offsetZMm)} MM
-                </strong>
-                <small>X · Y · Z in design millimetres.</small>
-              </div>
-            </>
-          ) : null}
+          </InspectorSection>
+          <InspectorSection title="Shared composition" description="Overall size, layout and linked footprint" visible={canShowControls('planShape', 'heightMm', 'upperFootprintMode', 'upperWidthRatio', 'upperDepthRatio', 'supportCount', 'supportRowCount')} defaultOpen={false}>
+          <ControlGroup visible={canShowControls('planShape')}>
+          <div className="control-subsection">
+            <span>PLAN SHAPE</span>
+            <small>Rectangle uses the support grid. Hexagon and Octagon use one leg per side. Each layout retains its own part edits.</small>
+          </div>
+          <div className={`offset-scope-switch plan-shape-switch ${affectedControls.has('planShape') ? 'affects-selection' : 'other-controls'}`} aria-label="Piloti plan shape">
+            {(['rectangle', 'hexagon', 'octagon'] as const).map((shape) => (
+              <button type="button" key={shape} aria-pressed={parameters.planShape === shape}
+                className={parameters.planShape === shape ? 'is-active' : ''}
+                onClick={() => update('planShape', shape)}><span>{shape.toUpperCase()}</span></button>
+            ))}
+          </div>
+          </ControlGroup>
           <RangeField
             label="Design height"
+            presentation="number"
             affected={affectedControls.has('heightMm')}
             value={parameters.heightMm}
             minimum={1_000}
@@ -1610,33 +2009,6 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('heightMm', value)}
           />
-          <div className="model-scale-control">
-            <div className="model-scale-heading">
-              <span>MODEL SCALE</span>
-              <small>Uniform manufacturing size, not camera zoom.</small>
-            </div>
-            <div className="model-scale-presets" aria-label="Model scale">
-              {MODEL_SCALE_PRESETS.map((preset) => {
-                const denominator = Math.round(1 / preset)
-                return (
-                  <button
-                    type="button"
-                    key={preset}
-                    className={modelScale === preset ? 'is-active' : ''}
-                    aria-pressed={modelScale === preset}
-                    onClick={() => updateModelScale(preset)}
-                  >
-                    1:{denominator}
-                  </button>
-                )
-              })}
-            </div>
-            <div className="model-scale-summary">
-              <span>MANUFACTURED HEIGHT</span>
-              <strong>{formatNumber(study.heightMm)} MM</strong>
-              <small>{formatNumber(masterStudy.heightMm)} MM DESIGN</small>
-            </div>
-          </div>
           <ControlGroup visible={canShowControls('upperFootprintMode', 'upperWidthRatio', 'upperDepthRatio', 'radialSpreadRatio')}>
           <div className="control-subsection">
             <span>UPPER / SUPPORT FOOTPRINT</span>
@@ -1712,178 +2084,10 @@ export default function App() {
             <p className="selection-help">Diameter share × design height gives the corner-to-corner base diameter. Radial spread scales the leg ring; Linked also scales the upper footprint. Top scale stays uniform to keep all polygon side faces planar.</p>
           </>}
           </ControlGroup>
-          <ControlGroup visible={canShowControls('upperOffsetXMm', 'upperOffsetYMm')}>
-          <div className="control-subsection">
-            <span>UPPER MASS PLACEMENT</span>
-            <small>
-              {parameters.upperFootprintMode === 'linked'
-                ? 'Shoulder tops follow X/Y; stems and feet stay fixed.'
-                : 'Independent cantilever in design millimetres.'}
-            </small>
-          </div>
-          <RangeField
-            label="Upper offset X"
-            affected={affectedControls.has('upperOffsetXMm')}
-            value={parameters.upperOffsetXMm}
-            minimum={-400}
-            maximum={400}
-            step={1}
-            suffix=" mm"
-            onInteractionStart={beginGesture}
-            onInteractionEnd={endGesture}
-            onChange={(value) => update('upperOffsetXMm', value)}
-          />
-          <RangeField
-            label="Upper offset Y"
-            affected={affectedControls.has('upperOffsetYMm')}
-            value={parameters.upperOffsetYMm}
-            minimum={-400}
-            maximum={400}
-            step={1}
-            suffix=" mm"
-            onInteractionStart={beginGesture}
-            onInteractionEnd={endGesture}
-            onChange={(value) => update('upperOffsetYMm', value)}
-          />
-          </ControlGroup>
-          <ControlGroup visible={canShowControls('upperMassProfile', 'upperTopWidthRatio', 'upperTopDepthRatio', 'upperTopOffsetXMm', 'upperTopOffsetYMm')}>
-          <div className="control-subsection">
-            <span>{activeDivision === 'whole' ? 'UPPER MASS PROFILE' : 'SHARED UPPER MASS PROFILE'}</span>
-            <small>The bottom bearing face stays fixed. Independent part tops keep their own profile.</small>
-          </div>
-          <div className={`offset-scope-switch ${affectedControls.has('upperMassProfile') ? 'affects-selection' : 'other-controls'}`} aria-label="Upper mass profile">
-            <button
-              type="button"
-              className={parameters.upperMassProfile === 'block' ? 'is-active' : ''}
-              aria-pressed={parameters.upperMassProfile === 'block'}
-              onClick={() => update('upperMassProfile', 'block')}
-            >
-              <span>BLOCK</span>
-              <small>PARALLEL SIDES</small>
-            </button>
-            <button
-              type="button"
-              className={
-                parameters.upperMassProfile === 'tapered' ? 'is-active' : ''
-              }
-              aria-pressed={parameters.upperMassProfile === 'tapered'}
-              onClick={() => update('upperMassProfile', 'tapered')}
-            >
-              <span>TAPERED</span>
-              <small>LOFTED TOP</small>
-            </button>
-          </div>
-          {parameters.upperMassProfile === 'tapered' ? (
-            <>
-              <RangeField
-                label={radial ? 'Top scale' : 'Top width share'}
-                affected={affectedControls.has('upperTopWidthRatio')}
-                value={parameters.upperTopWidthRatio}
-                minimum={0.45}
-                maximum={1.25}
-                step={0.01}
-                display="percent"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) => update('upperTopWidthRatio', value)}
-              />
-              {!radial ? <RangeField
-                label="Top depth share"
-                affected={affectedControls.has('upperTopDepthRatio')}
-                value={parameters.upperTopDepthRatio}
-                minimum={0.45}
-                maximum={1.25}
-                step={0.01}
-                display="percent"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) => update('upperTopDepthRatio', value)}
-              /> : null}
-              <RangeField
-                label="Top drift X"
-                affected={affectedControls.has('upperTopOffsetXMm')}
-                value={parameters.upperTopOffsetXMm}
-                minimum={-400}
-                maximum={400}
-                step={1}
-                suffix=" mm"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) => update('upperTopOffsetXMm', value)}
-              />
-              <RangeField
-                label="Top drift Y"
-                affected={affectedControls.has('upperTopOffsetYMm')}
-                value={parameters.upperTopOffsetYMm}
-                minimum={-400}
-                maximum={400}
-                step={1}
-                suffix=" mm"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) => update('upperTopOffsetYMm', value)}
-              />
-            </>
-          ) : null}
-          </ControlGroup>
-          <ControlGroup visible={canShowControls('retainedCoreMode', 'retainedCoreScale')}>
-          <div className="control-subsection retained-core-heading">
-            <span>RETAINED LIGHTWEIGHT CORE</span>
-            <small>Closed foam stays inside the cast. Blue is retained material; STL subtracts its space from concrete.</small>
-          </div>
-          <div
-            className={`offset-scope-switch retained-core-switch ${affectedControls.has('retainedCoreMode') ? 'affects-selection' : 'other-controls'}`}
-            aria-label="Retained core mode"
-          >
-            <button
-              type="button"
-              className={parameters.retainedCoreMode === 'none' ? 'is-active' : ''}
-              aria-pressed={parameters.retainedCoreMode === 'none'}
-              onClick={() => update('retainedCoreMode', 'none')}
-            >
-              <span>SOLID</span>
-              <small>CONCRETE ONLY</small>
-            </button>
-            <button
-              type="button"
-              className={parameters.retainedCoreMode === 'upper-mass' ? 'is-active' : ''}
-              aria-pressed={parameters.retainedCoreMode === 'upper-mass'}
-              onClick={() => update('retainedCoreMode', 'upper-mass')}
-            >
-              <span>UPPER CORE</span>
-              <small>RETAINED FOAM</small>
-            </button>
-          </div>
-          {parameters.retainedCoreMode === 'upper-mass' ? (
-            <>
-              <RangeField
-                label="Core size"
-                affected={affectedControls.has('retainedCoreScale')}
-                visible={relevantControls.has('retainedCoreScale')}
-                value={parameters.retainedCoreScale}
-                minimum={PILOTI_PARAMETER_RULES.retainedCoreScale.minimum}
-                maximum={PILOTI_PARAMETER_RULES.retainedCoreScale.maximum}
-                step={0.01}
-                display="percent"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) => update('retainedCoreScale', value)}
-              />
-              <div className={`shape-readout retained-core-readout is-${study.retainedCore.status}`}>
-                <span>{study.retainedCore.status === 'active' ? 'BLUE CORE · RETAINED' : 'CORE PAUSED'}</span>
-                <strong>
-                  {study.retainedCore.status === 'active'
-                    ? `${formatNumber(study.retainedCore.volumeMm3 / 1_000_000, 1)} L · ${formatNumber(study.retainedCore.minimumCoverMm, 1)} MM MIN AXIS COVER`
-                    : 'NO CORE GEOMETRY'}
-                </strong>
-                <small>{study.retainedCore.message}</small>
-              </div>
-            </>
-          ) : null}
-          </ControlGroup>
           {!radial ? <>
           <RangeField
             label="Columns (X)"
+            presentation="choices"
             affected={affectedControls.has('supportCount')}
             value={parameters.supportCount}
             minimum={1}
@@ -1895,6 +2099,7 @@ export default function App() {
           />
           <RangeField
             label="Rows (Y)"
+            presentation="choices"
             affected={affectedControls.has('supportRowCount')}
             value={parameters.supportRowCount}
             minimum={1}
@@ -1906,6 +2111,7 @@ export default function App() {
           />
           <RangeField
             label="Row spacing"
+            presentation="number"
             affected={affectedControls.has('rowSpacingMm')}
             value={parameters.rowSpacingMm}
             minimum={100}
@@ -1917,6 +2123,8 @@ export default function App() {
             onChange={(value) => update('rowSpacingMm', value)}
           />
           </> : null}
+          </InspectorSection>
+          <InspectorSection title={!allControlsVisible && selectedPiece?.role === 'mass' ? 'Upper base height' : 'Shared leg shape'} description="Shared support proportions also position the mass above" visible={canShowControls('supportHeightRatio', 'supportDepthRatio', 'shoulderRatio', 'shoulderMode', 'neckWidthRatio', 'footFlareRatio', 'bearingScaleRatio', 'footOffsetSpace')} defaultOpen={false}>
           <ControlGroup visible={canShowControls(
             'supportDepthRatio',
             'shoulderRatio',
@@ -2030,18 +2238,6 @@ export default function App() {
             onInteractionEnd={endGesture}
             onChange={(value) => update('bearingScaleRatio', value)}
           />
-          <RangeField
-            label="Asymmetry"
-            affected={affectedControls.has('asymmetry')}
-            value={parameters.asymmetry}
-            minimum={0}
-            maximum={0.5}
-            step={0.01}
-            display="percent"
-            onInteractionStart={beginGesture}
-            onInteractionEnd={endGesture}
-            onChange={(value) => update('asymmetry', value)}
-          />
           {radial && canShowControls('footOffsetSpace') ? <>
             <div className="control-subsection">
               <span>FOOT OFFSET SPACE</span>
@@ -2061,242 +2257,127 @@ export default function App() {
               ? 'Positive radial offset spreads feet away from the ring centre; negative pulls them inward. Positive tangential offset turns counter-clockwise viewed from above. Upper-mass placement does not change this centre.'
               : 'All legs use the same world X/Y directions, regardless of their position around the ring.'}</p>
           </> : null}
-          <ControlGroup visible={showLegEditor}>
-          <div className="control-subsection">
-            <span>LEG EDIT SCOPE</span>
-            <small>{!allControlsVisible && selectedSupportId && !selectedStem
-              ? 'Position and size move or resize the whole leg. Select its stem to change foot lean.'
-              : centeredFeet
-              ? 'Foot offsets lean. Position moves the whole leg and realigns its outward direction.'
-              : 'Foot offsets lean. Position moves the complete leg.'}</small>
-          </div>
-          <div className="offset-scope-switch" aria-label="Leg edit scope">
-            <button
-              type="button"
-              className={activeSupportEditScope === 'shared' ? 'is-active' : ''}
-              aria-pressed={activeSupportEditScope === 'shared'}
-              onClick={() => setSupportEditScope('shared')}
-            >
-              <span>SHARED</span>
-              <small>ALL LEGS</small>
-            </button>
-            <button
-              type="button"
-              className={activeSupportEditScope === 'selected' ? 'is-active' : ''}
-              aria-pressed={activeSupportEditScope === 'selected'}
-              disabled={selectedSupportId === undefined}
-              onClick={() => setSupportEditScope('selected')}
-            >
-              <span>SELECTED</span>
-              <small>
-                {selectedSupportId
-                  ? formatSupportId(selectedSupportId)
-                  : 'SELECT A LEG'}
-              </small>
-            </button>
-          </div>
-          {!allControlsVisible && activeSupportEditScope === 'shared' && hasSelectedSupportOverride ? (
-            <p className="selection-help">This leg uses its own settings. Choose Selected to edit them; shared foot sliders do not affect this leg.</p>
-          ) : !allControlsVisible && activeSupportEditScope === 'shared' && selectedSupportId && !selectedStem ? (
-            <p className="selection-help">Shared dimensions are above. Choose Selected to edit this leg's position and size.</p>
-          ) : null}
-          {activeSupportEditScope === 'selected' &&
-          !hasSelectedSupportOverride ? (
-            <div className="offset-inheritance">
-              <span>INHERITS SHARED LEG</span>
-              <small>
-                {centeredFeet ? 'RADIAL' : 'OFFSET X'} {parameters.footOffsetXMm} MM · {centeredFeet ? 'TANGENTIAL' : 'Y'}{' '}
-                {parameters.footOffsetYMm} MM · POSITION 0 × 0 MM · SIZE 100 ×
-                100%
-              </small>
-              <button type="button" onClick={createSelectedSupportOverride}>
-                CREATE OVERRIDE
-              </button>
-            </div>
-          ) : (
-            <>
-              {activeSupportEditScope === 'selected' && selectedSupportId ? (
-                <div className="offset-override-heading">
-                  <span>{formatSupportId(selectedSupportId)}</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      replaceSelectedSupportOverride(selectedSupportId)
-                    }
-                  >
-                    USE SHARED
-                  </button>
-                </div>
-              ) : null}
-              <RangeField
-                label={
-                  centeredFeet
-                    ? activeSupportEditScope === 'selected' ? 'Selected radial offset' : 'Radial foot offset'
-                    : activeSupportEditScope === 'selected'
-                    ? 'Selected foot X'
-                    : 'Foot offset X'
-                }
-                affected={activeSupportEditScope === 'selected'
-                  ? selectedPieceId.startsWith('support-')
-                  : affectedControls.has('footOffsetXMm')}
-                value={activeFootOffsetX}
-                minimum={-300}
-                maximum={300}
-                step={1}
-                suffix=" mm"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) =>
-                  activeSupportEditScope === 'selected'
-                    ? updateSelectedFootOffset('footOffsetXMm', value)
-                    : update('footOffsetXMm', value)
-                }
-              />
-              <RangeField
-                label={
-                  centeredFeet
-                    ? activeSupportEditScope === 'selected' ? 'Selected tangential offset' : 'Tangential foot offset'
-                    : activeSupportEditScope === 'selected'
-                    ? 'Selected foot Y'
-                    : 'Foot offset Y'
-                }
-                affected={activeSupportEditScope === 'selected'
-                  ? selectedPieceId.startsWith('support-')
-                  : affectedControls.has('footOffsetYMm')}
-                value={activeFootOffsetY}
-                minimum={-300}
-                maximum={300}
-                step={1}
-                suffix=" mm"
-                onInteractionStart={beginGesture}
-                onInteractionEnd={endGesture}
-                onChange={(value) =>
-                  activeSupportEditScope === 'selected'
-                    ? updateSelectedFootOffset('footOffsetYMm', value)
-                    : update('footOffsetYMm', value)
-                }
-              />
-              {activeSupportEditScope === 'selected' ? (
-                <>
-                  <RangeField
-                    label="Selected position X"
-                    affected={true}
-                    value={activeSupportPositionX}
-                    minimum={-300}
-                    maximum={300}
-                    step={1}
-                    suffix=" mm"
-                    onInteractionStart={beginGesture}
-                    onInteractionEnd={endGesture}
-                    onChange={(value) =>
-                      updateSelectedSupportPosition('positionXMm', value)
-                    }
-                  />
-                  <RangeField
-                    label="Selected position Y"
-                    affected={true}
-                    value={activeSupportPositionY}
-                    minimum={-300}
-                    maximum={300}
-                    step={1}
-                    suffix=" mm"
-                    onInteractionStart={beginGesture}
-                    onInteractionEnd={endGesture}
-                    onChange={(value) =>
-                      updateSelectedSupportPosition('positionYMm', value)
-                    }
-                  />
-                  <div className="shape-readout">
-                    <span>SELECTED POSITION</span>
-                    <strong>
-                      X {formatNumber(activeSupportPositionX)} · Y{' '}
-                      {formatNumber(activeSupportPositionY)} MM
-                    </strong>
-                    <small>{centeredFeet
-                      ? 'World X/Y placement. The outward foot direction follows this leg’s new position.'
-                      : 'Translation from the generated support position.'}</small>
-                  </div>
-                  <RangeField
-                    label="Selected width scale"
-                    affected={true}
-                    value={activeSupportWidthScale}
-                    minimum={0.55}
-                    maximum={1.45}
-                    step={0.01}
-                    display="percent"
-                    onInteractionStart={beginGesture}
-                    onInteractionEnd={endGesture}
-                    onChange={(value) =>
-                      updateSelectedSupportSize('widthScale', value)
-                    }
-                  />
-                  <RangeField
-                    label="Selected depth scale"
-                    affected={true}
-                    value={activeSupportDepthScale}
-                    minimum={0.55}
-                    maximum={1.45}
-                    step={0.01}
-                    display="percent"
-                    onInteractionStart={beginGesture}
-                    onInteractionEnd={endGesture}
-                    onChange={(value) =>
-                      updateSelectedSupportSize('depthScale', value)
-                    }
-                  />
-                  <div className="shape-readout">
-                    <span>SELECTED SIZE</span>
-                    <strong>
-                      {formatNumber(activeSupportWidthScale * 100)} ×{' '}
-                      {formatNumber(activeSupportDepthScale * 100)}%
-                    </strong>
-                    <small>Width × depth relative to the shared leg.</small>
-                  </div>
-                </>
-              ) : null}
-            </>
-          )}
-          <ControlGroup visible={showFootReadout}>
-          <div
-            className="lean-readout"
-            aria-label={`${activeSupportEditScope} leg lean result`}
-          >
-            <span>
-              {activeSupportEditScope === 'selected'
-                ? hasSelectedSupportOverride
-                  ? 'SELECTED LEAN'
-                  : 'INHERITED LEAN'
-                : 'SHARED LEAN'}
-            </span>
-            <strong>{authoredLeanAngleDeg.toFixed(1)}°</strong>
-            <small>
-              {formatNumber(footOffsetMm, 1)} MM DESIGN OFFSET ·{' '}
-              {footDirectionDeg === undefined
-                ? 'NO DIRECTION'
-                : `${footDirectionDeg.toFixed(0)}° ${centeredFeet ? 'FROM OUTWARD · CCW' : 'FOOT DIRECTION'}`}
-            </small>
-            <small>
-              {formatNumber(footOffsetMm * modelScale, 1)} MM MODEL OFFSET AT
-              1:{modelScaleDenominator}
-            </small>
-            <small>
-              {activeSupportEditScope === 'selected'
-                ? hasSelectedSupportOverride
-                  ? 'This leg uses selected lean, position and size values.'
-                  : 'Create an override to separate this leg.'
-                : 'Seeded asymmetry adds per-leg variation.'}
-            </small>
-          </div>
-          </ControlGroup>
-          </ControlGroup>
+          </InspectorSection>
+          <InspectorSection title="Variation" description="Seeded irregularity across the composition" visible={canShowControls('asymmetry')} defaultOpen={false}>
+          <RangeField
+            label="Asymmetry"
+            affected={affectedControls.has('asymmetry')}
+            value={parameters.asymmetry}
+            minimum={0}
+            maximum={0.5}
+            step={0.01}
+            display="percent"
+            onInteractionStart={beginGesture}
+            onInteractionEnd={endGesture}
+            onChange={(value) => update('asymmetry', value)}
+          />
+          </InspectorSection>
         </section>
         </InspectorControls>
+        </div>
 
-        <section className="panel-section metrics-section">
+        <section id="workflow-make" className="panel-section make-section" hidden={workflow !== 'make'}>
+          <div className="workflow-intro"><h1>Make it physical.</h1><p>Choose the manufactured size, inspect the estimate, then export.</p></div>
+          <InspectorControls showAll={true}>
+          <div className="model-scale-control">
+            <div className="model-scale-heading">
+              <span>MODEL SCALE</span>
+              <small>Uniform manufacturing size, not camera zoom.</small>
+            </div>
+            <div className="model-scale-presets" aria-label="Model scale">
+              {MODEL_SCALE_PRESETS.map((preset) => {
+                const denominator = Math.round(1 / preset)
+                return (
+                  <button
+                    type="button"
+                    key={preset}
+                    className={modelScale === preset ? 'is-active' : ''}
+                    aria-pressed={modelScale === preset}
+                    onClick={() => updateModelScale(preset)}
+                  >
+                    1:{denominator}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="model-scale-summary">
+              <span>MANUFACTURED HEIGHT</span>
+              <strong>{formatNumber(study.heightMm)} MM</strong>
+              <small>{formatNumber(masterStudy.heightMm)} MM DESIGN</small>
+            </div>
+          </div>
+
+          <InspectorSection title="Lightweight core" description="Optional retained foam inside the whole upper mass" visible={true} defaultOpen={parameters.retainedCoreMode !== 'none'}>
+          <ControlGroup visible={true}>
+          <div className="control-subsection retained-core-heading">
+            <span>RETAINED LIGHTWEIGHT CORE</span>
+            <small>Closed foam stays inside the cast. Blue is retained material; STL subtracts its space from concrete.</small>
+          </div>
+          <div
+            className={`offset-scope-switch retained-core-switch ${affectedControls.has('retainedCoreMode') ? 'affects-selection' : 'other-controls'}`}
+            aria-label="Retained core mode"
+          >
+            <button
+              type="button"
+              className={parameters.retainedCoreMode === 'none' ? 'is-active' : ''}
+              aria-pressed={parameters.retainedCoreMode === 'none'}
+              onClick={() => update('retainedCoreMode', 'none')}
+            >
+              <span>SOLID</span>
+              <small>CONCRETE ONLY</small>
+            </button>
+            <button
+              type="button"
+              className={parameters.retainedCoreMode === 'upper-mass' ? 'is-active' : ''}
+              aria-pressed={parameters.retainedCoreMode === 'upper-mass'}
+              onClick={() => update('retainedCoreMode', 'upper-mass')}
+            >
+              <span>UPPER CORE</span>
+              <small>RETAINED FOAM</small>
+            </button>
+          </div>
+          {parameters.retainedCoreMode === 'upper-mass' ? (
+            <>
+              <RangeField
+                label="Core size"
+                affected={affectedControls.has('retainedCoreScale')}
+                visible={relevantControls.has('retainedCoreScale')}
+                value={parameters.retainedCoreScale}
+                minimum={PILOTI_PARAMETER_RULES.retainedCoreScale.minimum}
+                maximum={PILOTI_PARAMETER_RULES.retainedCoreScale.maximum}
+                step={0.01}
+                display="percent"
+                onInteractionStart={beginGesture}
+                onInteractionEnd={endGesture}
+                onChange={(value) => update('retainedCoreScale', value)}
+              />
+              <div className={`shape-readout retained-core-readout is-${study.retainedCore.status}`}>
+                <span>{study.retainedCore.status === 'active' ? 'BLUE CORE · RETAINED' : 'CORE PAUSED'}</span>
+                <strong>
+                  {study.retainedCore.status === 'active'
+                    ? `${formatNumber(study.retainedCore.volumeMm3 / 1_000_000, 1)} L · ${formatNumber(study.retainedCore.minimumCoverMm, 1)} MM MIN AXIS COVER`
+                    : 'NO CORE GEOMETRY'}
+                </strong>
+                <small>{study.retainedCore.message}</small>
+              </div>
+            </>
+          ) : null}
+          </ControlGroup>
+          </InspectorSection>
+
+          </InspectorControls>
+          <div className="workflow-next">
+            <button type="button" className="workflow-next-button" disabled={exportPending} onClick={() => void exportManufacturingStl()}>{exportPending ? 'Building STL…' : 'Export sculpture STL'}</button>
+            <button type="button" className="subtle-button" onClick={() => { setDrawingWorkspaceOpened(true); setWorkspaceMode('drawing') }}>Open drawings / SVG</button>
+          </div>
+        </section>
+
+        <section className="panel-section metrics-section" hidden={workflow !== 'make'}>
           <div className="section-heading">
             <span>04</span>
             <h2>Manufacturing estimate</h2>
           </div>
+          <InspectorSection title="Material densities" description="Optional mass assumptions; does not change geometry">
           <div className="material-controls" aria-label="Material assumptions">
             <div className="control-subsection">
               <span>MATERIAL ASSUMPTIONS</span>
@@ -2304,6 +2385,7 @@ export default function App() {
             </div>
             <RangeField
               label="Concrete density"
+              presentation="number"
               affected={false}
               value={parameters.concreteDensityKgM3}
               minimum={PILOTI_PARAMETER_RULES.concreteDensityKgM3.minimum}
@@ -2317,6 +2399,7 @@ export default function App() {
             />
             <RangeField
               label="Retained core density"
+              presentation="number"
               affected={false}
               value={parameters.retainedCoreDensityKgM3}
               minimum={PILOTI_PARAMETER_RULES.retainedCoreDensityKgM3.minimum}
@@ -2329,6 +2412,7 @@ export default function App() {
               onChange={(value) => update('retainedCoreDensityKgM3', value)}
             />
           </div>
+          </InspectorSection>
           <dl className="metrics-grid">
             <div>
               <dt>Design envelope</dt>
@@ -2642,7 +2726,7 @@ export default function App() {
         </span>
         <span>{study.radialLayout?.totalSupports ?? study.supportLayout?.totalSupports ?? 0} {radial ? 'RADIAL' : 'GRID'} LEGS</span>
         <span>{visiblePieces.length} OBJECTS</span>
-        <span className="statusbar-end">RAAKA 0.1.36 / LOCAL</span>
+        <span className="statusbar-end">RAAKA 0.1.37</span>
       </footer>
     </main>
   )

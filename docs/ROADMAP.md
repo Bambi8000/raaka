@@ -58,6 +58,9 @@ Measured plan and X/Y elevation silhouettes, sharing the same semantic drawing
 pipeline, are implemented in 0.1.35.
 Angle-filtered visible creases, depth occlusion and independent line-role
 controls are implemented in 0.1.36.
+The owner's usability feedback takes priority over further drawing features:
+Create/Edit/Make navigation, readable controls and local-first editing ship in
+0.1.37. Validate the creation flow before adding more control surfaces.
 
 ## 0.1 — foundation
 
@@ -146,7 +149,7 @@ runs after the bot rebased PR #6.
 - [ ] camera view presets: front, side, top and axonometric
 - [x] numeric inputs alongside sliders; explicit mm and percentage readouts
 - [x] separate composition controls from selected-object information
-- [ ] compact drawers/tabs that retain recipe, object and seed actions
+- [x] compact workflow navigation retaining object, variation and file actions (0.1.37)
 - [ ] expose selection to assistive technology and preserve keyboard access
 
 Done when an edited study survives save/open and reload, undo restores the
@@ -458,18 +461,17 @@ emphasis to match its actual parameter dependencies.
   (0.1.24)
 - [ ] group each stem and shoulder under one expandable leg in the object list
   while retaining separate face/part selection for Fuse
-- [ ] a Selected / Composition inspector split, with selected overrides first
-  and a clear link back to shared source controls for copies
+- [x] a Selected / Composition inspector split, with selected overrides first (0.1.37)
+- [ ] direct navigation from a copy to its source controls
 - [x] selection-focused controls by default with Show all (0.1.22)
 - [ ] front, side and top view buttons for precise placement
 - [ ] review bundle splitting as the solid tools and inspector grow
 
-Unchecked items remain proposals. The owner-requested dynamic inspector is now
-implemented; fuller selected-first ordering and copy-source navigation remain
-open. Translation gizmos, exact numeric entry, the first STL handoff, retained
-lightweight core and static stability feedback are implemented. Next: editable
-material density, while keeping the existing manufacturing gates below in
-scope.
+Unchecked items remain proposals. The dynamic inspector and selected-first
+ordering are implemented; copy-source navigation remains open. Translation
+gizmos, exact numeric entry, STL handoff, retained lightweight core, static
+stability feedback and editable material density are implemented. The 0.1.37
+usability follow-ups below take priority during the owner's next inspection.
 
 ## 0.1.19 — divided upper masses and opposing tapers
 
@@ -966,6 +968,41 @@ deduplication, complete and partial depth occlusion, role filtering, open SVG
 paths and crease metadata. Browser inspection covered a tapered Piloti plan,
 both elevations, Outline-only, Creases-only and the explicit empty-role refusal
 in the compact layout.
+
+## 0.1.37 — a faster creation workflow
+
+- [x] begin with Create: visual plan shapes, grid-count buttons, exact height
+  and main silhouette proportions
+- [x] open Edit on object selection, with local part controls before shared
+  settings and explicit This leg / All legs scope
+- [x] create selected-leg overrides on first edit, preserving inherited values
+  and one-step Undo; keep Use shared available
+- [x] group detailed controls in keyboard-operable native disclosures and
+  preserve Show all as the unfiltered editor
+- [x] collect model scale, retained core, materials, analysis and output in Make
+- [x] retain a compact physical reading and actionable link to existing model
+  warnings while creating and editing
+- [x] use readable primary labels and values, larger targets, numeric-only
+  positions/densities and discrete count buttons
+- [x] collapse unavailable recipes and keep full object names readable
+- [x] keep workflow, disclosures, camera and project history independent
+
+Validation: 530 tests, lint, strict TypeScript and the production build, plus isolated-browser checks for
+shape/profile changes, count controls, local override creation, Undo/Redo,
+inheritance reset, copy translation, removal, model scale, recovery and compact
+layouts. Production-browser inspection also covered the 3D presentation,
+dark/light themes, independent mass taper, retained-core/density controls and
+a real plan SVG download. Desktop and 390 px layouts were visually inspected.
+
+Usability follow-ups after owner feedback:
+
+- [ ] group each complete leg in the object list with expandable stem/shoulder
+  selection for precise Fuse operations
+- [ ] add curated starting compositions and a visual variant board
+- [ ] add front/side/top camera presets for direct placement
+- [ ] consider direct taper/size handles and illustrated local help
+- [ ] verify a first-time-user path from a new study to a saved quarter-scale
+  test model with no tutorial required
 
 ## 0.2 — Piloti as a complete recipe and first manufacturing handoff
 

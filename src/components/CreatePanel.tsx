@@ -1,16 +1,19 @@
 import { InspectorControls, InspectorSection, RangeField } from './InspectorControls'
 import { PILOTI_PARAMETER_RULES } from '../core/pilotiParameters'
+import { UpperTaperActions } from './UpperTaperActions'
+import type { UpperSilhouettePreset } from '../core/upperSilhouette'
 import type { PilotiParameters } from '../core/types'
 
 interface CreatePanelProps {
   readonly parameters: PilotiParameters
   readonly onChange: <Key extends keyof PilotiParameters>(key: Key, value: PilotiParameters[Key]) => void
+  readonly onSilhouette: (preset: UpperSilhouettePreset) => void
   readonly onInteractionStart: () => void
   readonly onInteractionEnd: () => void
   readonly onEdit: () => void
 }
 
-export function CreatePanel({ parameters, onChange, onInteractionStart, onInteractionEnd, onEdit }: CreatePanelProps) {
+export function CreatePanel({ parameters, onChange, onSilhouette, onInteractionStart, onInteractionEnd, onEdit }: CreatePanelProps) {
   const radial = parameters.planShape !== 'rectangle'
   const interaction = { onInteractionStart, onInteractionEnd }
   const ratio = (key: 'upperWidthRatio' | 'upperDepthRatio' | 'supportHeightRatio' | 'upperTopWidthRatio' | 'upperTopDepthRatio' | 'asymmetry', label: string) => (
@@ -82,6 +85,7 @@ export function CreatePanel({ parameters, onChange, onInteractionStart, onIntera
             ))}
           </div>
           {parameters.upperMassProfile === 'tapered' ? <>
+            <UpperTaperActions parameters={parameters} onApply={onSilhouette} />
             {ratio('upperTopWidthRatio', radial ? 'Top size' : 'Top width')}
             {!radial ? ratio('upperTopDepthRatio', 'Top depth') : null}
           </> : null}

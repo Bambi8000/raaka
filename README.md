@@ -21,6 +21,18 @@ material estimates and STL/SVG output. Save/Open and Undo/Redo stay available
 throughout. Larger text, exact position fields and progressive disclosure form
 the first usability pass in 0.1.37; workflow choices do not change project data.
 
+For a symmetric, upward-flaring upper mass, choose **Create → Hexagon (or
+Octagon) → Tapered → Water tower**. Version 0.1.38 adds illustrated **Narrow
+top** (72%) and **Water tower** (125%) actions, both centered over the base.
+**Top size** fine-tunes the proportion; 100% matches the base and larger values
+widen upward. **Center top** removes only X/Y top drift, retaining the current
+size. The same actions are in Edit's shared Upper shape group. New studies no
+longer carry a hidden 120 mm top drift. These actions preserve legs, base
+placement, variation and independent part settings. Stacked level bases still
+follow the shared profile. For an unvaried overall study,
+set **Variation → Asymmetry** to zero separately. One Undo restores a preset's
+entire change, and saved/recovered studies are not silently recentered.
+
 Version 0.1.2 adds validated project files, automatic local recovery and a
 100-step undo/redo history. Use **Save project** for a portable `.raaka.json`
 file and **Open** to restore it. One slider drag is one undo step; direct seed
@@ -330,7 +342,7 @@ proposed next work.
 
 ## Status
 
-RAAKA 0.1.37 is an early design and geometry prototype. Only Piloti is
+RAAKA 0.1.38 is an early design and geometry prototype. Only Piloti is
 implemented. Study state is recoverable locally and can be saved as a
 versioned project file. Its finished solid, including the first retained upper
 core subtraction, can be exported as a watertight millimetre STL for Kerros.

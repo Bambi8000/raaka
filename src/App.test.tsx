@@ -105,6 +105,19 @@ describe('creation workflow', () => {
     expect(readout).toContain('<button type="button">Review model warnings →</button>')
     expect(workflowMarkup(html, 'make')).toContain('SIDE BEARING OVERHANG')
   })
+
+  it('exposes centered taper actions and existing drift in both Create and the shared editor', () => {
+    const html = renderInspector({
+      ...defaults, planShape: 'hexagon', upperMassProfile: 'tapered', upperTopOffsetXMm: 120,
+    })
+    for (const workflow of ['create', 'edit'] as const) {
+      const panel = workflowMarkup(html, workflow)
+      expect(panel).toContain('aria-label="Water tower" aria-pressed="false"')
+      expect(panel).toContain('Top shifted X +120 mm / Y 0 mm')
+      expect(panel).toContain('>Center top</button>')
+    }
+    expect(workflowMarkup(renderInspector(), 'create')).not.toContain('aria-label="Centered upper silhouettes"')
+  })
 })
 
 describe('wired selection inspector', () => {

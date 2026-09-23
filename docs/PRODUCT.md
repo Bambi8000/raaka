@@ -6,7 +6,7 @@ RAAKA is a deterministic brutalist massing studio for physical sculpture. It
 turns a constrained architectural vocabulary into repeatable solid forms,
 vector drawings and manufacturing intent.
 
-This document describes the product direction. In version 0.1.37, the
+This document describes the product direction. In version 0.1.38, the
 interactive Piloti study, selection, physical estimates, versioned project
 files, local recovery, undo/redo, shared X/Y foot offsets and selected-leg
 overrides are implemented, together with 1:1, 1:2 and 1:4 model scales,
@@ -71,6 +71,19 @@ workflow choices. Position and density use exact number fields; continuous
 proportions keep sliders. The larger typography and controls preserve the
 grey/white/yellow visual identity. Navigation and disclosures are workspace
 state, never saved geometry or undo steps.
+
+Version 0.1.38 makes taper direction and centering explicit. In Create's Tapered
+silhouette and Edit's shared Upper shape, **Narrow top** sets both top ratios to
+72% and **Water tower** sets them to 125%; either action clears both top drifts
+in one undoable edit. **Center top** clears only drift and keeps custom ratios.
+The current centered/shifted state is visible next to these illustrated actions.
+The base bearing face, legs, upper placement and seeded variation remain
+unchanged. Independent part settings are retained; stacked level bases still
+follow the shared profile, so their resulting geometry can change. Thus
+"centered" means the shared top over its own base, not
+symmetry of the entire arrangement. A whole hexagonal or octagonal upper mass
+widens evenly on every side. New studies start with zero latent top drift;
+saved and recovered offsets remain authoritative until explicitly changed.
 
 ## Physical scale
 

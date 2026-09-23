@@ -54,7 +54,7 @@ export const DEFAULT_PILOTI_PARAMETERS: PilotiParameters = {
   retainedCoreDensityKgM3: DEFAULT_RETAINED_CORE_DENSITY_KG_M3,
   upperTopWidthRatio: 0.72,
   upperTopDepthRatio: 0.84,
-  upperTopOffsetXMm: 120,
+  upperTopOffsetXMm: 0,
   upperTopOffsetYMm: 0,
   asymmetry: 0.12,
   randomLocks: [],

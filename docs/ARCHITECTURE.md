@@ -702,6 +702,18 @@ version 21 and recovery remains `raaka.recovery.v4`. The compact warning entry
 reads the existing support/radial layout, stability, core and Fuse analysis
 before linking to the full Make panel.
 
+Version 0.1.38 adds `upperSilhouette.ts` with pure, idempotent shared-top actions.
+Narrow and wide presets write the tapered profile, equal top ratios and zero
+X/Y drift together; centering writes only the drift fields. `App` performs one
+study replacement for each action, not several single-key updates that could
+overwrite each other through a stale render closure. `UpperTaperActions` is
+shared by Create and the detailed editor; preset selection is derived from
+actual ratios and drift, never a saved preset flag. Polygon matching ignores
+the dormant depth ratio. Existing local overrides and all unrelated parameters
+are retained. Only the new-study latent X top drift changes from 120 mm to zero;
+the default block geometry, project parsing and legacy migrations are unchanged.
+No schema field changes: Piloti remains recipe version 21 and recovery v4.
+
 ### Direct translation handles
 
 Version 0.1.23 adds `translationGizmo.ts` as the pure boundary between semantic
